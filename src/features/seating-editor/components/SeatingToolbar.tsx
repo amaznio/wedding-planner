@@ -5,6 +5,7 @@ type SeatingToolbarProps = {
   occupiedSeats: number;
   totalSeats: number;
   unseatedGuests: number;
+  onPlanNameChange: (name: string) => void;
   onAddTable: () => void;
   onSave: () => void;
 };
@@ -16,6 +17,7 @@ export function SeatingToolbar({
   occupiedSeats,
   totalSeats,
   unseatedGuests,
+  onPlanNameChange,
   onAddTable,
   onSave,
 }: SeatingToolbarProps) {
@@ -31,9 +33,15 @@ export function SeatingToolbar({
             : "No local changes";
 
   return (
-    <header className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4">
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-900">{planName}</h1>
+    <header className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-4">
+      <div className="min-w-0 flex-1">
+        <input
+          type="text"
+          value={planName}
+          onChange={(event) => onPlanNameChange(event.target.value)}
+          className="block w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xl font-semibold text-zinc-900 focus:border-zinc-300 focus:bg-white focus:outline-none"
+          aria-label="Plan name"
+        />
         <p className="text-sm text-zinc-600">{statusText}</p>
         <p className="text-xs text-zinc-500">
           Seats: {occupiedSeats}/{totalSeats} occupied · Unseated guests: {unseatedGuests}

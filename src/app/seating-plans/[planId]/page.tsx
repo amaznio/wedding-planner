@@ -77,6 +77,7 @@ export default function SeatingPlanEditorPage() {
     isDirty,
     setPlan,
     markSaved,
+    updatePlanName,
     addTable,
     selectTable,
     updateSelectedTableLabel,
@@ -557,6 +558,7 @@ export default function SeatingPlanEditorPage() {
         occupiedSeats={occupiedSeatCount}
         totalSeats={totalSeatCount}
         unseatedGuests={unseatedGuestCount}
+        onPlanNameChange={updatePlanName}
         onSave={handleSave}
         onAddTable={addTable}
       />

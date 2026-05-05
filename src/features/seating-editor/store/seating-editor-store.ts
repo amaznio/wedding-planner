@@ -14,6 +14,7 @@ type SeatingEditorState = {
   isDirty: boolean;
   setPlan: (plan: SeatingPlan) => void;
   markSaved: () => void;
+  updatePlanName: (name: string) => void;
   addTable: () => void;
   selectTable: (tableId: string | null) => void;
   updateSelectedTableLabel: (label: string) => void;
@@ -81,6 +82,19 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   },
   markSaved: () => {
     set({ isDirty: false });
+  },
+  updatePlanName: (name) => {
+    const state = get();
+    const trimmed = name.trimStart();
+    if (trimmed === state.plan.name) return;
+
+    set({
+      plan: {
+        ...state.plan,
+        name: trimmed,
+      },
+      isDirty: true,
+    });
   },
   addTable: () => {
     const state = get();
