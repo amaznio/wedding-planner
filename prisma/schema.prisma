@@ -14,7 +14,9 @@ model SeatingPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tables SeatingTable[]
+  tables       SeatingTable[]
+  guests       Guest[]
+  assignments  SeatAssignment[]
 }
 
 model SeatingTable {
@@ -32,5 +34,40 @@ model SeatingTable {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  assignments SeatAssignment[]
+
   @@index([planId])
+}
+
+model Guest {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String
+  group     String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  assignment SeatAssignment?
+
+  @@index([planId])
+}
+
+model SeatAssignment {
+  id         String      @id @default(cuid())
+  planId     String
+  plan       SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  tableId    String
+  table      SeatingTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  guestId    String      @unique
+  guest      Guest       @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  seatNumber Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([planId, tableId, seatNumber])
+  @@index([planId])
+  @@index([tableId])
+  @@index([guestId])
 }

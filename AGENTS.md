@@ -172,12 +172,103 @@ Use Zod for API payload validation.
 
 Initial constraints:
 
-- `seatCount`: integer, minimum 1, maximum 24
+- `seatCount`: integer, minimum 1, maximum 50
 - `type`: only `"rectangle"`
 - `width` / `height`: reasonable positive canvas dimensions
 - `x` / `y` / `rotation`: integers
 
 Invalid API payloads should return useful errors.
+
+## Post-MVP Roadmap (Guest Assignment)
+
+After MVP completion, use these additional phases to add guest management and seat assignment.
+
+### Phase 10 - Guest Data Model
+
+Goal:
+
+Add guest and assignment entities to support seat mapping.
+
+Tasks:
+
+- Add `Guest` model scoped to `SeatingPlan`.
+- Add `SeatAssignment` model linking guest to table seat (`tableId` + `seatNumber`).
+- Enforce one guest per seat and one seat per guest per plan with DB constraints.
+- Keep seat geometry derived from table `seatCount` (do not persist seat geometry).
+
+### Phase 11 - Guest & Assignment API
+
+Goal:
+
+Expose CRUD and assignment APIs.
+
+Tasks:
+
+- Add guest CRUD endpoints.
+- Add assign / unassign endpoints.
+- Validate payloads with Zod.
+- Return clear conflict errors for duplicate/invalid assignments.
+
+### Phase 12 - Guest List UI
+
+Goal:
+
+Manage guests in editor UI.
+
+Tasks:
+
+- Add guest panel with search/filter.
+- Add unseated guest list.
+- Show basic guest metadata (name, notes/group/tags as needed).
+
+### Phase 13 - Seat Assignment UX
+
+Goal:
+
+Assign guests to seats directly in editor.
+
+Tasks:
+
+- Make seats interactive targets.
+- Add click-to-assign flow first.
+- Add unassign and swap interactions.
+- Optionally add drag-guest-to-seat after click flow is stable.
+
+### Phase 14 - Assignment Validation & States
+
+Goal:
+
+Improve reliability and clarity of assignment interactions.
+
+Tasks:
+
+- Distinct seat states: empty, occupied, conflict.
+- Guard invalid actions with actionable errors.
+- Keep assignment rules consistent between UI and API.
+
+### Phase 15 - Persistence Integration for Assignments
+
+Goal:
+
+Load/save assignments with plans.
+
+Tasks:
+
+- Hydrate guests + assignments when opening a plan.
+- Save assignment operations with robust error handling.
+- Preserve editor responsiveness during save/load transitions.
+
+### Phase 16 - Assignment Polish
+
+Goal:
+
+Make guest assignment practical for real event planning.
+
+Tasks:
+
+- Add keyboard shortcuts for assignment workflow.
+- Add CSV guest import/export.
+- Add occupancy/unseated summary indicators.
 
 ## Code Quality
 

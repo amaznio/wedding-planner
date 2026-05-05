@@ -11,6 +11,11 @@ type RectTableProps = {
   onSelect?: (tableId: string) => void;
   onMove?: (tableId: string, nextX: number, nextY: number) => void;
   screenToCanvas?: (clientX: number, clientY: number) => { x: number; y: number };
+  seatOccupants?: Record<number, { guestId: string; guestName: string }>;
+  selectedGuestId?: string | null;
+  conflictSeatNumber?: number | null;
+  onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
+  onDragStateChange?: (isDragging: boolean) => void;
 };
 
 export function RectTable({
@@ -19,6 +24,11 @@ export function RectTable({
   onSelect,
   onMove,
   screenToCanvas,
+  seatOccupants,
+  selectedGuestId,
+  conflictSeatNumber,
+  onSeatClick,
+  onDragStateChange,
 }: RectTableProps) {
   const dimensions = getRectangleTableDimensions(table.seatCount);
   const seatPositions = getSeatPositions(
@@ -27,6 +37,9 @@ export function RectTable({
     dimensions.height,
   );
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const movedDuringDragRef = useRef(false);
+  const suppressClickRef = useRef(false);
 
   return (
     <div
@@ -45,12 +58,15 @@ export function RectTable({
           tabIndex={0}
           onClick={(event) => {
             event.stopPropagation();
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
             onSelect?.(table.id);
           }}
           onPointerDown={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            onSelect?.(table.id);
 
             const target = event.currentTarget;
             target.setPointerCapture(event.pointerId);
@@ -61,6 +77,9 @@ export function RectTable({
               x: point.x - table.x,
               y: point.y - table.y,
             };
+            pointerStartRef.current = { x: point.x, y: point.y };
+            movedDuringDragRef.current = false;
+            onDragStateChange?.(true);
           }}
           onPointerMove={(event) => {
             if (!dragOffsetRef.current) return;
@@ -72,14 +91,29 @@ export function RectTable({
 
             const nextX = point.x - dragOffsetRef.current.x;
             const nextY = point.y - dragOffsetRef.current.y;
+            if (pointerStartRef.current) {
+              const movedX = Math.abs(point.x - pointerStartRef.current.x);
+              const movedY = Math.abs(point.y - pointerStartRef.current.y);
+              if (movedX > 2 || movedY > 2) {
+                movedDuringDragRef.current = true;
+              }
+            }
             onMove?.(table.id, nextX, nextY);
           }}
           onPointerUp={(event) => {
             dragOffsetRef.current = null;
+            pointerStartRef.current = null;
+            suppressClickRef.current = movedDuringDragRef.current;
+            movedDuringDragRef.current = false;
             event.currentTarget.releasePointerCapture(event.pointerId);
+            onDragStateChange?.(false);
           }}
           onPointerCancel={() => {
             dragOffsetRef.current = null;
+            pointerStartRef.current = null;
+            suppressClickRef.current = true;
+            movedDuringDragRef.current = false;
+            onDragStateChange?.(false);
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -100,7 +134,20 @@ export function RectTable({
         </div>
 
         {seatPositions.map((seat) => (
-          <Seat key={seat.seatNumber} seatNumber={seat.seatNumber} x={seat.x} y={seat.y} />
+          <Seat
+            key={seat.seatNumber}
+            seatNumber={seat.seatNumber}
+            x={seat.x}
+            y={seat.y}
+            occupantName={seatOccupants?.[seat.seatNumber]?.guestName ?? null}
+            isSelectedGuestSeat={
+              seatOccupants?.[seat.seatNumber]?.guestId === selectedGuestId
+            }
+            isConflict={conflictSeatNumber === seat.seatNumber}
+            onClick={(seatNumber, clientX, clientY) =>
+              onSeatClick?.(table.id, seatNumber, clientX, clientY)
+            }
+          />
         ))}
       </div>
     </div>

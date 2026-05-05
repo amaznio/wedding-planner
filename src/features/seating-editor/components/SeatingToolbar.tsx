@@ -2,6 +2,9 @@ type SeatingToolbarProps = {
   planName: string;
   isDirty: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
+  occupiedSeats: number;
+  totalSeats: number;
+  unseatedGuests: number;
   onAddTable: () => void;
   onSave: () => void;
 };
@@ -10,6 +13,9 @@ export function SeatingToolbar({
   planName,
   isDirty,
   saveState,
+  occupiedSeats,
+  totalSeats,
+  unseatedGuests,
   onAddTable,
   onSave,
 }: SeatingToolbarProps) {
@@ -29,6 +35,9 @@ export function SeatingToolbar({
       <div>
         <h1 className="text-xl font-semibold text-zinc-900">{planName}</h1>
         <p className="text-sm text-zinc-600">{statusText}</p>
+        <p className="text-xs text-zinc-500">
+          Seats: {occupiedSeats}/{totalSeats} occupied · Unseated guests: {unseatedGuests}
+        </p>
       </div>
 
       <div className="flex items-center gap-2">

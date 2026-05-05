@@ -66,21 +66,70 @@ export async function PUT(request: Request, context: RouteContext) {
         },
       });
 
-      await tx.seatingTable.deleteMany({
+      const existingTables = await tx.seatingTable.findMany({
         where: { planId },
+        select: { id: true },
       });
 
-      if (payload.tables.length > 0) {
-        await tx.seatingTable.createMany({
-          data: payload.tables.map((table) => ({
+      const existingTableIds = new Set(existingTables.map((table) => table.id));
+      const incomingTableIds = new Set(
+        payload.tables
+          .map((table) => table.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+
+      const removedTableIds = [...existingTableIds].filter(
+        (id) => !incomingTableIds.has(id),
+      );
+
+      if (removedTableIds.length > 0) {
+        await tx.seatingTable.deleteMany({
+          where: {
             planId,
-            label: table.label,
-            type: table.type,
-            x: table.x,
-            y: table.y,
-            rotation: table.rotation,
-            seatCount: table.seatCount,
-          })),
+            id: { in: removedTableIds },
+          },
+        });
+      }
+
+      for (const table of payload.tables) {
+        if (table.id && existingTableIds.has(table.id)) {
+          await tx.seatingTable.update({
+            where: { id: table.id },
+            data: {
+              label: table.label,
+              type: table.type,
+              x: table.x,
+              y: table.y,
+              rotation: table.rotation,
+              seatCount: table.seatCount,
+            },
+          });
+        } else {
+          await tx.seatingTable.create({
+            data: {
+              ...(table.id ? { id: table.id } : {}),
+              planId,
+              label: table.label,
+              type: table.type,
+              x: table.x,
+              y: table.y,
+              rotation: table.rotation,
+              seatCount: table.seatCount,
+            },
+          });
+        }
+      }
+
+      for (const table of payload.tables) {
+        const tableId = table.id;
+        if (!tableId) continue;
+
+        await tx.seatAssignment.deleteMany({
+          where: {
+            planId,
+            tableId,
+            seatNumber: { gt: table.seatCount },
+          },
         });
       }
 

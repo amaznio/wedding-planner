@@ -52,9 +52,13 @@ const DEFAULT_PLAN: SeatingPlan = {
 
 function getNextTable(tableCount: number): SeatingTable {
   const nextIndex = tableCount + 1;
+  const generatedId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `table-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
   return {
-    id: `table-${nextIndex}`,
+    id: generatedId,
     label: `Table ${nextIndex}`,
     type: "rectangle",
     x: 120 + (tableCount % 5) * 220,
@@ -71,7 +75,7 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   setPlan: (plan) => {
     set({
       plan,
-      selectedTableId: plan.tables[0]?.id ?? null,
+      selectedTableId: null,
       isDirty: false,
     });
   },

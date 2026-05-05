@@ -2,15 +2,41 @@ type SeatProps = {
   seatNumber: number;
   x: number;
   y: number;
+  occupantName?: string | null;
+  isSelectedGuestSeat?: boolean;
+  isConflict?: boolean;
+  onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
 };
 
-export function Seat({ seatNumber, x, y }: SeatProps) {
+export function Seat({
+  seatNumber,
+  x,
+  y,
+  occupantName,
+  isSelectedGuestSeat = false,
+  isConflict = false,
+  onClick,
+}: SeatProps) {
   return (
-    <div
-      className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-300 bg-white text-xs font-medium text-zinc-700 shadow-sm"
+    <button
+      type="button"
+      title={occupantName ? `${seatNumber}: ${occupantName}` : `Seat ${seatNumber}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.(seatNumber, event.clientX, event.clientY);
+      }}
+      className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-xs font-medium shadow-sm transition-colors ${
+        isConflict
+          ? "border-red-500 bg-red-100 text-red-800"
+          : isSelectedGuestSeat
+          ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+          : occupantName
+            ? "border-blue-300 bg-blue-50 text-blue-800"
+            : "border-zinc-300 bg-white text-zinc-700"
+      }`}
       style={{ left: x, top: y }}
     >
       {seatNumber}
-    </div>
+    </button>
   );
 }

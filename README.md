@@ -13,6 +13,27 @@ SeatPlan-style wedding seating editor built with Next.js, TypeScript, Tailwind, 
 - Drag tables on canvas
 - Save/load layouts from PostgreSQL
 - Canvas zoom and pan
+- Floating table editor anchored near selected table
+- Guest list management (create/edit/delete/search/filter)
+- Separated selected-guest edit section in sidebar for clearer workflow
+- Seat assignment UX:
+  - Click seat to open anchored guest picker
+  - See current seat occupant in picker
+  - Assign any guest from picker
+  - Unassign seat from picker
+  - Swap automatically when assigning into an occupied seat
+  - Inline assignment feedback (assigned/swapped/already assigned)
+  - Conflict error shown in picker and highlighted conflict seat state
+  - Seat legend overlay (selected guest / occupied / empty)
+- Assignment persistence integrated with plan saves:
+  - table updates preserve assignment-linked table IDs
+  - removed tables clear related assignments
+  - seat-count reductions clear out-of-range assignments
+  - guests/assignments refresh after save
+- Assignment workflow polish:
+  - Keyboard shortcuts: `[` previous guest, `]` next guest, `U` unassign selected guest
+  - Occupancy summary in toolbar (`occupied/total seats` + unseated guest count)
+  - Guest CSV import/export
 
 ## Canvas Controls
 
@@ -23,6 +44,16 @@ SeatPlan-style wedding seating editor built with Next.js, TypeScript, Tailwind, 
 - Keyboard:
   - `Delete` / `Backspace`: delete selected table
   - `Escape`: clear selection
+  - `[` / `]`: cycle guest selection
+  - `U`: unassign selected guest from their current seat
+
+## Seat Assignment Usage
+
+- Click a seat on any table.
+- In the floating seat picker, review the current occupant.
+- Click a guest name to assign that guest to the seat.
+- Use `Unassign Seat` to clear occupancy.
+- If the seat is occupied and the selected guest already has another seat, assignments are swapped.
 
 ## Local Setup
 
