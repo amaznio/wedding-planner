@@ -7,9 +7,6 @@ export default function Home() {
         <h1 className="text-2xl font-semibold text-zinc-900">
           Wedding Seating Planner MVP
         </h1>
-        <p className="mt-3 text-sm text-zinc-600">
-          Open the static editor preview for Phase 2.
-        </p>
         <div className="mt-6">
           <Link
             href="/seating-plans"
