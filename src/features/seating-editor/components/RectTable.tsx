@@ -10,6 +10,7 @@ type RectTableProps = {
   isSelected?: boolean;
   onSelect?: (tableId: string) => void;
   onMove?: (tableId: string, nextX: number, nextY: number) => void;
+  screenToCanvas?: (clientX: number, clientY: number) => { x: number; y: number };
 };
 
 export function RectTable({
@@ -17,6 +18,7 @@ export function RectTable({
   isSelected = false,
   onSelect,
   onMove,
+  screenToCanvas,
 }: RectTableProps) {
   const dimensions = getRectangleTableDimensions(table.seatCount);
   const seatPositions = getSeatPositions(
@@ -28,6 +30,7 @@ export function RectTable({
 
   return (
     <div
+      data-table-root="true"
       className="absolute"
       style={{
         left: table.x,
@@ -51,17 +54,24 @@ export function RectTable({
 
             const target = event.currentTarget;
             target.setPointerCapture(event.pointerId);
+            const point = screenToCanvas
+              ? screenToCanvas(event.clientX, event.clientY)
+              : { x: event.clientX, y: event.clientY };
             dragOffsetRef.current = {
-              x: event.clientX - table.x,
-              y: event.clientY - table.y,
+              x: point.x - table.x,
+              y: point.y - table.y,
             };
           }}
           onPointerMove={(event) => {
             if (!dragOffsetRef.current) return;
             event.preventDefault();
 
-            const nextX = event.clientX - dragOffsetRef.current.x;
-            const nextY = event.clientY - dragOffsetRef.current.y;
+            const point = screenToCanvas
+              ? screenToCanvas(event.clientX, event.clientY)
+              : { x: event.clientX, y: event.clientY };
+
+            const nextX = point.x - dragOffsetRef.current.x;
+            const nextY = point.y - dragOffsetRef.current.y;
             onMove?.(table.id, nextX, nextY);
           }}
           onPointerUp={(event) => {
@@ -78,8 +88,10 @@ export function RectTable({
               onSelect?.(table.id);
             }
           }}
-          className={`h-full w-full rounded-md border bg-zinc-100 shadow-sm ${
-            isSelected ? "border-rose-500 ring-2 ring-rose-200" : "border-zinc-300"
+          className={`h-full w-full rounded-md border bg-zinc-100 shadow-sm transition-shadow ${
+            isSelected
+              ? "border-rose-500 ring-2 ring-rose-200 shadow-md shadow-rose-100"
+              : "border-zinc-300 hover:shadow-md"
           }`}
         >
           <div className="flex h-full items-center justify-center text-sm font-semibold text-zinc-700">

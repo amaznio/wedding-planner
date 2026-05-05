@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wedding Seating Planner
 
-## Getting Started
+SeatPlan-style wedding seating editor built with Next.js, TypeScript, Tailwind, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Current Features
+
+- Seating plan list + create flow
+- Open plan editor by ID
+- Rectangular tables only
+- Auto-generated numbered seats from `seatCount`
+- Auto-sized rectangular table width from seat count
+- Select, edit label, edit seat count, rotate, delete
+- Drag tables on canvas
+- Save/load layouts from PostgreSQL
+- Canvas zoom and pan
+
+## Canvas Controls
+
+- Drag table: drag directly on a table
+- Pan canvas: drag empty grid area
+- Zoom canvas: mouse wheel
+- Reset view: click `Reset View` in canvas control badge
+- Keyboard:
+  - `Delete` / `Backspace`: delete selected table
+  - `Escape`: clear selection
+
+## Local Setup
+
+1. Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+corepack pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Start PostgreSQL (Docker example):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+docker run --name seating-planner-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=seating_planner \
+  -p 5432:5432 \
+  -d postgres:16
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Configure env (`.env`):
 
-## Learn More
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/seating_planner?schema=public"
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Apply migrations and generate client:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+corepack pnpm prisma migrate dev --name init_seating
+corepack pnpm prisma generate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Run app:
 
-## Deploy on Vercel
+```bash
+corepack pnpm dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open `http://localhost:3000/seating-plans`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Quality Checks
+
+```bash
+corepack pnpm lint
+corepack pnpm typecheck
+corepack pnpm build
+```

@@ -5,3 +5,32 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model SeatingPlan {
+  id        String   @id @default(cuid())
+  name      String
+  width     Int      @default(1600)
+  height    Int      @default(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tables SeatingTable[]
+}
+
+model SeatingTable {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  label     String
+  type      String      @default("rectangle")
+  x         Int
+  y         Int
+  rotation  Int         @default(0)
+  seatCount Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+}

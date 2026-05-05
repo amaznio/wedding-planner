@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 - Dragging tables on canvas (completed)
+Phase 9 - Grid snapping for table alignment (completed, post-MVP extension)
 
 ## Completed Phases
 
@@ -11,70 +11,50 @@ Phase 4 - Dragging tables on canvas (completed)
 - Phase 2 - Static seating editor UI
 - Phase 3 - Local editor state with Zustand
 - Phase 4 - Dragging tables on canvas
+- Phase 5 - Database schema and API
+- Phase 6 - Connect editor to persistence
+- Phase 7 - Basic MVP polish
+- Phase 8 - Canvas zoom and pan
+- Phase 9 - Grid snapping for table alignment
 
 ## Completed Work
 
-- Re-read `AGENTS.md` and `PROGRESS.md` before starting.
-- Implemented custom pointer-event dragging for tables (no external drag library).
-- Added table move action to Zustand store:
-  - `moveTable(tableId, nextX, nextY)` updates `x`/`y` and marks dirty.
-- Wired move action from page -> canvas -> table components.
-- Implemented pointer capture drag behavior in `RectTable`:
-  - `onPointerDown`: select table, capture pointer, set drag offset.
-  - `onPointerMove`: update table position in Zustand during drag.
-  - `onPointerUp`/`onPointerCancel`: release/reset drag state.
-- Preserved selection behavior while dragging:
-  - Table pointer/click handlers stop propagation so canvas background click does not clear selection.
+- Added snap-to-grid behavior for table dragging.
+- Snapping is applied in the editor store `moveTable` action, using the same 24px grid size as the canvas background.
+- Table positions now snap to nearest grid intersection while dragging.
 
 ## Files Changed
 
-- `src/app/seating-plans/page.tsx`
-- `src/features/seating-editor/components/RectTable.tsx`
-- `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `src/features/seating-editor/store/seating-editor-store.ts`
 - `PROGRESS.md`
 
 ## Commands Run
 
-- `Get-Content AGENTS.md`
-- `Get-Content PROGRESS.md`
-- `Get-Content src/features/seating-editor/store/seating-editor-store.ts`
-- `Get-Content src/features/seating-editor/components/RectTable.tsx`
-- `Get-Content src/features/seating-editor/components/SeatingCanvas.tsx`
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
-- `corepack pnpm build` (fails in sandbox due font fetch + sandbox file access issue under `.pnpm` for `zustand`)
+- `corepack pnpm build` (pass)
 
 ## Check Results
 
 - Lint: pass.
 - TypeScript: pass.
-- Build: fail in this sandbox because:
-  - `next/font/google` cannot fetch Geist fonts from `fonts.googleapis.com`.
-  - Turbopack reports `Access is denied (os error 5)` reading `zustand` package files under `node_modules/.pnpm` in this environment.
+- Build: pass.
 
 ## How To Test
 
 1. Run `corepack pnpm dev`.
-2. Open `http://localhost:3000/seating-plans`.
-3. Click and drag a table around the canvas.
-4. Verify:
-   - table follows pointer while dragging,
-   - `x`/`y` persist in local state until refresh,
-   - selection still works,
-   - canvas click still clears selection when not clicking a table.
+2. Open a plan editor (`/seating-plans/{id}`).
+3. Drag tables around canvas.
+4. Verify table movement locks to grid increments (24px).
 
 ## Known Issues
 
-- Build remains blocked in this sandbox by Google Fonts fetch restrictions.
-- Build in this sandbox also reports `Access is denied` when Turbopack reads `zustand` files from `.pnpm`; lint/typecheck do not reproduce it.
-- Persistence is still out of scope until Phase 5/6.
+- None for this phase.
 
 ## Next Recommended Step
 
-Phase 5 - Database schema and API:
+Optional post-MVP enhancements:
 
-- Add Prisma models and migration for `SeatingPlan`/`SeatingTable`.
-- Add API routes for CRUD.
-- Add Zod payload validation.
-- Implement full-layout `PUT` save strategy.
+1. Add snapping toggle (on/off) in toolbar.
+2. Add stronger major grid lines every 5 cells.
+3. Add collision detection between tables.

@@ -1,6 +1,6 @@
 const TABLE_HEIGHT = 80;
 const MIN_TABLE_WIDTH = 140;
-const SEAT_SPACING = 28;
+const SEAT_SPACING = 40;
 
 export type RectangleTableDimensions = {
   width: number;

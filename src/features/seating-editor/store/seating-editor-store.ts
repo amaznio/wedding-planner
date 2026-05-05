@@ -2,10 +2,18 @@ import { create } from "zustand";
 
 import type { SeatingPlan, SeatingTable } from "../types/seating-plan.types";
 
+const GRID_SIZE = 24;
+
+function snapToGrid(value: number): number {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+}
+
 type SeatingEditorState = {
   plan: SeatingPlan;
   selectedTableId: string | null;
   isDirty: boolean;
+  setPlan: (plan: SeatingPlan) => void;
+  markSaved: () => void;
   addTable: () => void;
   selectTable: (tableId: string | null) => void;
   updateSelectedTableLabel: (label: string) => void;
@@ -60,6 +68,16 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   plan: DEFAULT_PLAN,
   selectedTableId: DEFAULT_PLAN.tables[0]?.id ?? null,
   isDirty: false,
+  setPlan: (plan) => {
+    set({
+      plan,
+      selectedTableId: plan.tables[0]?.id ?? null,
+      isDirty: false,
+    });
+  },
+  markSaved: () => {
+    set({ isDirty: false });
+  },
   addTable: () => {
     const state = get();
     const nextTable = getNextTable(state.plan.tables.length);
@@ -94,7 +112,7 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
     const state = get();
     if (!state.selectedTableId) return;
 
-    const boundedSeatCount = Math.min(24, Math.max(1, Math.floor(seatCount)));
+    const boundedSeatCount = Math.min(50, Math.max(1, Math.floor(seatCount)));
 
     set({
       plan: {
@@ -151,8 +169,8 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
           table.id === tableId
             ? {
                 ...table,
-                x: Math.round(nextX),
-                y: Math.round(nextY),
+                x: snapToGrid(nextX),
+                y: snapToGrid(nextY),
               }
             : table,
         ),

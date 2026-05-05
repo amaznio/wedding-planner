@@ -29,7 +29,7 @@ export function SeatingSidebar({
               type="text"
               value={selectedTable.label}
               onChange={(event) => onLabelChange(event.target.value)}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
             />
           </label>
 
@@ -38,13 +38,16 @@ export function SeatingSidebar({
             <input
               type="number"
               min={1}
-              max={24}
+              max={50}
               value={selectedTable.seatCount}
               onChange={(event) =>
                 onSeatCountChange(Number.parseInt(event.target.value, 10) || 1)
               }
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
             />
+            <span className="mt-1 block text-xs text-zinc-500">
+              Allowed range: 1 to 50 seats.
+            </span>
           </label>
 
           <div className="flex flex-col gap-2">
