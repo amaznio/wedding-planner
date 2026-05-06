@@ -165,6 +165,7 @@ Canvas tables:
 - Tables should be draggable.
 - Seats should be numbered.
 - Seat rendering should be derived from `seatCount`.
+- In all user-facing UI text, always show table names/labels (for example `Para Mloda`) instead of table IDs (for example `a502` or truncated IDs).
 
 ## Validation Rules
 

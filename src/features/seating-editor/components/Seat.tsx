@@ -1,3 +1,5 @@
+import { createGuestDragPreview } from "../lib/drag-preview";
+
 type SeatProps = {
   seatNumber: number;
   x: number;
@@ -51,9 +53,14 @@ export function Seat({
       draggable={isSeatDraggable}
       title={occupantName ? `${seatNumber}: ${occupantName}` : `Seat ${seatNumber}`}
       onDragStart={(event) => {
-        if (!isSeatDraggable || !occupantGuestId) return;
+        if (!isSeatDraggable || !occupantGuestId || !occupantName) return;
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", occupantGuestId);
+        const preview = createGuestDragPreview(occupantName);
+        event.dataTransfer.setDragImage(preview, 18, 18);
+        requestAnimationFrame(() => {
+          preview.remove();
+        });
         onSeatGuestDragStart?.(occupantGuestId);
       }}
       onDragEnd={() => {

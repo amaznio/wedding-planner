@@ -841,6 +841,7 @@ export default function SeatingPlanEditorPage() {
           selectedGuest={selectedGuest}
           selectedTable={selectedTable}
           selectedSeatGuest={selectedSeatGuest}
+          tableLabelById={tableLabelById}
           onClose={() => setMobileInspectorOpen(false)}
           onSelectTable={(tableId) => selectTable(tableId)}
           onUnassignGuest={async (assignmentId) => {
@@ -927,6 +928,7 @@ export default function SeatingPlanEditorPage() {
               selectedGuest={selectedGuest}
               selectedTable={selectedTable}
               selectedSeatGuest={selectedSeatGuest}
+              tableLabelById={tableLabelById}
               onClose={clearSelection}
               onSelectTable={(tableId) => selectTable(tableId)}
               onUnassignGuest={async (assignmentId) => {

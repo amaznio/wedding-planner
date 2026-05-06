@@ -30,6 +30,7 @@ type InspectorPanelProps = {
   selectedGuest: Guest | null;
   selectedTable: SeatingTable | null;
   selectedSeatGuest: Guest | null;
+  tableLabelById?: Record<string, string>;
   onClose: () => void;
   onSelectTable: (tableId: string) => void;
   onUnassignGuest: (assignmentId: string) => Promise<void>;
@@ -52,6 +53,7 @@ export function InspectorPanel({
   selectedGuest,
   selectedTable,
   selectedSeatGuest,
+  tableLabelById = {},
   onClose,
   onSelectTable,
   onUnassignGuest,
@@ -95,7 +97,7 @@ export function InspectorPanel({
                 <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
                 {selectedGuest.assignment ? (
                   <Badge variant="secondary" className="mt-1">
-                    Table {selectedGuest.assignment.tableId.slice(0, 4)} • Seat{" "}
+                    {tableLabelById[selectedGuest.assignment.tableId] ?? "Table"} • Seat{" "}
                     {selectedGuest.assignment.seatNumber}
                   </Badge>
                 ) : (
@@ -210,7 +212,7 @@ export function InspectorPanel({
                 Seat {selection.seatNumber}
               </p>
               <p className="text-xs text-zinc-600">
-                Table {selection.tableId.slice(0, 6)}
+                {tableLabelById[selection.tableId] ?? "Table"}
               </p>
               {selectedSeatGuest ? (
                 <Badge variant="secondary">Assigned: {selectedSeatGuest.name}</Badge>
