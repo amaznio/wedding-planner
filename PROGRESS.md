@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 33 - Desktop drag preview polish (completed)
+Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
 
 ## Completed Phases
 
@@ -40,8 +40,15 @@ Phase 33 - Desktop drag preview polish (completed)
 - Phase 31 - Mobile fullscreen planner shell
 - Phase 32 - Desktop guest-to-seat drag-and-drop
 - Phase 33 - Desktop drag preview polish
+- Phase 34 - Desktop seat-to-seat drag-and-drop
 
 ## Completed Work
+
+- Added desktop seat-to-seat drag-and-drop:
+  - occupied seats are now draggable as guest drag sources on desktop
+  - dropping onto any seat reuses existing assignment logic (move/swap/replace)
+  - drag hover highlighting and drop behavior now work for both guest-list drag and seat drag
+  - mobile behavior remains unchanged
 
 - Replaced browser default guest drag ghost with a custom compact drag preview (desktop):
   - initials avatar + guest name pill

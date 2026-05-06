@@ -2,16 +2,20 @@ type SeatProps = {
   seatNumber: number;
   x: number;
   y: number;
+  occupantGuestId?: string | null;
   occupantName?: string | null;
   isSelectedGuestSeat?: boolean;
   isSelected?: boolean;
   isConflict?: boolean;
   isDropTarget?: boolean;
   isDragActive?: boolean;
+  enableSeatDrag?: boolean;
   onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
   onDragEnter?: (seatNumber: number) => void;
   onDragLeave?: (seatNumber: number) => void;
   onDropGuest?: (seatNumber: number, guestId: string) => void;
+  onSeatGuestDragStart?: (guestId: string) => void;
+  onSeatGuestDragEnd?: () => void;
 };
 
 function getInitials(name: string): string {
@@ -23,23 +27,39 @@ export function Seat({
   seatNumber,
   x,
   y,
+  occupantGuestId,
   occupantName,
   isSelectedGuestSeat = false,
   isSelected = false,
   isConflict = false,
   isDropTarget = false,
   isDragActive = false,
+  enableSeatDrag = false,
   onClick,
   onDragEnter,
   onDragLeave,
   onDropGuest,
+  onSeatGuestDragStart,
+  onSeatGuestDragEnd,
 }: SeatProps) {
   const initials = occupantName ? getInitials(occupantName) : null;
+  const isSeatDraggable = Boolean(enableSeatDrag && occupantGuestId);
 
   return (
     <button
       type="button"
+      draggable={isSeatDraggable}
       title={occupantName ? `${seatNumber}: ${occupantName}` : `Seat ${seatNumber}`}
+      onDragStart={(event) => {
+        if (!isSeatDraggable || !occupantGuestId) return;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", occupantGuestId);
+        onSeatGuestDragStart?.(occupantGuestId);
+      }}
+      onDragEnd={() => {
+        if (!isSeatDraggable) return;
+        onSeatGuestDragEnd?.();
+      }}
       onClick={(event) => {
         event.stopPropagation();
         onClick?.(seatNumber, event.clientX, event.clientY);

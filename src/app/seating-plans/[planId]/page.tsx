@@ -916,6 +916,9 @@ export default function SeatingPlanEditorPage() {
               onAddTable={addTable}
               draggedGuestId={draggedGuestId}
               isDraggingGuest={isDraggingGuest}
+              enableSeatDrag={isDesktopViewport}
+              onSeatGuestDragStart={startGuestDrag}
+              onSeatGuestDragEnd={endGuestDrag}
               onGuestDropToSeat={dropGuestOnSeat}
             />
             <InspectorPanel

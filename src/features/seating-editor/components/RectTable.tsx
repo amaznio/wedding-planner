@@ -17,10 +17,13 @@ type RectTableProps = {
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
   isDragActive?: boolean;
+  enableSeatDrag?: boolean;
   onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
   onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
   onSeatDrop?: (tableId: string, seatNumber: number, guestId: string) => void;
+  onSeatGuestDragStart?: (guestId: string) => void;
+  onSeatGuestDragEnd?: () => void;
   onDragStateChange?: (isDragging: boolean) => void;
 };
 
@@ -36,10 +39,13 @@ export function RectTable({
   conflictSeatNumber,
   dropTargetSeatNumber,
   isDragActive = false,
+  enableSeatDrag = false,
   onSeatClick,
   onSeatDragEnter,
   onSeatDragLeave,
   onSeatDrop,
+  onSeatGuestDragStart,
+  onSeatGuestDragEnd,
   onDragStateChange,
 }: RectTableProps) {
   const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
@@ -156,6 +162,7 @@ export function RectTable({
             seatNumber={seat.seatNumber}
             x={seat.x}
             y={seat.y}
+            occupantGuestId={seatOccupants?.[seat.seatNumber]?.guestId ?? null}
             occupantName={seatOccupants?.[seat.seatNumber]?.guestName ?? null}
             isSelectedGuestSeat={
               seatOccupants?.[seat.seatNumber]?.guestId === selectedGuestId
@@ -164,6 +171,7 @@ export function RectTable({
             isConflict={conflictSeatNumber === seat.seatNumber}
             isDropTarget={dropTargetSeatNumber === seat.seatNumber}
             isDragActive={isDragActive}
+            enableSeatDrag={enableSeatDrag}
             onClick={(seatNumber, clientX, clientY) =>
               onSeatClick?.(table.id, seatNumber, clientX, clientY)
             }
@@ -172,6 +180,8 @@ export function RectTable({
             onDropGuest={(seatNumber, guestId) =>
               onSeatDrop?.(table.id, seatNumber, guestId)
             }
+            onSeatGuestDragStart={onSeatGuestDragStart}
+            onSeatGuestDragEnd={onSeatGuestDragEnd}
           />
         ))}
       </div>

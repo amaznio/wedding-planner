@@ -43,6 +43,9 @@ type SeatingCanvasProps = {
   onViewChange?: (next: { scale: number; x: number; y: number }) => void;
   draggedGuestId?: string | null;
   isDraggingGuest?: boolean;
+  enableSeatDrag?: boolean;
+  onSeatGuestDragStart?: (guestId: string) => void;
+  onSeatGuestDragEnd?: () => void;
   onGuestDropToSeat?: (
     tableId: string,
     seatNumber: number,
@@ -74,8 +77,12 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onViewChange,
   draggedGuestId = null,
   isDraggingGuest = false,
+  enableSeatDrag = false,
+  onSeatGuestDragStart,
+  onSeatGuestDragEnd,
   onGuestDropToSeat,
 }, ref) {
+  const [draggedSeatGuestId, setDraggedSeatGuestId] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
     Map<number, { clientX: number; clientY: number }>
@@ -355,6 +362,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const menuSeatAssignment = seatMenu
     ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
     : null;
+  const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
+  const isAnyGuestDragActive = isDraggingGuest || draggedSeatGuestId !== null;
 
   return (
     <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden">
@@ -547,7 +556,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   ? dragHoverSeat.seatNumber
                   : null
               }
-              isDragActive={isDraggingGuest}
+              isDragActive={isAnyGuestDragActive}
+              enableSeatDrag={enableSeatDrag}
               selectedSeatNumber={
                 selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null
               }
@@ -559,7 +569,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 onTableDragStateChange?.(isDragging);
               }}
               onSeatDragEnter={(tableId, seatNumber) => {
-                if (!isDraggingGuest) return;
+                if (!isAnyGuestDragActive) return;
                 setDragHoverSeat({ tableId, seatNumber });
               }}
               onSeatDragLeave={(tableId, seatNumber) => {
@@ -572,10 +582,22 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }}
               onSeatDrop={async (tableId, seatNumber, guestId) => {
                 setDragHoverSeat(null);
-                if (!isDraggingGuest) return;
-                const effectiveGuestId = guestId || draggedGuestId;
+                if (!isAnyGuestDragActive) return;
+                const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
                 await onGuestDropToSeat?.(tableId, seatNumber, effectiveGuestId);
+                setDraggedSeatGuestId(null);
+                onSeatGuestDragEnd?.();
+              }}
+              onSeatGuestDragStart={(guestId) => {
+                setSeatMenu(null);
+                setDraggedSeatGuestId(guestId);
+                onSeatGuestDragStart?.(guestId);
+              }}
+              onSeatGuestDragEnd={() => {
+                setDraggedSeatGuestId(null);
+                setDragHoverSeat(null);
+                onSeatGuestDragEnd?.();
               }}
               screenToCanvas={screenToCanvas}
             />
