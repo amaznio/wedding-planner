@@ -302,7 +302,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
-    if (target.closest("[data-table-root='true']")) return;
+    if (target.closest("[data-table-root='true']") && enableTableDrag) return;
 
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -464,6 +464,12 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     centeredPlanIdRef.current = plan.id;
   }, [mobileMode, plan.id, plan.tables]);
 
+  useEffect(() => {
+    const handleOpenLegend = () => setMobileLegendOpen(true);
+    window.addEventListener("mobile-open-legend", handleOpenLegend);
+    return () => window.removeEventListener("mobile-open-legend", handleOpenLegend);
+  }, []);
+
   return (
     <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden">
       <div
@@ -490,8 +496,14 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-10 px-4 text-sm">
-                Add Object
+              <Button
+                size="sm"
+                variant="default"
+                className={`h-11 px-4 text-sm font-medium shadow-sm ${
+                  plan.tables.length === 0 ? "ring-2 ring-zinc-200 ring-offset-2 ring-offset-zinc-100/40" : ""
+                }`}
+              >
+                + Add
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -585,40 +597,30 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             className="absolute left-3 right-3 top-3 z-20 flex items-center justify-between"
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-8 rounded-full bg-white px-2.5 text-xs"
-                onClick={resetView}
-              >
-                <span>{Math.round(view.scale * 100)}%</span>
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-              </Button>
-              <Button
-                type="button"
-                variant={enableTableDrag ? "default" : "outline"}
-                className="h-8 rounded-full px-2.5 text-xs"
-                onClick={onToggleTableDrag}
-              >
-                Move tables
-              </Button>
-            </div>
             <Button
               type="button"
               variant="outline"
-              className="h-8 w-8 rounded-full bg-white p-0"
-              aria-label="Info"
-              onClick={() => setMobileLegendOpen(true)}
+              className="h-8 rounded-full bg-white px-2.5 text-xs"
+              onClick={resetView}
             >
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
+              <svg viewBox="0 0 24 24" className="mr-1 h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
               </svg>
+              <span>{Math.round(view.scale * 100)}%</span>
+            </Button>
+            <Button
+              type="button"
+              variant={enableTableDrag ? "default" : "outline"}
+              className={`h-8 rounded-full px-2.5 text-xs ${
+                enableTableDrag
+                  ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-white text-zinc-700"
+              }`}
+              onClick={onToggleTableDrag}
+              aria-pressed={enableTableDrag}
+            >
+              Move tables: {enableTableDrag ? "On" : "Off"}
             </Button>
           </div>
         ) : null}
