@@ -10,6 +10,8 @@ import { SeatingToolbar } from "@/features/seating-editor/components/SeatingTool
 import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-editor-store";
 import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
 import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -100,6 +102,9 @@ export default function SeatingPlanEditorPage() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isTableDragging, setIsTableDragging] = useState(false);
+  const [mobileGuestsOpen, setMobileGuestsOpen] = useState(false);
+  const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
@@ -144,7 +149,6 @@ export default function SeatingPlanEditorPage() {
     selectedTableId ??
     (selectedSeat ? selectedSeat.tableId : null) ??
     (selectedGuest?.assignment?.tableId ?? null);
-
   const handleSelectGuest = useCallback(
     (guestId: string | null) => {
       selectGuest(guestId);
@@ -643,33 +647,20 @@ export default function SeatingPlanEditorPage() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-zinc-50 lg:h-dvh">
-      <SeatingToolbar
-        planName={plan.name}
-        isDirty={isDirty}
-        saveState={saveState}
-        lastSavedLabel={lastSavedLabel}
-        occupiedSeats={occupiedSeatCount}
-        totalSeats={totalSeatCount}
-        unseatedGuests={unseatedGuestCount}
-        onPlanNameChange={updatePlanName}
-        onSave={handleSave}
-      />
-
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <GuestPanel
-          guests={guests}
-          tableLabelById={tableLabelById}
-          selectedGuestId={selectedGuestId}
-          isLoading={isGuestsLoading}
-          error={guestsError}
-          onSelectGuest={handleSelectGuest}
-          onCreateGuest={handleCreateGuest}
-          onBulkCreateGuests={handleBulkCreateGuests}
-          onUpdateGuest={handleUpdateGuest}
-          onDeleteGuest={handleDeleteGuest}
+    <main className="bg-zinc-50">
+      <div className="flex h-dvh flex-col overflow-hidden lg:hidden">
+        <SeatingToolbar
+          planName={plan.name}
+          isDirty={isDirty}
+          saveState={saveState}
+          lastSavedLabel={lastSavedLabel}
+          occupiedSeats={occupiedSeatCount}
+          totalSeats={totalSeatCount}
+          unseatedGuests={unseatedGuestCount}
+          onPlanNameChange={updatePlanName}
+          onSave={handleSave}
         />
-        <div className="relative order-1 flex h-[56dvh] w-full border-t border-zinc-200 bg-zinc-100/40 lg:order-2 lg:h-auto lg:min-h-0 lg:flex-1 lg:border-t-0">
+        <div className="relative min-h-0 flex-1 overflow-hidden border-t border-zinc-200 bg-zinc-100/40">
           <SeatingCanvas
             plan={plan}
             selectedTableId={canvasHighlightedTableId ?? undefined}
@@ -690,31 +681,197 @@ export default function SeatingPlanEditorPage() {
             onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
             onAddTable={addTable}
+            mobileMode
           />
-          <InspectorPanel
-            selection={selection}
-            isOpen={selection !== null}
-            selectedGuest={selectedGuest}
-            selectedTable={selectedTable}
-            selectedSeatGuest={selectedSeatGuest}
-            onClose={clearSelection}
-            onSelectTable={(tableId) => selectTable(tableId)}
-            onUnassignGuest={async (assignmentId) => {
-              if (!selectedGuestId) return;
-              await handleUnassignGuest(assignmentId, selectedGuestId);
-            }}
-            guestForm={guestForm}
-            onGuestFormChange={setGuestForm}
-            onSaveGuest={async (guestId) => {
-              await handleUpdateGuest(guestId, guestForm);
-            }}
+        </div>
+        <div className="shrink-0 border-t border-zinc-200 bg-white px-2 py-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              variant={mobileGuestsOpen ? "default" : "outline"}
+              className="h-11 items-center justify-center gap-1 text-xs"
+              onClick={() => {
+                setMobileGuestsOpen(true);
+                setMobileTablesOpen(false);
+                setMobileInspectorOpen(false);
+              }}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <path d="M20 8v6" />
+                <path d="M23 11h-6" />
+              </svg>
+              Guests
+            </Button>
+            <Button
+              size="sm"
+              variant={mobileTablesOpen ? "default" : "outline"}
+              className="h-11 items-center justify-center gap-1 text-xs"
+              onClick={() => {
+                setMobileTablesOpen(true);
+                setMobileGuestsOpen(false);
+                setMobileInspectorOpen(false);
+              }}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M12 8v8" />
+                <path d="M8 12h8" />
+              </svg>
+              Objects
+            </Button>
+          </div>
+        </div>
+
+        <Drawer open={mobileGuestsOpen} onOpenChange={setMobileGuestsOpen}>
+          <DrawerContent className="h-[82dvh] p-0">
+            <GuestPanel
+              variant="sheet"
+              guests={guests}
+              tableLabelById={tableLabelById}
+              selectedGuestId={selectedGuestId}
+              isLoading={isGuestsLoading}
+              error={guestsError}
+              onSelectGuest={handleSelectGuest}
+              onGuestSelected={() => setMobileGuestsOpen(false)}
+              onCreateGuest={handleCreateGuest}
+              onBulkCreateGuests={handleBulkCreateGuests}
+              onUpdateGuest={handleUpdateGuest}
+              onDeleteGuest={handleDeleteGuest}
+            />
+          </DrawerContent>
+        </Drawer>
+
+        <Drawer open={mobileTablesOpen} onOpenChange={setMobileTablesOpen}>
+          <DrawerContent className="p-4">
+            <h3 className="mb-3 text-sm font-semibold text-zinc-900">Tables & Objects</h3>
+            <div className="space-y-2">
+              <Button
+                className="w-full justify-start"
+                onClick={() => {
+                  addTable();
+                  setMobileTablesOpen(false);
+                }}
+              >
+                Add rectangular table
+              </Button>
+              <Button className="w-full justify-start" variant="outline" disabled>
+                Round table (coming soon)
+              </Button>
+              <Button className="w-full justify-start" variant="outline" disabled>
+                Buffet (coming soon)
+              </Button>
+              <Button className="w-full justify-start" variant="outline" disabled>
+                Dance floor (coming soon)
+              </Button>
+              <Button className="w-full justify-start" variant="outline" disabled>
+                Custom object (coming soon)
+              </Button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+
+        <InspectorPanel
+          selection={selection}
+          isOpen={mobileInspectorOpen}
+          selectedGuest={selectedGuest}
+          selectedTable={selectedTable}
+          selectedSeatGuest={selectedSeatGuest}
+          onClose={() => setMobileInspectorOpen(false)}
+          onSelectTable={(tableId) => selectTable(tableId)}
+          onUnassignGuest={async (assignmentId) => {
+            if (!selectedGuestId) return;
+            await handleUnassignGuest(assignmentId, selectedGuestId);
+          }}
+          guestForm={guestForm}
+          onGuestFormChange={setGuestForm}
+          onSaveGuest={async (guestId) => {
+            await handleUpdateGuest(guestId, guestForm);
+          }}
+          onDeleteGuest={handleDeleteGuest}
+          onTableLabelChange={updateSelectedTableLabel}
+          onTableSeatCountChange={updateSelectedTableSeatCount}
+          onTableSeatLayoutChange={updateSelectedTableSeatLayout}
+          onRotateTable={rotateSelectedTable}
+          onDeleteTable={deleteSelectedTable}
+          side="bottom"
+          showOverlay
+        />
+      </div>
+
+      <div className="hidden min-h-dvh flex-col lg:flex lg:h-dvh">
+        <SeatingToolbar
+          planName={plan.name}
+          isDirty={isDirty}
+          saveState={saveState}
+          lastSavedLabel={lastSavedLabel}
+          occupiedSeats={occupiedSeatCount}
+          totalSeats={totalSeatCount}
+          unseatedGuests={unseatedGuestCount}
+          onPlanNameChange={updatePlanName}
+          onSave={handleSave}
+        />
+        <div className="flex min-h-0 flex-1 flex-row">
+          <GuestPanel
+            guests={guests}
+            tableLabelById={tableLabelById}
+            selectedGuestId={selectedGuestId}
+            isLoading={isGuestsLoading}
+            error={guestsError}
+            onSelectGuest={handleSelectGuest}
+            onCreateGuest={handleCreateGuest}
+            onBulkCreateGuests={handleBulkCreateGuests}
+            onUpdateGuest={handleUpdateGuest}
             onDeleteGuest={handleDeleteGuest}
-            onTableLabelChange={updateSelectedTableLabel}
-            onTableSeatCountChange={updateSelectedTableSeatCount}
-            onTableSeatLayoutChange={updateSelectedTableSeatLayout}
-            onRotateTable={rotateSelectedTable}
-            onDeleteTable={deleteSelectedTable}
           />
+          <div className="relative order-2 flex w-full bg-zinc-100/40 lg:h-auto lg:min-h-0 lg:flex-1 lg:border-t-0">
+            <SeatingCanvas
+              plan={plan}
+              selectedTableId={canvasHighlightedTableId ?? undefined}
+              selectedSeat={selectedSeat}
+              onSelectTable={selectTable}
+              onSelectSeat={selectSeat}
+              onMoveTable={moveTable}
+              seatAssignments={seatAssignments}
+              tableLabelById={tableLabelById}
+              selectedGuestId={selectedGuestId}
+              guests={guests.map((guest) => ({
+                id: guest.id,
+                name: guest.name,
+                assignment: guest.assignment
+                  ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
+                  : null,
+              }))}
+              onSeatAssign={handleSeatAssign}
+              onTableDragStateChange={setIsTableDragging}
+              onAddTable={addTable}
+            />
+            <InspectorPanel
+              selection={selection}
+              isOpen={selection !== null}
+              selectedGuest={selectedGuest}
+              selectedTable={selectedTable}
+              selectedSeatGuest={selectedSeatGuest}
+              onClose={clearSelection}
+              onSelectTable={(tableId) => selectTable(tableId)}
+              onUnassignGuest={async (assignmentId) => {
+                if (!selectedGuestId) return;
+                await handleUnassignGuest(assignmentId, selectedGuestId);
+              }}
+              guestForm={guestForm}
+              onGuestFormChange={setGuestForm}
+              onSaveGuest={async (guestId) => {
+                await handleUpdateGuest(guestId, guestForm);
+              }}
+              onDeleteGuest={handleDeleteGuest}
+              onTableLabelChange={updateSelectedTableLabel}
+              onTableSeatCountChange={updateSelectedTableSeatCount}
+              onTableSeatLayoutChange={updateSelectedTableSeatLayout}
+              onRotateTable={rotateSelectedTable}
+              onDeleteTable={deleteSelectedTable}
+            />
+          </div>
         </div>
       </div>
     </main>

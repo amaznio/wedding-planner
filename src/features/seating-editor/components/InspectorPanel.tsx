@@ -41,6 +41,8 @@ type InspectorPanelProps = {
   onTableSeatLayoutChange: (seatLayout: "balanced" | "top-only" | "bottom-only") => void;
   onRotateTable: () => void;
   onDeleteTable: () => void;
+  side?: "right" | "bottom";
+  showOverlay?: boolean;
 };
 
 export function InspectorPanel({
@@ -61,17 +63,24 @@ export function InspectorPanel({
   onTableSeatLayoutChange,
   onRotateTable,
   onDeleteTable,
+  side = "right",
+  showOverlay = false,
 }: InspectorPanelProps) {
+  const contentClassName =
+    side === "bottom"
+      ? "h-[56dvh] rounded-t-xl p-0"
+      : "h-full w-[340px] p-0 sm:max-w-[340px]";
+
   return (
     <Sheet
       open={isOpen}
-      modal={false}
+      modal={showOverlay}
       onOpenChange={(open) => (!open ? onClose() : undefined)}
     >
       <SheetContent
-        side="right"
-        showOverlay={false}
-        className="h-full w-[340px] p-0 sm:max-w-[340px]"
+        side={side}
+        showOverlay={showOverlay}
+        className={contentClassName}
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between px-4 py-3">

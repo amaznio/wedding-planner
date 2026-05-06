@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 30 - Drag-commit autosave gating (completed)
+Phase 31 - Mobile fullscreen planner shell (completed)
 
 ## Completed Phases
 
@@ -37,8 +37,19 @@ Phase 30 - Drag-commit autosave gating (completed)
 - Phase 28 - Reusable seat layout modes for rectangular tables
 - Phase 29 - Save feedback visibility
 - Phase 30 - Drag-commit autosave gating
+- Phase 31 - Mobile fullscreen planner shell
 
 ## Completed Work
+
+- Added mobile-only fullscreen planner composition (`h-dvh`, `overflow-hidden`) with a dedicated mobile branch and preserved desktop branch.
+- Removed guest panel from mobile page flow by moving guest management into a bottom sheet using `GuestPanel` `variant="sheet"` (shared CRUD/search/filter/import/export logic).
+- Added mobile bottom action bar (`Plan`, `Guests`, `Tables`, `More`) to keep canvas primary.
+- Added mobile tables/add-object sheet:
+  - rectangular table enabled
+  - round/buffet/dance-floor/custom disabled (coming soon)
+- Added mobile more sheet with secondary actions (open selection details, clear selection).
+- Added mobile inspector path as bottom sheet; desktop inspector remains right-side.
+- Hid floating `Add Object` button on mobile and offset canvas controls above mobile bottom bar.
 
 - Added drag-aware autosave gating so table movement no longer triggers saves mid-drag.
 - Wired table drag state from canvas to editor page:

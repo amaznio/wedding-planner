@@ -222,9 +222,7 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
         ...state.plan,
         tables: nextTables,
       },
-      selection: nextTables[0]
-        ? { type: "table", tableId: nextTables[0].id }
-        : null,
+      selection: null,
       isDirty: true,
     });
   },

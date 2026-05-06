@@ -38,6 +38,7 @@ type SeatingCanvasProps = {
   ) => Promise<{ message?: string; level?: "info" | "success" }>;
   onTableDragStateChange?: (isDragging: boolean) => void;
   onAddTable?: () => void;
+  mobileMode?: boolean;
 };
 
 export function SeatingCanvas({
@@ -54,6 +55,7 @@ export function SeatingCanvas({
   onSelectSeat,
   onTableDragStateChange,
   onAddTable,
+  mobileMode = false,
 }: SeatingCanvasProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const panSessionRef = useRef<{
@@ -227,7 +229,7 @@ export function SeatingCanvas({
         }}
       >
         <div
-          className="absolute right-3 top-3 z-20"
+          className="absolute right-3 top-3 z-20 hidden lg:block"
           onPointerDown={(event) => event.stopPropagation()}
         >
           <DropdownMenu>
@@ -244,74 +246,76 @@ export function SeatingCanvas({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div
-          className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-1 rounded-md border border-zinc-200 bg-white/95 px-1.5 py-1.5 text-[11px] shadow-sm"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <span className="px-1 text-zinc-600">{Math.round(view.scale * 100)}%</span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-[11px]"
-            onClick={() =>
-              setView((current) => ({
-                ...current,
-                scale: Math.min(2.5, current.scale * 1.1),
-              }))
-            }
+        {!mobileMode ? (
+          <div
+            className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-1 rounded-md border border-zinc-200 bg-white/95 px-1.5 py-1.5 text-[11px] shadow-sm"
+            onPointerDown={(event) => event.stopPropagation()}
           >
-            +
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-[11px]"
-            onClick={() =>
-              setView((current) => ({
-                ...current,
-                scale: Math.max(0.25, current.scale * 0.9),
-              }))
-            }
-          >
-            -
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-[11px]"
-            onClick={() => setView({ scale: 1, x: 0, y: 0 })}
-          >
-            Reset
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">
-                Legend
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-48 p-3">
-              <p className="mb-2 text-xs font-semibold text-zinc-800">Seat legend</p>
-              <div className="space-y-1 text-xs text-zinc-600">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
-                  <span>Selected guest</span>
+            <span className="px-1 text-zinc-600">{Math.round(view.scale * 100)}%</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-[11px]"
+              onClick={() =>
+                setView((current) => ({
+                  ...current,
+                  scale: Math.min(2.5, current.scale * 1.1),
+                }))
+              }
+            >
+              +
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-[11px]"
+              onClick={() =>
+                setView((current) => ({
+                  ...current,
+                  scale: Math.max(0.25, current.scale * 0.9),
+                }))
+              }
+            >
+              -
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => setView({ scale: 1, x: 0, y: 0 })}
+            >
+              Reset
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">
+                  Legend
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-48 p-3">
+                <p className="mb-2 text-xs font-semibold text-zinc-800">Seat legend</p>
+                <div className="space-y-1 text-xs text-zinc-600">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
+                    <span>Selected guest</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
+                    <span>Selected seat</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
+                    <span>Occupied</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
+                    <span>Empty</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
-                  <span>Selected seat</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
-                  <span>Occupied</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
-                  <span>Empty</span>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        ) : null}
         <div
           className="absolute left-0 top-0 rounded-md"
           style={{

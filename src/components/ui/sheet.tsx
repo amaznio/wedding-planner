@@ -22,7 +22,7 @@ export function SheetOverlay({
 }
 
 const sheetVariants = cva(
-  "fixed z-50 bg-white shadow-xl transition ease-in-out",
+  "fixed z-50 border border-zinc-200 bg-white shadow-lg transition ease-in-out",
   {
     variants: {
       side: {

@@ -30,6 +30,8 @@ type GuestPanelProps = {
   onBulkCreateGuests: (guests: Array<{ name: string; group?: string; notes?: string }>) => Promise<void>;
   onUpdateGuest: (guestId: string, payload: { name: string; group: string; notes: string }) => Promise<void>;
   onDeleteGuest: (guestId: string) => Promise<void>;
+  variant?: "desktop" | "sheet";
+  onGuestSelected?: () => void;
 };
 
 function getInitials(name: string): string {
@@ -46,6 +48,8 @@ export function GuestPanel({
   onSelectGuest,
   onCreateGuest,
   onBulkCreateGuests,
+  variant = "desktop",
+  onGuestSelected,
 }: GuestPanelProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
@@ -82,6 +86,11 @@ export function GuestPanel({
       setIsSubmitting(false);
     }
   };
+
+  const rootClassName =
+    variant === "sheet"
+      ? "flex h-full w-full flex-col bg-zinc-50"
+      : "order-2 flex w-full flex-col border-t border-zinc-200 bg-zinc-50 lg:order-1 lg:h-full lg:w-[340px] lg:shrink-0 lg:border-r lg:border-t-0";
 
   const handleExportCsv = () => {
     const header = "name,group,notes";
@@ -136,7 +145,7 @@ export function GuestPanel({
   };
 
   return (
-    <aside className="order-2 flex w-full flex-col border-t border-zinc-200 bg-zinc-50 lg:order-1 lg:h-full lg:w-[340px] lg:shrink-0 lg:border-r lg:border-t-0">
+    <aside className={rootClassName}>
       <div className="px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-900">Guests</h2>
@@ -202,9 +211,10 @@ export function GuestPanel({
               <li key={guest.id}>
                 <button
                   type="button"
-                  onClick={() =>
-                    onSelectGuest(selectedGuestId === guest.id ? null : guest.id)
-                  }
+                  onClick={() => {
+                    onSelectGuest(selectedGuestId === guest.id ? null : guest.id);
+                    onGuestSelected?.();
+                  }}
                   className={`mb-1 flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left ${
                     selectedGuestId === guest.id
                       ? "border-zinc-400 bg-zinc-100"
