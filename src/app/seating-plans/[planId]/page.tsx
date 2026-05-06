@@ -106,6 +106,8 @@ export default function SeatingPlanEditorPage() {
   const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
+  const [isDraggingGuest, setIsDraggingGuest] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
@@ -189,6 +191,14 @@ export default function SeatingPlanEditorPage() {
     },
     [isDesktopViewport, selectSeat],
   );
+  const startGuestDrag = useCallback((guestId: string) => {
+    setDraggedGuestId(guestId);
+    setIsDraggingGuest(true);
+  }, []);
+  const endGuestDrag = useCallback(() => {
+    setDraggedGuestId(null);
+    setIsDraggingGuest(false);
+  }, []);
 
   const occupiedSeatCount = guests.filter((guest) => guest.assignment !== null).length;
   const totalSeatCount = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
@@ -362,6 +372,28 @@ export default function SeatingPlanEditorPage() {
     if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: "Guests swapped" };
     return { level: "success" as const, message: "Seat assigned" };
   }, [createAssignment, deleteAssignment, guests]);
+  const dropGuestOnSeat = useCallback(
+    async (tableId: string, seatNumber: number, guestId: string) => {
+      if (!isDesktopViewport) return;
+      if (isTableDraggingRef.current) return;
+      try {
+        const result = await handleSeatAssign(tableId, seatNumber, guestId);
+        if (result?.message) {
+          toast({
+            variant: result.level === "info" ? "info" : "success",
+            title: result.level === "info" ? "Info" : "Success",
+            description: result.message,
+          });
+        }
+        handleSelectGuest(guestId);
+      } catch (error) {
+        setGuestsError(error instanceof Error ? error.message : "Failed to assign seat");
+      } finally {
+        endGuestDrag();
+      }
+    },
+    [endGuestDrag, handleSeatAssign, handleSelectGuest, isDesktopViewport],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -857,6 +889,9 @@ export default function SeatingPlanEditorPage() {
             onBulkCreateGuests={handleBulkCreateGuests}
             onUpdateGuest={handleUpdateGuest}
             onDeleteGuest={handleDeleteGuest}
+            enableGuestDnD
+            onGuestDragStart={startGuestDrag}
+            onGuestDragEnd={endGuestDrag}
           />
           <div className="relative order-2 flex w-full bg-zinc-100/40 lg:h-auto lg:min-h-0 lg:flex-1 lg:border-t-0">
             <SeatingCanvas
@@ -879,6 +914,9 @@ export default function SeatingPlanEditorPage() {
               onSeatAssign={handleSeatAssign}
               onTableDragStateChange={setIsTableDragging}
               onAddTable={addTable}
+              draggedGuestId={draggedGuestId}
+              isDraggingGuest={isDraggingGuest}
+              onGuestDropToSeat={dropGuestOnSeat}
             />
             <InspectorPanel
               selection={selection}

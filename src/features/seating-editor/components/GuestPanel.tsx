@@ -32,11 +32,60 @@ type GuestPanelProps = {
   onDeleteGuest: (guestId: string) => Promise<void>;
   variant?: "desktop" | "sheet";
   onGuestSelected?: () => void;
+  enableGuestDnD?: boolean;
+  onGuestDragStart?: (guestId: string) => void;
+  onGuestDragEnd?: () => void;
 };
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).slice(0, 2);
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+function createGuestDragPreview(name: string): HTMLDivElement {
+  const preview = document.createElement("div");
+  preview.style.position = "fixed";
+  preview.style.top = "-9999px";
+  preview.style.left = "-9999px";
+  preview.style.pointerEvents = "none";
+  preview.style.display = "inline-flex";
+  preview.style.alignItems = "center";
+  preview.style.gap = "8px";
+  preview.style.padding = "8px 10px";
+  preview.style.border = "1px solid rgb(209 213 219)";
+  preview.style.borderRadius = "999px";
+  preview.style.background = "white";
+  preview.style.boxShadow = "0 8px 24px rgba(15, 23, 42, 0.16)";
+  preview.style.color = "rgb(24 24 27)";
+  preview.style.fontSize = "12px";
+  preview.style.fontWeight = "600";
+  preview.style.maxWidth = "260px";
+
+  const avatar = document.createElement("span");
+  avatar.textContent = getInitials(name);
+  avatar.style.display = "inline-flex";
+  avatar.style.alignItems = "center";
+  avatar.style.justifyContent = "center";
+  avatar.style.width = "24px";
+  avatar.style.height = "24px";
+  avatar.style.borderRadius = "999px";
+  avatar.style.border = "1px solid rgb(147 197 253)";
+  avatar.style.background = "rgb(239 246 255)";
+  avatar.style.color = "rgb(30 64 175)";
+  avatar.style.fontWeight = "700";
+  avatar.style.fontSize = "11px";
+
+  const label = document.createElement("span");
+  label.textContent = name;
+  label.style.whiteSpace = "nowrap";
+  label.style.overflow = "hidden";
+  label.style.textOverflow = "ellipsis";
+
+  preview.appendChild(avatar);
+  preview.appendChild(label);
+  document.body.appendChild(preview);
+
+  return preview;
 }
 
 export function GuestPanel({
@@ -50,6 +99,9 @@ export function GuestPanel({
   onBulkCreateGuests,
   variant = "desktop",
   onGuestSelected,
+  enableGuestDnD = false,
+  onGuestDragStart,
+  onGuestDragEnd,
 }: GuestPanelProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
@@ -211,6 +263,22 @@ export function GuestPanel({
               <li key={guest.id}>
                 <button
                   type="button"
+                  draggable={variant === "desktop" && enableGuestDnD}
+                  onDragStart={(event) => {
+                    if (!(variant === "desktop" && enableGuestDnD)) return;
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", guest.id);
+                    const preview = createGuestDragPreview(guest.name);
+                    event.dataTransfer.setDragImage(preview, 18, 18);
+                    requestAnimationFrame(() => {
+                      preview.remove();
+                    });
+                    onGuestDragStart?.(guest.id);
+                  }}
+                  onDragEnd={() => {
+                    if (!(variant === "desktop" && enableGuestDnD)) return;
+                    onGuestDragEnd?.();
+                  }}
                   onClick={() => {
                     onSelectGuest(selectedGuestId === guest.id ? null : guest.id);
                     onGuestSelected?.();

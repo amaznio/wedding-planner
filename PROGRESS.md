@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 31 - Mobile fullscreen planner shell (completed)
+Phase 33 - Desktop drag preview polish (completed)
 
 ## Completed Phases
 
@@ -38,8 +38,22 @@ Phase 31 - Mobile fullscreen planner shell (completed)
 - Phase 29 - Save feedback visibility
 - Phase 30 - Drag-commit autosave gating
 - Phase 31 - Mobile fullscreen planner shell
+- Phase 32 - Desktop guest-to-seat drag-and-drop
+- Phase 33 - Desktop drag preview polish
 
 ## Completed Work
+
+- Replaced browser default guest drag ghost with a custom compact drag preview (desktop):
+  - initials avatar + guest name pill
+  - cleaner visual while dragging guests onto seats
+  - no changes to drop/assignment behavior
+
+- Added desktop-only guest-to-seat drag-and-drop:
+  - guests in desktop guest panel are now draggable
+  - seats on canvas now accept drops with hover feedback
+  - drop assignment reuses existing `handleSeatAssign` behavior (assign/swap/replace)
+  - on successful drop, dropped guest is selected and highlighted
+- Preserved mobile behavior (no guest DnD in mobile guest drawer).
 
 - Added mobile-only fullscreen planner composition (`h-dvh`, `overflow-hidden`) with a dedicated mobile branch and preserved desktop branch.
 - Removed guest panel from mobile page flow by moving guest management into a bottom sheet using `GuestPanel` `variant="sheet"` (shared CRUD/search/filter/import/export logic).

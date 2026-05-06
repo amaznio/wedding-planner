@@ -6,7 +6,12 @@ type SeatProps = {
   isSelectedGuestSeat?: boolean;
   isSelected?: boolean;
   isConflict?: boolean;
+  isDropTarget?: boolean;
+  isDragActive?: boolean;
   onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
+  onDragEnter?: (seatNumber: number) => void;
+  onDragLeave?: (seatNumber: number) => void;
+  onDropGuest?: (seatNumber: number, guestId: string) => void;
 };
 
 function getInitials(name: string): string {
@@ -22,7 +27,12 @@ export function Seat({
   isSelectedGuestSeat = false,
   isSelected = false,
   isConflict = false,
+  isDropTarget = false,
+  isDragActive = false,
   onClick,
+  onDragEnter,
+  onDragLeave,
+  onDropGuest,
 }: SeatProps) {
   const initials = occupantName ? getInitials(occupantName) : null;
 
@@ -34,9 +44,32 @@ export function Seat({
         event.stopPropagation();
         onClick?.(seatNumber, event.clientX, event.clientY);
       }}
+      onDragOver={(event) => {
+        if (!isDragActive) return;
+        event.preventDefault();
+      }}
+      onDragEnter={(event) => {
+        if (!isDragActive) return;
+        event.preventDefault();
+        onDragEnter?.(seatNumber);
+      }}
+      onDragLeave={() => {
+        if (!isDragActive) return;
+        onDragLeave?.(seatNumber);
+      }}
+      onDrop={(event) => {
+        if (!isDragActive) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const guestId = event.dataTransfer.getData("text/plain");
+        if (!guestId) return;
+        onDropGuest?.(seatNumber, guestId);
+      }}
       className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-xs font-medium shadow-sm transition-colors ${
         isConflict
           ? "border-red-500 bg-red-100 text-red-800"
+          : isDropTarget
+          ? "border-blue-500 bg-blue-100 text-blue-900 ring-2 ring-blue-200"
           : isSelected
           ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-200"
           : isSelectedGuestSeat

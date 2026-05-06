@@ -41,6 +41,13 @@ type SeatingCanvasProps = {
   onAddTable?: () => void;
   mobileMode?: boolean;
   onViewChange?: (next: { scale: number; x: number; y: number }) => void;
+  draggedGuestId?: string | null;
+  isDraggingGuest?: boolean;
+  onGuestDropToSeat?: (
+    tableId: string,
+    seatNumber: number,
+    guestId: string,
+  ) => Promise<void> | void;
 };
 
 export type SeatingCanvasHandle = {
@@ -65,6 +72,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onAddTable,
   mobileMode = false,
   onViewChange,
+  draggedGuestId = null,
+  isDraggingGuest = false,
+  onGuestDropToSeat,
 }, ref) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
@@ -96,6 +106,10 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const [isAssigningSeat, setIsAssigningSeat] = useState(false);
   const [seatMenuError, setSeatMenuError] = useState<string | null>(null);
   const [conflictSeat, setConflictSeat] = useState<{
+    tableId: string;
+    seatNumber: number;
+  } | null>(null);
+  const [dragHoverSeat, setDragHoverSeat] = useState<{
     tableId: string;
     seatNumber: number;
   } | null>(null);
@@ -528,6 +542,12 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   ? conflictSeat.seatNumber
                   : null
               }
+              dropTargetSeatNumber={
+                dragHoverSeat?.tableId === table.id
+                  ? dragHoverSeat.seatNumber
+                  : null
+              }
+              isDragActive={isDraggingGuest}
               selectedSeatNumber={
                 selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null
               }
@@ -537,6 +557,25 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   setSeatMenu(null);
                 }
                 onTableDragStateChange?.(isDragging);
+              }}
+              onSeatDragEnter={(tableId, seatNumber) => {
+                if (!isDraggingGuest) return;
+                setDragHoverSeat({ tableId, seatNumber });
+              }}
+              onSeatDragLeave={(tableId, seatNumber) => {
+                if (
+                  dragHoverSeat?.tableId === tableId &&
+                  dragHoverSeat?.seatNumber === seatNumber
+                ) {
+                  setDragHoverSeat(null);
+                }
+              }}
+              onSeatDrop={async (tableId, seatNumber, guestId) => {
+                setDragHoverSeat(null);
+                if (!isDraggingGuest) return;
+                const effectiveGuestId = guestId || draggedGuestId;
+                if (!effectiveGuestId) return;
+                await onGuestDropToSeat?.(tableId, seatNumber, effectiveGuestId);
               }}
               screenToCanvas={screenToCanvas}
             />

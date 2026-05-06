@@ -15,7 +15,12 @@ type RectTableProps = {
   selectedGuestId?: string | null;
   selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
+  dropTargetSeatNumber?: number | null;
+  isDragActive?: boolean;
   onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
+  onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
+  onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
+  onSeatDrop?: (tableId: string, seatNumber: number, guestId: string) => void;
   onDragStateChange?: (isDragging: boolean) => void;
 };
 
@@ -29,7 +34,12 @@ export function RectTable({
   selectedGuestId,
   selectedSeatNumber,
   conflictSeatNumber,
+  dropTargetSeatNumber,
+  isDragActive = false,
   onSeatClick,
+  onSeatDragEnter,
+  onSeatDragLeave,
+  onSeatDrop,
   onDragStateChange,
 }: RectTableProps) {
   const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
@@ -152,8 +162,15 @@ export function RectTable({
             }
             isSelected={selectedSeatNumber === seat.seatNumber}
             isConflict={conflictSeatNumber === seat.seatNumber}
+            isDropTarget={dropTargetSeatNumber === seat.seatNumber}
+            isDragActive={isDragActive}
             onClick={(seatNumber, clientX, clientY) =>
               onSeatClick?.(table.id, seatNumber, clientX, clientY)
+            }
+            onDragEnter={(seatNumber) => onSeatDragEnter?.(table.id, seatNumber)}
+            onDragLeave={(seatNumber) => onSeatDragLeave?.(table.id, seatNumber)}
+            onDropGuest={(seatNumber, guestId) =>
+              onSeatDrop?.(table.id, seatNumber, guestId)
             }
           />
         ))}
