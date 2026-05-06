@@ -1,3 +1,14 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+
 type SeatingToolbarProps = {
   planName: string;
   isDirty: boolean;
@@ -33,41 +44,49 @@ export function SeatingToolbar({
             : "No local changes";
 
   return (
-    <header className="border-b border-zinc-200 bg-zinc-50/95 px-3 py-3 backdrop-blur sm:px-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
-        <input
-          type="text"
-          value={planName}
-          onChange={(event) => onPlanNameChange(event.target.value)}
-          className="block w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-2xl font-semibold text-zinc-900 focus:border-zinc-300 focus:bg-white focus:outline-none"
-          aria-label="Plan name"
-        />
-          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600">
-            <span>{statusText}</span>
-            <span className="text-zinc-400">|</span>
-            <span>Seats: {occupiedSeats}/{totalSeats} occupied</span>
-            <span className="text-zinc-400">|</span>
-            <span>Unseated guests: {unseatedGuests}</span>
+    <header className="border-b border-zinc-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="min-w-[220px] flex-1 space-y-2">
+          <Input
+            value={planName}
+            onChange={(event) => onPlanNameChange(event.target.value)}
+            className="h-10 border-transparent bg-zinc-50 text-lg font-semibold"
+            aria-label="Plan name"
+          />
+          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
+            <Badge>{statusText}</Badge>
+            <Badge variant="secondary">
+              Seats: {occupiedSeats}/{totalSeats}
+            </Badge>
+            <Badge variant="secondary">Unseated: {unseatedGuests}</Badge>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start lg:self-auto">
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={!isDirty || saveState === "saving"}
-            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <Separator orientation="vertical" className="hidden h-10 lg:block" />
+
+        <nav className="flex items-center gap-2">
+          {["Plan", "Guests", "Tables", "Settings"].map((item) => (
+            <Button key={item} variant="ghost" size="sm">
+              {item}
+            </Button>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex h-9 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100">
+              Add Object
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onAddTable}>Rectangular table</DropdownMenuItem>
+              <DropdownMenuItem disabled>Round table (coming soon)</DropdownMenuItem>
+              <DropdownMenuItem disabled>Buffet (coming soon)</DropdownMenuItem>
+              <DropdownMenuItem disabled>Dance floor (coming soon)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={onSave} disabled={!isDirty || saveState === "saving"}>
             {saveState === "saving" ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={onAddTable}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-          >
-            Add Table
-          </button>
+          </Button>
         </div>
       </div>
     </header>

@@ -1,5 +1,12 @@
 import { useMemo, useState, type ChangeEventHandler } from "react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+
 type Guest = {
   id: string;
   name: string;
@@ -24,6 +31,11 @@ type GuestPanelProps = {
   onDeleteGuest: (guestId: string) => Promise<void>;
 };
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
 export function GuestPanel({
   guests,
   selectedGuestId,
@@ -32,25 +44,21 @@ export function GuestPanel({
   onSelectGuest,
   onCreateGuest,
   onBulkCreateGuests,
-  onUpdateGuest,
-  onDeleteGuest,
 }: GuestPanelProps) {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "unseated">("all");
+  const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const selectedGuest =
-    guests.find((guest) => guest.id === selectedGuestId) ?? null;
-
-  const [editName, setEditName] = useState("");
-  const [editGroup, setEditGroup] = useState("");
-  const [editNotes, setEditNotes] = useState("");
 
   const visibleGuests = useMemo(() => {
     const queryLower = query.trim().toLowerCase();
     return guests.filter((guest) => {
-      const matchesFilter = filter === "all" ? true : guest.assignment === null;
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : filter === "assigned"
+            ? guest.assignment !== null
+            : guest.assignment === null;
       const matchesQuery =
         queryLower.length === 0
           ? true
@@ -59,11 +67,6 @@ export function GuestPanel({
       return matchesFilter && matchesQuery;
     });
   }, [filter, guests, query]);
-
-  const unseatedCount = useMemo(
-    () => guests.filter((guest) => guest.assignment === null).length,
-    [guests],
-  );
 
   const handleCreateGuest = async () => {
     const trimmed = newGuestName.trim();
@@ -112,7 +115,9 @@ export function GuestPanel({
     const parsed = lines
       .slice(1)
       .map((line) => {
-        const parts = line.split(",").map((part) => part.trim().replace(/^"|"$/g, "").replaceAll("\"\"", "\""));
+        const parts = line
+          .split(",")
+          .map((part) => part.trim().replace(/^"|"$/g, "").replaceAll("\"\"", "\""));
         return {
           name: parts[0] ?? "",
           group: parts[1] ?? "",
@@ -128,208 +133,101 @@ export function GuestPanel({
     event.target.value = "";
   };
 
-  const handleSaveGuest = async () => {
-    if (!selectedGuest) return;
-
-    setIsSubmitting(true);
-    try {
-      await onUpdateGuest(selectedGuest.id, {
-        name: editName.trim(),
-        group: editGroup.trim(),
-        notes: editNotes.trim(),
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSelectGuest = (guest: Guest) => {
-    onSelectGuest(guest.id);
-    setEditName(guest.name);
-    setEditGroup(guest.group ?? "");
-    setEditNotes(guest.notes ?? "");
-  };
-
   return (
-    <aside className="order-2 w-full border-t border-zinc-200 bg-zinc-50 p-4 lg:order-1 lg:h-full lg:w-[340px] lg:shrink-0 lg:border-r lg:border-t-0 lg:p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-zinc-900">Guests</h2>
-        <span className="text-xs text-zinc-600">Unseated: {unseatedCount}</span>
+    <aside className="order-2 flex w-full flex-col border-t border-zinc-200 bg-zinc-50 lg:order-1 lg:h-full lg:w-[340px] lg:shrink-0 lg:border-r lg:border-t-0">
+      <div className="px-4 py-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-900">Guests</h2>
+          <Badge>{guests.length}</Badge>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={newGuestName}
+            onChange={(event) => setNewGuestName(event.target.value)}
+            placeholder="Add guest"
+          />
+          <Button size="sm" disabled={isSubmitting} onClick={handleCreateGuest}>
+            Add
+          </Button>
+        </div>
       </div>
-
-      <div className="mb-3 flex gap-2">
-        <input
-          type="text"
-          value={newGuestName}
-          onChange={(event) => setNewGuestName(event.target.value)}
-          placeholder="Guest name"
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-        />
-        <button
-          type="button"
-          disabled={isSubmitting}
-          onClick={handleCreateGuest}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-        >
-          Add
-        </button>
-      </div>
-      <div className="mb-3 flex items-center gap-2">
-        <label className="cursor-pointer rounded-md border border-zinc-300 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100">
-          Import CSV
-          <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportCsv} />
-        </label>
-        <button
-          type="button"
-          onClick={handleExportCsv}
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100"
-        >
-          Export CSV
-        </button>
-      </div>
-
-      <div className="mb-3 space-y-2">
-        <input
-          type="text"
+      <Separator />
+      <div className="space-y-3 px-4 py-4">
+        <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search guests"
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
         />
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-              filter === "all"
-                ? "bg-zinc-900 text-white"
-                : "border border-zinc-300 text-zinc-700"
-            }`}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("unseated")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-              filter === "unseated"
-                ? "bg-zinc-900 text-white"
-                : "border border-zinc-300 text-zinc-700"
-            }`}
-          >
-            Unseated
-          </button>
+          {(["all", "unseated", "assigned"] as const).map((next) => (
+            <Button
+              key={next}
+              size="sm"
+              variant={filter === next ? "default" : "outline"}
+              onClick={() => setFilter(next)}
+            >
+              {next[0].toUpperCase() + next.slice(1)}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <label className="cursor-pointer">
+            <Button size="sm" variant="outline" type="button">
+              Import
+            </Button>
+            <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportCsv} />
+          </label>
+          <Button size="sm" variant="outline" onClick={handleExportCsv}>
+            Export
+          </Button>
         </div>
       </div>
-
       {error ? (
-        <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-          {error}
-        </div>
+        <div className="px-4 pb-3 text-xs text-red-700">{error}</div>
       ) : null}
-
-      <div className="mb-4 max-h-56 overflow-auto rounded-md border border-zinc-200">
+      <Separator />
+      <ScrollArea className="flex-1">
         {isLoading ? (
-          <p className="p-3 text-sm text-zinc-600">Loading guests...</p>
+          <p className="p-4 text-sm text-zinc-600">Loading guests...</p>
         ) : visibleGuests.length === 0 ? (
-          <p className="p-3 text-sm text-zinc-600">No guests match this filter.</p>
+          <p className="p-4 text-sm text-zinc-600">No guests match this filter.</p>
         ) : (
-          <ul>
+          <ul className="p-2">
             {visibleGuests.map((guest) => (
               <li key={guest.id}>
                 <button
                   type="button"
-                  onClick={() => handleSelectGuest(guest)}
-                  className={`flex w-full items-center justify-between border-b border-zinc-100 px-3 py-2 text-left text-sm hover:bg-zinc-50 ${
-                    selectedGuestId === guest.id ? "bg-zinc-100" : ""
+                  onClick={() =>
+                    onSelectGuest(selectedGuestId === guest.id ? null : guest.id)
+                  }
+                  className={`mb-1 flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left ${
+                    selectedGuestId === guest.id
+                      ? "border-zinc-400 bg-zinc-100"
+                      : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
                   }`}
                 >
-                  <span className="font-medium text-zinc-800">{guest.name}</span>
-                  <span className="text-xs text-zinc-500">
-                    {guest.assignment ? "Assigned" : "Unseated"}
-                  </span>
+                  <Avatar>
+                    <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-zinc-900">{guest.name}</p>
+                    <p className="truncate text-xs text-zinc-500">
+                      {guest.assignment
+                        ? `Table ${guest.assignment.tableId.slice(0, 4)} • Seat ${guest.assignment.seatNumber}`
+                        : "Unseated"}
+                    </p>
+                  </div>
+                  {guest.assignment ? (
+                    <Badge variant="secondary">Assigned</Badge>
+                  ) : (
+                    <Badge>Unseated</Badge>
+                  )}
                 </button>
               </li>
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="mt-2 border-t border-zinc-200 pt-4">
-        <div className="mb-3">
-          <h3 className="text-sm font-semibold text-zinc-900">Selected Guest</h3>
-          {!selectedGuest ? (
-            <p className="mt-1 text-xs text-zinc-600">No guest selected.</p>
-          ) : (
-            <p className="mt-1 text-xs text-zinc-600">
-              Editing: <span className="font-medium text-zinc-800">{selectedGuest.name}</span>
-            </p>
-          )}
-        </div>
-
-        {!selectedGuest ? (
-          <p className="text-sm text-zinc-600">Select a guest from the list to edit details.</p>
-        ) : (
-          <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50/60 p-3">
-          <label className="block text-sm">
-            <span className="mb-1 block text-zinc-700">Name</span>
-            <input
-              type="text"
-              value={editName}
-              onChange={(event) => setEditName(event.target.value)}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-            />
-          </label>
-
-          <label className="block text-sm">
-            <span className="mb-1 block text-zinc-700">Group</span>
-            <input
-              type="text"
-              value={editGroup}
-              onChange={(event) => setEditGroup(event.target.value)}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-            />
-          </label>
-
-          <label className="block text-sm">
-            <span className="mb-1 block text-zinc-700">Notes</span>
-            <textarea
-              value={editNotes}
-              onChange={(event) => setEditNotes(event.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200"
-            />
-          </label>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={handleSaveGuest}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
-            >
-              Save Guest
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={async () => {
-                setIsSubmitting(true);
-                try {
-                  await onDeleteGuest(selectedGuest.id);
-                  onSelectGuest(null);
-                } finally {
-                  setIsSubmitting(false);
-                }
-              }}
-              className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
-              Delete Guest
-            </button>
-          </div>
-          </div>
-        )}
-      </div>
+      </ScrollArea>
     </aside>
   );
 }

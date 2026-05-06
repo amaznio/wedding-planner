@@ -1,15 +1,17 @@
 import type { PointerEvent, WheelEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import { getRectangleTableDimensions } from "../lib/table-dimensions";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { SeatingPlan } from "../types/seating-plan.types";
 import { RectTable } from "./RectTable";
-import { TableFloatingEditor } from "./TableFloatingEditor";
 
 type SeatingCanvasProps = {
   plan: SeatingPlan;
   selectedTableId?: string;
+  selectedSeat?: { tableId: string; seatNumber: number } | null;
   onSelectTable?: (tableId: string | null) => void;
+  onSelectSeat?: (tableId: string, seatNumber: number) => void;
   onMoveTable?: (tableId: string, nextX: number, nextY: number) => void;
   seatAssignments?: Record<
     string,
@@ -26,10 +28,6 @@ type SeatingCanvasProps = {
     seatNumber: number,
     guestId: string | null,
   ) => Promise<{ message?: string; level?: "info" | "success" }>;
-  onLabelChange?: (label: string) => void;
-  onSeatCountChange?: (seatCount: number) => void;
-  onRotate?: () => void;
-  onDelete?: () => void;
 };
 
 export function SeatingCanvas({
@@ -41,10 +39,8 @@ export function SeatingCanvas({
   selectedGuestId,
   guests = [],
   onSeatAssign,
-  onLabelChange,
-  onSeatCountChange,
-  onRotate,
-  onDelete,
+  selectedSeat,
+  onSelectSeat,
 }: SeatingCanvasProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const panSessionRef = useRef<{
@@ -57,11 +53,6 @@ export function SeatingCanvas({
   } | null>(null);
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [viewportSize, setViewportSize] = useState({
-    width: 1200,
-    height: 800,
-  });
-  const [isDraggingTable, setIsDraggingTable] = useState(false);
   const [seatMenu, setSeatMenu] = useState<{
     tableId: string;
     seatNumber: number;
@@ -78,29 +69,6 @@ export function SeatingCanvas({
     level: "info" | "success";
     message: string;
   } | null>(null);
-  const selectedTable =
-    plan.tables.find((table) => table.id === selectedTableId) ?? null;
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const updateSize = () => {
-      setViewportSize({
-        width: viewport.clientWidth,
-        height: viewport.clientHeight,
-      });
-    };
-
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(viewport);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   const screenToCanvas = (clientX: number, clientY: number) => {
     const viewport = viewportRef.current;
     if (!viewport) {
@@ -221,6 +189,7 @@ export function SeatingCanvas({
     setSeatMenuError(null);
     setConflictSeat(null);
     setSeatMenu({ tableId, seatNumber, x, y });
+    onSelectSeat?.(tableId, seatNumber);
   };
 
   const menuSeatAssignment = seatMenu
@@ -248,17 +217,47 @@ export function SeatingCanvas({
         }}
       >
         <div
-          className="absolute left-3 top-3 z-20 flex select-none items-center gap-2 rounded-md bg-white/95 px-3 py-2 text-xs shadow-sm"
+          className="absolute left-3 top-3 z-20 flex select-none items-center gap-2 rounded-md border border-zinc-200 bg-white/95 px-2 py-2 text-xs shadow-sm"
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <span className="text-zinc-600">{Math.round(view.scale * 100)}%</span>
-          <button
-            type="button"
-            onClick={() => setView({ scale: 1, x: 0, y: 0 })}
-            className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-zinc-100"
-          >
-            Reset View
-          </button>
+          <span className="px-1 text-zinc-600">{Math.round(view.scale * 100)}%</span>
+          <Button size="sm" variant="outline" onClick={() => setView((current) => ({ ...current, scale: Math.min(2.5, current.scale * 1.1) }))}>
+            +
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setView((current) => ({ ...current, scale: Math.max(0.25, current.scale * 0.9) }))}>
+            -
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+            Reset
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline">
+                Legend
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-48 p-3">
+              <p className="mb-2 text-xs font-semibold text-zinc-800">Seat legend</p>
+              <div className="space-y-1 text-xs text-zinc-600">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
+                  <span>Selected guest</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
+                  <span>Selected seat</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
+                  <span>Occupied</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
+                  <span>Empty</span>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         {assignmentStatus ? (
           <div
@@ -271,25 +270,6 @@ export function SeatingCanvas({
             {assignmentStatus.message}
           </div>
         ) : null}
-        <div
-          className="absolute left-3 top-16 z-20 rounded-md border border-zinc-200 bg-white/95 px-3 py-2 text-xs shadow-sm"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <p className="mb-1 font-medium text-zinc-700">Seat legend</p>
-          <div className="flex items-center gap-2 text-zinc-600">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
-            <span>Selected guest</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-zinc-600">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
-            <span>Occupied</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-zinc-600">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
-            <span>Empty</span>
-          </div>
-        </div>
-
         <div
           className="absolute left-0 top-0 rounded-md"
           style={{
@@ -315,8 +295,10 @@ export function SeatingCanvas({
                   ? conflictSeat.seatNumber
                   : null
               }
+              selectedSeatNumber={
+                selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null
+              }
               onSeatClick={handleSeatClick}
-              onDragStateChange={setIsDraggingTable}
               screenToCanvas={screenToCanvas}
             />
           ))}
@@ -327,48 +309,6 @@ export function SeatingCanvas({
               No tables yet. Use <span className="font-medium">Add Table</span>{" "}
               to start.
             </div>
-          </div>
-        ) : null}
-        {selectedTable && !isDraggingTable ? (
-          <div
-            className="absolute z-30"
-            style={(() => {
-              const dimensions = getRectangleTableDimensions(
-                selectedTable.seatCount,
-              );
-              const editorWidth = 420;
-              const editorHeight = 320;
-              const viewportWidth = viewportSize.width;
-              const viewportHeight = viewportSize.height;
-              const anchorX =
-                selectedTable.x * view.scale +
-                view.x +
-                dimensions.width * view.scale +
-                20;
-              const anchorY = selectedTable.y * view.scale + view.y;
-
-              const clampedX = Math.max(
-                12,
-                Math.min(anchorX, viewportWidth - editorWidth - 12),
-              );
-              const clampedY = Math.max(
-                12,
-                Math.min(anchorY, viewportHeight - editorHeight - 12),
-              );
-
-              return { left: clampedX, top: clampedY };
-            })()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <TableFloatingEditor
-              selectedTable={selectedTable}
-              onLabelChange={(label) => onLabelChange?.(label)}
-              onSeatCountChange={(seatCount) => onSeatCountChange?.(seatCount)}
-              onRotate={() => onRotate?.()}
-              onDelete={() => onDelete?.()}
-              onClose={() => onSelectTable?.(null)}
-            />
           </div>
         ) : null}
         {seatMenu ? (

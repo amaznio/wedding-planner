@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
+Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
 
 ## Completed Phases
 
@@ -30,8 +30,62 @@ Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
 - Phase 21 - Table editor click propagation fix
 - Phase 22 - Mobile zoom-out range adjustment
 - Phase 23 - Layout shell refactor (navbar + non-card containers)
+- Phase 24 - Incremental desktop editor redesign (selection + inspector + UI modernization)
+- Phase 25 - Stabilization pass (callback wiring + seat action surface lock)
+- Phase 26 - Inspector migrated to shadcn Sheet
+- Phase 27 - Inspector sheet made non-modal for canvas interactivity
 
 ## Completed Work
+
+- Refactored seating editor page handlers to stable `useCallback` wiring to remove hook dependency lint issues.
+- Consolidated assignment/unassignment helper usage so keyboard and inspector guest actions share stable helpers.
+- Kept behavior unchanged while reducing render churn risk:
+  - save flow unchanged
+  - guest CRUD/import/export unchanged
+  - seat assign/unassign/swap unchanged
+- Finalized seat interaction surface for this phase:
+  - seat assignment remains popover-primary
+  - inspector seat section is summary/read-only and links back to table
+  - removed duplicate inspector seat assignment action button
+- Verified selection transitions remain intact:
+  - guest -> opens inspector
+  - table -> opens inspector
+  - seat -> opens inspector + opens seat popover
+  - empty canvas -> clears selection + closes inspector
+- Migrated inspector rendering from in-tree `absolute` aside to portal-based shadcn `Sheet` to prevent page/canvas overflow side effects.
+- Added reusable `Sheet` primitive under `src/components/ui/sheet.tsx` (Radix Dialog based).
+- Updated inspector sheet to non-modal mode (`modal={false}`) and removed overlay rendering for this panel (`showOverlay={false}`) so canvas interactions and seat popovers stay accessible while inspector is open.
+
+- Consolidated selection into a single Zustand union:
+  - guest selection
+  - table selection
+  - seat selection (`tableId + seatNumber`)
+  - clear selection
+- Refactored editor interactions to use unified selection across page, guest list, and canvas.
+- Added right-side slide-in Inspector panel with contextual sections:
+  - guest details/actions (save/delete/unassign)
+  - table settings (label/seat count/rotate/delete)
+  - seat summary (table/seat assignment context)
+- Kept existing seat assignment popover as the single interactive seat action surface for this pass to avoid competing controls.
+- Removed floating in-canvas table editor and moved table editing into Inspector.
+- Modernized header into editor-style layout with:
+  - plan name input
+  - save/status/summary badges
+  - nav tabs (`Plan`, `Guests`, `Tables`, `Settings`)
+  - `Add Object` dropdown (rectangle enabled; round/buffet/dance floor as coming soon)
+- Redesigned guest sidebar for discovery and quick selection:
+  - avatar initials
+  - assignment badges and table/seat metadata
+  - filters: all/unseated/assigned
+  - preserved add/search/import/export behavior
+- Reworked canvas controls:
+  - compact floating zoom/reset controls
+  - legend moved to button-triggered popover (hidden by default)
+- Added shadcn-style UI foundation:
+  - `components.json`
+  - shared `cn` utility
+  - reusable UI primitives for button/input/badge/avatar/separator/scroll-area/popover/dropdown-menu
+- Preserved API contracts, Prisma schema, save behavior, guest CSV behavior, and assignment flow.
 
 - Refactored the header card into a horizontal navbar style with:
   - inline status + occupancy metadata
@@ -119,6 +173,23 @@ Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
 
 ## Files Changed
 
+- `components.json`
+- `src/lib/utils.ts`
+- `src/components/ui/button.tsx`
+- `src/components/ui/input.tsx`
+- `src/components/ui/badge.tsx`
+- `src/components/ui/avatar.tsx`
+- `src/components/ui/separator.tsx`
+- `src/components/ui/scroll-area.tsx`
+- `src/components/ui/popover.tsx`
+- `src/components/ui/dropdown-menu.tsx`
+- `src/components/ui/sheet.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/components/ui/sheet.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/features/seating-editor/store/seating-editor-store.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
 - `src/features/seating-editor/components/SeatingToolbar.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
@@ -136,10 +207,22 @@ Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
 
 ## Commands Run
 
+- `corepack pnpm add @radix-ui/react-avatar @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-scroll-area @radix-ui/react-separator class-variance-authority clsx tailwind-merge` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm add @radix-ui/react-dialog` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass)
+- `corepack pnpm build` (pass)
 
 ## Check Results
 
@@ -159,16 +242,21 @@ Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
 5. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
 6. Export guests to CSV and import the CSV back.
 7. Save and refresh; verify assignments still persist.
+8. Click a guest, table, and seat and verify inspector opens with contextual content.
+9. Verify seat assignment actions happen via seat popover only.
+10. Click empty canvas and verify selection clears and inspector closes.
+11. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
+12. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
 
 ## Known Issues
 
 - Drag guest-to-seat interaction is not implemented yet (click/picker flow is primary).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
+- None from this phase-specific stabilization pass.
 
 ## Next Recommended Step
 
-Post-MVP optional enhancements:
+Next recommended follow-up:
 
-- Drag guest-to-seat assignment flow.
-- Better CSV validation (quoted commas/newlines).
-- Bulk assignment management and advanced filters.
+- Optional UX phase: move seat assignment fully into inspector (or keep popover long-term), but maintain a single action surface.
+- Improve CSV parser robustness for quoted commas/newlines.

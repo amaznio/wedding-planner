@@ -13,6 +13,7 @@ type RectTableProps = {
   screenToCanvas?: (clientX: number, clientY: number) => { x: number; y: number };
   seatOccupants?: Record<number, { guestId: string; guestName: string }>;
   selectedGuestId?: string | null;
+  selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
   onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
   onDragStateChange?: (isDragging: boolean) => void;
@@ -26,6 +27,7 @@ export function RectTable({
   screenToCanvas,
   seatOccupants,
   selectedGuestId,
+  selectedSeatNumber,
   conflictSeatNumber,
   onSeatClick,
   onDragStateChange,
@@ -143,6 +145,7 @@ export function RectTable({
             isSelectedGuestSeat={
               seatOccupants?.[seat.seatNumber]?.guestId === selectedGuestId
             }
+            isSelected={selectedSeatNumber === seat.seatNumber}
             isConflict={conflictSeatNumber === seat.seatNumber}
             onClick={(seatNumber, clientX, clientY) =>
               onSeatClick?.(table.id, seatNumber, clientX, clientY)

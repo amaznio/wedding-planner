@@ -10,13 +10,20 @@ function snapToGrid(value: number): number {
 
 type SeatingEditorState = {
   plan: SeatingPlan;
-  selectedTableId: string | null;
+  selection:
+    | { type: "guest"; guestId: string }
+    | { type: "table"; tableId: string }
+    | { type: "seat"; tableId: string; seatNumber: number }
+    | null;
   isDirty: boolean;
   setPlan: (plan: SeatingPlan) => void;
   markSaved: () => void;
   updatePlanName: (name: string) => void;
   addTable: () => void;
+  selectGuest: (guestId: string | null) => void;
   selectTable: (tableId: string | null) => void;
+  selectSeat: (tableId: string, seatNumber: number) => void;
+  clearSelection: () => void;
   updateSelectedTableLabel: (label: string) => void;
   updateSelectedTableSeatCount: (seatCount: number) => void;
   rotateSelectedTable: () => void;
@@ -71,12 +78,14 @@ function getNextTable(tableCount: number): SeatingTable {
 
 export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   plan: DEFAULT_PLAN,
-  selectedTableId: DEFAULT_PLAN.tables[0]?.id ?? null,
+  selection: DEFAULT_PLAN.tables[0]
+    ? { type: "table", tableId: DEFAULT_PLAN.tables[0].id }
+    : null,
   isDirty: false,
   setPlan: (plan) => {
     set({
       plan,
-      selectedTableId: null,
+      selection: null,
       isDirty: false,
     });
   },
@@ -105,22 +114,38 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
         ...state.plan,
         tables: [...state.plan.tables, nextTable],
       },
-      selectedTableId: nextTable.id,
+      selection: { type: "table", tableId: nextTable.id },
       isDirty: true,
     });
   },
+  selectGuest: (guestId) => {
+    set({
+      selection: guestId ? { type: "guest", guestId } : null,
+    });
+  },
   selectTable: (tableId) => {
-    set({ selectedTableId: tableId });
+    set({
+      selection: tableId ? { type: "table", tableId } : null,
+    });
+  },
+  selectSeat: (tableId, seatNumber) => {
+    set({
+      selection: { type: "seat", tableId, seatNumber },
+    });
+  },
+  clearSelection: () => {
+    set({ selection: null });
   },
   updateSelectedTableLabel: (label) => {
     const state = get();
-    if (!state.selectedTableId) return;
+    if (state.selection?.type !== "table") return;
+    const selectedTableId = state.selection.tableId;
 
     set({
       plan: {
         ...state.plan,
         tables: state.plan.tables.map((table) =>
-          table.id === state.selectedTableId ? { ...table, label } : table,
+          table.id === selectedTableId ? { ...table, label } : table,
         ),
       },
       isDirty: true,
@@ -128,7 +153,8 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   },
   updateSelectedTableSeatCount: (seatCount) => {
     const state = get();
-    if (!state.selectedTableId) return;
+    if (state.selection?.type !== "table") return;
+    const selectedTableId = state.selection.tableId;
 
     const boundedSeatCount = Math.min(50, Math.max(1, Math.floor(seatCount)));
 
@@ -136,7 +162,7 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
       plan: {
         ...state.plan,
         tables: state.plan.tables.map((table) =>
-          table.id === state.selectedTableId
+          table.id === selectedTableId
             ? { ...table, seatCount: boundedSeatCount }
             : table,
         ),
@@ -146,13 +172,14 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   },
   rotateSelectedTable: () => {
     const state = get();
-    if (!state.selectedTableId) return;
+    if (state.selection?.type !== "table") return;
+    const selectedTableId = state.selection.tableId;
 
     set({
       plan: {
         ...state.plan,
         tables: state.plan.tables.map((table) =>
-          table.id === state.selectedTableId
+          table.id === selectedTableId
             ? { ...table, rotation: (table.rotation + 90) % 360 }
             : table,
         ),
@@ -162,10 +189,11 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
   },
   deleteSelectedTable: () => {
     const state = get();
-    if (!state.selectedTableId) return;
+    if (state.selection?.type !== "table") return;
+    const selectedTableId = state.selection.tableId;
 
     const nextTables = state.plan.tables.filter(
-      (table) => table.id !== state.selectedTableId,
+      (table) => table.id !== selectedTableId,
     );
 
     set({
@@ -173,7 +201,9 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
         ...state.plan,
         tables: nextTables,
       },
-      selectedTableId: nextTables[0]?.id ?? null,
+      selection: nextTables[0]
+        ? { type: "table", tableId: nextTables[0].id }
+        : null,
       isDirty: true,
     });
   },
