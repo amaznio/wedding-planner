@@ -8,6 +8,7 @@ export const Sheet = DialogPrimitive.Root;
 export const SheetTrigger = DialogPrimitive.Trigger;
 export const SheetClose = DialogPrimitive.Close;
 export const SheetPortal = DialogPrimitive.Portal;
+export const SheetTitle = DialogPrimitive.Title;
 
 export function SheetOverlay({
   className,

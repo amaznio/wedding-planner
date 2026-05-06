@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { SeatingTable } from "../types/seating-plan.types";
 
 type Guest = {
@@ -232,7 +232,10 @@ export function InspectorPanel({
   if (side === "bottom") {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => (!open ? onClose() : undefined)}>
-        <DrawerContent className="h-auto max-h-[56dvh] p-0">{inspectorBody}</DrawerContent>
+        <DrawerContent className="h-auto max-h-[56dvh] p-0">
+          <DrawerTitle className="sr-only">Inspector</DrawerTitle>
+          {inspectorBody}
+        </DrawerContent>
       </Drawer>
     );
   }
@@ -248,6 +251,7 @@ export function InspectorPanel({
         showOverlay={showOverlay}
         className="h-full w-[340px] p-0 sm:max-w-[340px]"
       >
+        <SheetTitle className="sr-only">Inspector</SheetTitle>
         {inspectorBody}
       </SheetContent>
     </Sheet>

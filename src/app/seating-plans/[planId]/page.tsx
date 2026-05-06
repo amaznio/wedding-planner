@@ -11,7 +11,7 @@ import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-e
 import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -755,6 +755,7 @@ export default function SeatingPlanEditorPage() {
 
         <Drawer open={mobileGuestsOpen} onOpenChange={setMobileGuestsOpen}>
           <DrawerContent className="h-[82dvh] p-0">
+            <DrawerTitle className="sr-only">Guests</DrawerTitle>
             <GuestPanel
               variant="sheet"
               guests={guests}
@@ -774,6 +775,7 @@ export default function SeatingPlanEditorPage() {
 
         <Drawer open={mobileTablesOpen} onOpenChange={setMobileTablesOpen}>
           <DrawerContent className="p-4">
+            <DrawerTitle className="sr-only">Tables and objects</DrawerTitle>
             <h3 className="mb-3 text-sm font-semibold text-zinc-900">Tables & Objects</h3>
             <div className="space-y-2">
               <Button

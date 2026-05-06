@@ -1,5 +1,5 @@
 import type { PointerEvent, WheelEvent } from "react";
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
 import type { SeatingPlan } from "../types/seating-plan.types";
@@ -39,9 +40,16 @@ type SeatingCanvasProps = {
   onTableDragStateChange?: (isDragging: boolean) => void;
   onAddTable?: () => void;
   mobileMode?: boolean;
+  onViewChange?: (next: { scale: number; x: number; y: number }) => void;
 };
 
-export function SeatingCanvas({
+export type SeatingCanvasHandle = {
+  resetView: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+};
+
+export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>(function SeatingCanvas({
   plan,
   selectedTableId,
   onSelectTable,
@@ -56,7 +64,8 @@ export function SeatingCanvas({
   onTableDragStateChange,
   onAddTable,
   mobileMode = false,
-}: SeatingCanvasProps) {
+  onViewChange,
+}, ref) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
     Map<number, { clientX: number; clientY: number }>
@@ -90,6 +99,7 @@ export function SeatingCanvas({
     tableId: string;
     seatNumber: number;
   } | null>(null);
+  const [mobileLegendOpen, setMobileLegendOpen] = useState(false);
   const screenToCanvas = (clientX: number, clientY: number) => {
     const viewport = viewportRef.current;
     if (!viewport) {
@@ -154,12 +164,34 @@ export function SeatingCanvas({
     const worldX = (mouseX - view.x) / view.scale;
     const worldY = (mouseY - view.y) / view.scale;
 
-    setView({
+    const nextView = {
       scale: nextScale,
       x: mouseX - worldX * nextScale,
       y: mouseY - worldY * nextScale,
-    });
+    };
+    setView(nextView);
+    onViewChange?.(nextView);
   };
+  const applyView = (next: { scale: number; x: number; y: number }) => {
+    setView(next);
+    onViewChange?.(next);
+  };
+  const zoomIn = () =>
+    applyView({
+      ...view,
+      scale: Math.min(2.5, view.scale * 1.1),
+    });
+  const zoomOut = () =>
+    applyView({
+      ...view,
+      scale: Math.max(getMinScale(), view.scale * 0.9),
+    });
+  const resetView = () => applyView({ scale: 1, x: 0, y: 0 });
+  useImperativeHandle(ref, () => ({
+    resetView,
+    zoomIn,
+    zoomOut,
+  }));
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
@@ -230,11 +262,13 @@ export function SeatingCanvas({
         );
         const worldX = (midX - pinchSession.startX) / pinchSession.startScale;
         const worldY = (midY - pinchSession.startY) / pinchSession.startScale;
-        setView({
+        const nextView = {
           scale: nextScale,
           x: midX - worldX * nextScale,
           y: midY - worldY * nextScale,
-        });
+        };
+        setView(nextView);
+        onViewChange?.(nextView);
         suppressCanvasClickRef.current = true;
       }
       return;
@@ -248,11 +282,13 @@ export function SeatingCanvas({
     const moved = Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2;
     session.moved = session.moved || moved;
 
-    setView((current) => ({
-      ...current,
+    const nextView = {
+      ...view,
       x: session.originX + deltaX,
       y: session.originY + deltaY,
-    }));
+    };
+    setView(nextView);
+    onViewChange?.(nextView);
   };
 
   const endPan = (event: PointerEvent<HTMLDivElement>) => {
@@ -355,10 +391,7 @@ export function SeatingCanvas({
               variant="outline"
               className="h-7 px-2 text-[11px]"
               onClick={() =>
-                setView((current) => ({
-                  ...current,
-                  scale: Math.min(2.5, current.scale * 1.1),
-                }))
+                zoomIn()
               }
             >
               +
@@ -368,10 +401,7 @@ export function SeatingCanvas({
               variant="outline"
               className="h-7 px-2 text-[11px]"
               onClick={() =>
-                setView((current) => ({
-                  ...current,
-                  scale: Math.max(0.25, current.scale * 0.9),
-                }))
+                zoomOut()
               }
             >
               -
@@ -380,7 +410,7 @@ export function SeatingCanvas({
               size="sm"
               variant="outline"
               className="h-7 px-2 text-[11px]"
-              onClick={() => setView({ scale: 1, x: 0, y: 0 })}
+              onClick={resetView}
             >
               Reset
             </Button>
@@ -414,6 +444,65 @@ export function SeatingCanvas({
             </Popover>
           </div>
         ) : null}
+        {mobileMode ? (
+          <div
+            className="absolute left-3 top-3 z-20 flex items-center gap-2"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <div className="inline-flex h-10 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm">
+              <span>{Math.round(view.scale * 100)}%</span>
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-full bg-white px-3 text-sm"
+              onClick={resetView}
+            >
+              Reset view
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 w-10 rounded-full bg-white p-0"
+              aria-label="Info"
+              onClick={() => setMobileLegendOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </Button>
+          </div>
+        ) : null}
+        <Drawer open={mobileLegendOpen} onOpenChange={setMobileLegendOpen}>
+          <DrawerContent className="p-4">
+            <DrawerTitle className="sr-only">Seat legend</DrawerTitle>
+            <p className="mb-2 text-sm font-semibold text-zinc-800">Seat legend</p>
+            <div className="space-y-2 text-sm text-zinc-600">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
+                <span>Selected guest</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
+                <span>Selected seat</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
+                <span>Occupied</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
+                <span>Empty</span>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
         <div
           className="absolute left-0 top-0 rounded-md"
           style={{
@@ -588,4 +677,4 @@ export function SeatingCanvas({
       </div>
     </section>
   );
-}
+});

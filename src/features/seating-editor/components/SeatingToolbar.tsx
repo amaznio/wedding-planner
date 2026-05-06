@@ -69,17 +69,24 @@ export function SeatingToolbar({
       </div>
 
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1">
+        <div className="flex h-12 items-center justify-between px-1">
+          <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="Menu">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 6h18" />
+              <path d="M3 12h18" />
+              <path d="M3 18h18" />
+            </svg>
+          </Button>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2">
             {isMobileEditingTitle ? (
               <Input
                 value={planName}
                 onChange={(event) => onPlanNameChange(event.target.value)}
-                className="h-8 w-[180px] max-w-[58vw] border-transparent bg-zinc-50 text-sm font-semibold"
+                className="h-8 w-[170px] max-w-[48vw] border-transparent bg-zinc-50 text-sm font-semibold"
                 aria-label="Plan name"
               />
             ) : (
-              <p className="truncate text-base font-semibold text-zinc-900">
+              <p className="truncate text-sm font-semibold text-zinc-900">
                 {planName}
               </p>
             )}
@@ -91,31 +98,42 @@ export function SeatingToolbar({
               onClick={() => setIsMobileEditingTitle((current) => !current)}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                <path d="m9 18 6-6-6-6" />
               </svg>
             </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-7 w-7 p-0"
-            onClick={onSave}
-            disabled={saveState === "saving"}
-            aria-label={saveState === "saving" ? "Saving" : "Save"}
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-              <path d="M17 21v-8H7v8" />
-              <path d="M7 3v5h8" />
-            </svg>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              onClick={onSave}
+              disabled={saveState === "saving"}
+              aria-label={saveState === "saving" ? "Saving" : "Save"}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                <path d="M17 21v-8H7v8" />
+                <path d="M7 3v5h8" />
+              </svg>
+            </Button>
+            <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="Guests">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <path d="M20 8v6" />
+                <path d="M23 11h-6" />
+              </svg>
+            </Button>
+            <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="More">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                <circle cx="6" cy="12" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="18" cy="12" r="1.5" />
+              </svg>
+            </Button>
+          </div>
         </div>
-        <p className="line-clamp-1 text-[11px] text-zinc-600">
-          {statusText ? `${statusText} · ` : ""}
-          {lastSavedLabel ? `Last saved ${lastSavedLabel} · ` : ""}
-          Seats {occupiedSeats}/{totalSeats} · Unseated {unseatedGuests}
-        </p>
       </div>
     </header>
   );
