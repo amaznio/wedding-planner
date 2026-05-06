@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { InspectorPanel } from "@/features/seating-editor/components/InspectorPanel";
@@ -9,6 +9,7 @@ import { GuestPanel } from "@/features/seating-editor/components/GuestPanel";
 import { SeatingToolbar } from "@/features/seating-editor/components/SeatingToolbar";
 import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-editor-store";
 import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
+import { toast } from "@/components/ui/use-toast";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -97,10 +98,30 @@ export default function SeatingPlanEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isTableDragging, setIsTableDragging] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
   const [guestForm, setGuestForm] = useState({ name: "", group: "", notes: "" });
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlightRef = useRef(false);
+  const pendingAutosaveRef = useRef(false);
+  const shouldAutosaveGuestsRef = useRef(false);
+  const isTableDraggingRef = useRef(false);
+  const isDirtyRef = useRef(isDirty);
+  const planRef = useRef(plan);
+
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+  useEffect(() => {
+    isTableDraggingRef.current = isTableDragging;
+  }, [isTableDragging]);
 
   const selectedTableId = selection?.type === "table" ? selection.tableId : null;
   const selectedGuestId = selection?.type === "guest" ? selection.guestId : null;
@@ -140,6 +161,14 @@ export default function SeatingPlanEditorPage() {
   const occupiedSeatCount = guests.filter((guest) => guest.assignment !== null).length;
   const totalSeatCount = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
   const unseatedGuestCount = guests.length - occupiedSeatCount;
+  const lastSavedLabel = useMemo(() => {
+    if (!lastSavedAt) return null;
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(lastSavedAt);
+  }, [lastSavedAt]);
 
   const seatAssignments = useMemo(
     () =>
@@ -230,6 +259,10 @@ export default function SeatingPlanEditorPage() {
     const response = await fetch(`/api/seating-plans/${planId}/assignments/${assignmentId}`, {
       method: "DELETE",
     });
+    if (response.status === 404) {
+      // Assignment can already be removed by a prior swap/unassign request; treat as no-op.
+      return;
+    }
     if (!response.ok) {
       const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
       throw new Error(errorData?.error ?? "Failed to remove assignment");
@@ -363,17 +396,38 @@ export default function SeatingPlanEditorPage() {
     selectedTableId,
   ]);
 
-  const handleSave = useCallback(async () => {
-    try {
-      setSaveState("saving");
-      const response = await fetch(`/api/seating-plans/${plan.id}`, {
+  const savePlan = async (source: "manual" | "auto") => {
+      if (saveInFlightRef.current) {
+        if (source === "auto") {
+          pendingAutosaveRef.current = true;
+        }
+        return;
+      }
+
+      if (
+        source === "auto" &&
+        !isDirtyRef.current &&
+        !shouldAutosaveGuestsRef.current
+      ) {
+        return;
+      }
+      if (source === "auto" && isTableDraggingRef.current) {
+        pendingAutosaveRef.current = true;
+        return;
+      }
+
+      saveInFlightRef.current = true;
+      try {
+        setSaveState("saving");
+        const nextPlan = planRef.current;
+        const response = await fetch(`/api/seating-plans/${nextPlan.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: plan.name,
-          width: plan.width,
-          height: plan.height,
-          tables: plan.tables.map((table) => ({
+          name: nextPlan.name,
+          width: nextPlan.width,
+          height: nextPlan.height,
+          tables: nextPlan.tables.map((table) => ({
             id: table.id,
             label: table.label,
             type: table.type,
@@ -385,20 +439,67 @@ export default function SeatingPlanEditorPage() {
           })),
         }),
       });
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorData?.error ?? "Failed to save seating plan");
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to save seating plan");
+        }
+        const payload = (await response.json()) as { plan?: ApiPlan };
+        if (payload.plan) {
+          setPlan(normalizePlan(payload.plan));
+        }
+        await loadGuests();
+        shouldAutosaveGuestsRef.current = false;
+        markSaved();
+        setSaveState("saved");
+        setLastSavedAt(new Date());
+        toast({
+          title: "Saved",
+          description: source === "auto" ? "Changes autosaved." : "Seating plan saved.",
+          variant: "success",
+        });
+        setTimeout(() => setSaveState("idle"), 1200);
+      } catch {
+        setSaveState("error");
+        toast({
+          title: "Save failed",
+          description: "Could not save your latest changes.",
+          variant: "destructive",
+        });
+      } finally {
+        saveInFlightRef.current = false;
+        if (
+          pendingAutosaveRef.current &&
+          (isDirtyRef.current || shouldAutosaveGuestsRef.current)
+        ) {
+          pendingAutosaveRef.current = false;
+          void savePlan("auto");
+        } else {
+          pendingAutosaveRef.current = false;
+        }
       }
-      const payload = (await response.json()) as { plan?: ApiPlan };
-      if (payload.plan) setPlan(normalizePlan(payload.plan));
-      await loadGuests();
-      markSaved();
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 1200);
-    } catch {
-      setSaveState("error");
+    };
+  const scheduleAutosave = useCallback(() => {
+    if (isTableDraggingRef.current) {
+      pendingAutosaveRef.current = true;
+      return;
     }
-  }, [loadGuests, markSaved, plan.height, plan.id, plan.name, plan.tables, plan.width, setPlan]);
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      void savePlan("auto");
+    }, 1000);
+  }, [savePlan]);
+
+  const handleSave = useCallback(async () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    await savePlan("manual");
+  }, [savePlan]);
 
   const handleCreateGuest = useCallback(async (name: string) => {
     try {
@@ -414,10 +515,12 @@ export default function SeatingPlanEditorPage() {
       }
       const data = (await response.json()) as { guest: ApiGuest };
       setGuests((current) => [...current, data.guest]);
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
     } catch (error) {
       setGuestsError(error instanceof Error ? error.message : "Failed to create guest");
     }
-  }, [planId]);
+  }, [planId, scheduleAutosave]);
 
   const handleBulkCreateGuests = useCallback(async (
     csvGuests: Array<{ name: string; group?: string; notes?: string }>,
@@ -443,10 +546,12 @@ export default function SeatingPlanEditorPage() {
         createdGuests.push(data.guest);
       }
       setGuests((current) => [...current, ...createdGuests]);
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
     } catch (error) {
       setGuestsError(error instanceof Error ? error.message : "Failed to import guests");
     }
-  }, [planId]);
+  }, [planId, scheduleAutosave]);
 
   const handleUpdateGuest = useCallback(async (
     guestId: string,
@@ -467,7 +572,9 @@ export default function SeatingPlanEditorPage() {
     }
     const data = (await response.json()) as { guest: ApiGuest };
     setGuests((current) => current.map((guest) => (guest.id === guestId ? data.guest : guest)));
-  }, [planId]);
+    shouldAutosaveGuestsRef.current = true;
+    scheduleAutosave();
+  }, [planId, scheduleAutosave]);
 
   const handleDeleteGuest = useCallback(async (guestId: string) => {
     try {
@@ -481,10 +588,43 @@ export default function SeatingPlanEditorPage() {
       }
       setGuests((current) => current.filter((guest) => guest.id !== guestId));
       if (selectedGuestId === guestId) clearSelection();
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
     } catch (error) {
       setGuestsError(error instanceof Error ? error.message : "Failed to delete guest");
     }
-  }, [clearSelection, planId, selectedGuestId]);
+  }, [clearSelection, planId, scheduleAutosave, selectedGuestId]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isDirty) return;
+    scheduleAutosave();
+  }, [isDirty, isLoading, scheduleAutosave]);
+
+  useEffect(() => {
+    if (isTableDragging) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      return;
+    }
+    if (pendingAutosaveRef.current && (isDirtyRef.current || shouldAutosaveGuestsRef.current)) {
+      pendingAutosaveRef.current = false;
+      scheduleAutosave();
+    }
+  }, [isTableDragging, scheduleAutosave]);
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      if (isDirtyRef.current || shouldAutosaveGuestsRef.current) {
+        void savePlan("auto");
+      }
+    };
+  }, [savePlan]);
 
   if (isLoading) {
     return (
@@ -508,6 +648,7 @@ export default function SeatingPlanEditorPage() {
         planName={plan.name}
         isDirty={isDirty}
         saveState={saveState}
+        lastSavedLabel={lastSavedLabel}
         occupiedSeats={occupiedSeatCount}
         totalSeats={totalSeatCount}
         unseatedGuests={unseatedGuestCount}
@@ -548,6 +689,7 @@ export default function SeatingPlanEditorPage() {
                 : null,
             }))}
             onSeatAssign={handleSeatAssign}
+            onTableDragStateChange={setIsTableDragging}
           />
           <InspectorPanel
             selection={selection}

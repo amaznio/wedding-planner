@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/components/ui/use-toast";
 import type { SeatingPlan } from "../types/seating-plan.types";
 import { RectTable } from "./RectTable";
 
@@ -29,6 +30,7 @@ type SeatingCanvasProps = {
     seatNumber: number,
     guestId: string | null,
   ) => Promise<{ message?: string; level?: "info" | "success" }>;
+  onTableDragStateChange?: (isDragging: boolean) => void;
 };
 
 export function SeatingCanvas({
@@ -43,6 +45,7 @@ export function SeatingCanvas({
   onSeatAssign,
   selectedSeat,
   onSelectSeat,
+  onTableDragStateChange,
 }: SeatingCanvasProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const panSessionRef = useRef<{
@@ -66,10 +69,6 @@ export function SeatingCanvas({
   const [conflictSeat, setConflictSeat] = useState<{
     tableId: string;
     seatNumber: number;
-  } | null>(null);
-  const [assignmentStatus, setAssignmentStatus] = useState<{
-    level: "info" | "success";
-    message: string;
   } | null>(null);
   const screenToCanvas = (clientX: number, clientY: number) => {
     const viewport = viewportRef.current;
@@ -262,17 +261,6 @@ export function SeatingCanvas({
             </PopoverContent>
           </Popover>
         </div>
-        {assignmentStatus ? (
-          <div
-            className={`absolute left-44 top-3 z-20 rounded-md border px-3 py-2 text-xs shadow-sm ${
-              assignmentStatus.level === "success"
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                : "border-blue-300 bg-blue-50 text-blue-800"
-            }`}
-          >
-            {assignmentStatus.message}
-          </div>
-        ) : null}
         <div
           className="absolute left-0 top-0 rounded-md"
           style={{
@@ -306,6 +294,7 @@ export function SeatingCanvas({
                 if (isDragging) {
                   setSeatMenu(null);
                 }
+                onTableDragStateChange?.(isDragging);
               }}
               screenToCanvas={screenToCanvas}
             />
@@ -367,11 +356,12 @@ export function SeatingCanvas({
                           guest.id,
                         );
                         if (result?.message) {
-                          setAssignmentStatus({
-                            level: result.level ?? "success",
-                            message: result.message,
+                          toast({
+                            variant:
+                              result.level === "info" ? "info" : "success",
+                            title: result.level === "info" ? "Info" : "Success",
+                            description: result.message,
                           });
-                          setTimeout(() => setAssignmentStatus(null), 1600);
                         }
                         setSeatMenu(null);
                       } catch (error) {
@@ -415,11 +405,11 @@ export function SeatingCanvas({
                     null,
                   );
                   if (result?.message) {
-                    setAssignmentStatus({
-                      level: result.level ?? "success",
-                      message: result.message,
+                    toast({
+                      variant: result.level === "info" ? "info" : "success",
+                      title: result.level === "info" ? "Info" : "Success",
+                      description: result.message,
                     });
-                    setTimeout(() => setAssignmentStatus(null), 1600);
                   }
                   setSeatMenu(null);
                 } catch (error) {

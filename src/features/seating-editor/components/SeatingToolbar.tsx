@@ -13,6 +13,7 @@ type SeatingToolbarProps = {
   planName: string;
   isDirty: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
+  lastSavedLabel: string | null;
   occupiedSeats: number;
   totalSeats: number;
   unseatedGuests: number;
@@ -25,6 +26,7 @@ export function SeatingToolbar({
   planName,
   isDirty,
   saveState,
+  lastSavedLabel,
   occupiedSeats,
   totalSeats,
   unseatedGuests,
@@ -32,6 +34,7 @@ export function SeatingToolbar({
   onAddTable,
   onSave,
 }: SeatingToolbarProps) {
+  const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
     saveState === "saving"
       ? "Saving..."
@@ -39,22 +42,24 @@ export function SeatingToolbar({
         ? "Save failed"
         : isDirty
           ? "Unsaved changes"
-          : saveState === "saved"
-            ? "Saved"
-            : "No local changes";
+          : null;
 
   return (
     <header className="border-b border-zinc-200 bg-white px-4 py-3">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="min-w-[220px] flex-1 space-y-2">
+        <div className="space-y-2">
           <Input
             value={planName}
             onChange={(event) => onPlanNameChange(event.target.value)}
             className="h-10 border-transparent bg-zinc-50 text-lg font-semibold"
+            style={{ width: `${titleWidthCh}ch` }}
             aria-label="Plan name"
           />
           <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
-            <Badge>{statusText}</Badge>
+            {statusText ? <Badge>{statusText}</Badge> : null}
+            {lastSavedLabel ? (
+              <Badge variant="secondary">Last saved {lastSavedLabel}</Badge>
+            ) : null}
             <Badge variant="secondary">
               Seats: {occupiedSeats}/{totalSeats}
             </Badge>
@@ -84,7 +89,7 @@ export function SeatingToolbar({
               <DropdownMenuItem disabled>Dance floor (coming soon)</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={onSave} disabled={!isDirty || saveState === "saving"}>
+          <Button onClick={onSave} disabled={saveState === "saving"}>
             {saveState === "saving" ? "Saving..." : "Save"}
           </Button>
         </div>

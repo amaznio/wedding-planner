@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 28 - Reusable seat layout modes for rectangular tables (completed)
+Phase 30 - Drag-commit autosave gating (completed)
 
 ## Completed Phases
 
@@ -35,8 +35,25 @@ Phase 28 - Reusable seat layout modes for rectangular tables (completed)
 - Phase 26 - Inspector migrated to shadcn Sheet
 - Phase 27 - Inspector sheet made non-modal for canvas interactivity
 - Phase 28 - Reusable seat layout modes for rectangular tables
+- Phase 29 - Save feedback visibility
+- Phase 30 - Drag-commit autosave gating
 
 ## Completed Work
+
+- Added drag-aware autosave gating so table movement no longer triggers saves mid-drag.
+- Wired table drag state from canvas to editor page:
+  - drag start pauses autosave timer
+  - drag move updates remain local/dirty but do not trigger save requests
+  - drag end resumes autosave scheduling with the existing 1s debounce
+- Added guard in autosave execution path to defer auto saves while table drag is active.
+- Preserved manual save behavior and existing assignment immediate-write behavior.
+
+- Added visible save feedback for plan persistence:
+  - success toast on manual save and autosave
+  - destructive toast on save failure
+- Added persistent header metadata for save recency:
+  - `Last saved HH:MM:SS` badge shown after successful save
+- Kept existing autosave flow and assignment persistence behavior unchanged.
 
 - Added reusable per-table seat layout modes for rectangle tables:
   - `balanced`
@@ -217,6 +234,8 @@ Phase 28 - Reusable seat layout modes for rectangular tables (completed)
 - `src/app/seating-plans/[planId]/page.tsx`
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 - `src/features/seating-editor/components/SeatingToolbar.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
@@ -230,6 +249,8 @@ Phase 28 - Reusable seat layout modes for rectangular tables (completed)
 - `src/features/seating-editor/components/Seat.tsx`
 - `src/features/seating-editor/components/RectTable.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/SeatingToolbar.tsx`
 
 ## Commands Run
 
@@ -238,6 +259,12 @@ Phase 28 - Reusable seat layout modes for rectangular tables (completed)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing `savePlan` hook dependency warnings)
+- `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing `savePlan` hook dependency warnings)
 - `corepack pnpm build` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
