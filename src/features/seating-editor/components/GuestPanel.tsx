@@ -137,7 +137,11 @@ export function GuestPanel({
       return;
     }
 
-    const seen = new Set<string>();
+    const seen = new Set<string>(
+      guests
+        .map((guest) => guest.name.trim().toLowerCase())
+        .filter((name) => name.length > 0),
+    );
     const parsed = values
       .map((name) => name.trim())
       .filter((name) => name.length > 0)
