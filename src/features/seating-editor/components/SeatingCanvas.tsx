@@ -118,7 +118,11 @@ export function SeatingCanvas({
     const mouseY = event.clientY - rect.top;
 
     const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
-    const nextScale = Math.max(0.5, Math.min(2.5, view.scale * zoomFactor));
+    const isMobileViewport =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 1023px)").matches;
+    const minScale = isMobileViewport ? 0.25 : 0.5;
+    const nextScale = Math.max(minScale, Math.min(2.5, view.scale * zoomFactor));
 
     const worldX = (mouseX - view.x) / view.scale;
     const worldY = (mouseY - view.y) / view.scale;
@@ -209,10 +213,10 @@ export function SeatingCanvas({
       : null;
 
   return (
-    <section className="h-full min-h-[70vh] w-full overflow-hidden rounded-lg border border-zinc-200 bg-white p-4 lg:min-h-0">
+    <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-white p-2 sm:p-4">
       <div
         ref={viewportRef}
-        className="relative h-full w-full select-none rounded-md border border-zinc-200"
+        className="relative h-full min-h-0 w-full select-none rounded-md border border-zinc-200"
         onClick={handleCanvasClick}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
@@ -328,6 +332,7 @@ export function SeatingCanvas({
               return { left: clampedX, top: clampedY };
             })()}
             onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <TableFloatingEditor
               selectedTable={selectedTable}

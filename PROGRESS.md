@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 16 - Assignment polish (completed, post-MVP extension)
+Phase 22 - Mobile zoom-out range adjustment (completed)
 
 ## Completed Phases
 
@@ -23,9 +23,30 @@ Phase 16 - Assignment polish (completed, post-MVP extension)
 - Phase 14 - Assignment validation & states
 - Phase 15 - Persistence integration for assignments
 - Phase 16 - Assignment polish
+- Phase 17 - Mobile canvas expansion hotfix
+- Phase 18 - Mobile canvas flex-fill hotfix
+- Phase 19 - Mobile canvas priority layout hotfix
+- Phase 20 - Mobile canvas height-reference hotfix
+- Phase 21 - Table editor click propagation fix
+- Phase 22 - Mobile zoom-out range adjustment
 
 ## Completed Work
 
+- Increased mobile zoom-out range in canvas interactions by lowering mobile minimum zoom scale from `0.5` to `0.25`.
+- Kept desktop minimum zoom unchanged at `0.5` to preserve existing behavior.
+- Fixed floating table editor closing when clicking inside inputs/buttons.
+- Stopped `click` event propagation on the floating editor container so canvas deselection handler is not triggered during edits.
+- Fixed collapsed mobile canvas by giving the canvas wrapper an explicit mobile height (`h-[56dvh]`) instead of only `min-height`.
+- Kept desktop behavior unchanged by restoring flexible sizing at `lg` breakpoint (`lg:h-auto lg:flex-1`).
+- Prioritized canvas rendering area on mobile by ordering canvas before guest panel in the stack.
+- Added explicit mobile canvas minimum height (`56dvh`) so the canvas always remains usable.
+- Constrained guest panel height on mobile with internal scrolling to prevent it from collapsing canvas space.
+- Replaced fixed mobile canvas minimum-height wrapper with flex-fill behavior (`flex-1 min-h-0`) in the plan editor layout.
+- Updated `SeatingCanvas` root container to a true flex child (`flex-1 min-h-0`) so it expands to all available space.
+- Added `min-h-0` to the viewport container and reduced mobile canvas padding for better edge utilization.
+- Adjusted seating editor page layout to better fill viewport on mobile breakpoints.
+- Switched main editor container to dynamic viewport sizing (`dvh`) and responsive page padding.
+- Increased mobile canvas wrapper minimum height with `dvh` so canvas expands predictably on small screens.
 - Added assignment workflow keyboard shortcuts:
   - `[` selects previous guest
   - `]` selects next guest
@@ -86,6 +107,9 @@ Phase 16 - Assignment polish (completed, post-MVP extension)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
 - `src/features/seating-editor/components/SeatingToolbar.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
@@ -99,6 +123,8 @@ Phase 16 - Assignment polish (completed, post-MVP extension)
 
 ## Commands Run
 
+- `corepack pnpm lint` (pass)
+- `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
 
@@ -124,6 +150,7 @@ Phase 16 - Assignment polish (completed, post-MVP extension)
 ## Known Issues
 
 - Drag guest-to-seat interaction is not implemented yet (click/picker flow is primary).
+- Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 
 ## Next Recommended Step
 

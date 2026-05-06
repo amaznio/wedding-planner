@@ -550,7 +550,7 @@ export default function SeatingPlanEditorPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col gap-4 bg-zinc-50 p-6">
+    <main className="flex min-h-dvh flex-col gap-4 bg-zinc-50 p-3 sm:p-6 lg:h-dvh">
       <SeatingToolbar
         planName={plan.name}
         isDirty={isDirty}
@@ -563,7 +563,7 @@ export default function SeatingPlanEditorPage() {
         onAddTable={addTable}
       />
 
-      <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         <GuestPanel
           guests={guests}
           selectedGuestId={selectedGuestId}
@@ -575,7 +575,7 @@ export default function SeatingPlanEditorPage() {
           onUpdateGuest={handleUpdateGuest}
           onDeleteGuest={handleDeleteGuest}
         />
-        <div className="relative flex min-h-[70vh] flex-1 lg:min-h-0">
+        <div className="relative order-1 flex h-[56dvh] w-full lg:order-2 lg:h-auto lg:min-h-0 lg:flex-1">
           <SeatingCanvas
             plan={plan}
             selectedTableId={selectedTableId ?? undefined}
