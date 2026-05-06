@@ -1,3 +1,5 @@
+import type { RectangleSeatLayout } from "../types/seating-plan.types";
+
 export type SeatPosition = {
   seatNumber: number;
   x: number;
@@ -10,10 +12,21 @@ export function getSeatPositions(
   seatCount: number,
   tableWidth: number,
   tableHeight: number,
+  seatLayout: RectangleSeatLayout = "balanced",
 ): SeatPosition[] {
   const safeSeatCount = Math.max(1, Math.floor(seatCount));
-  const topSeatCount = Math.ceil(safeSeatCount / 2);
-  const bottomSeatCount = Math.floor(safeSeatCount / 2);
+  const topSeatCount =
+    seatLayout === "top-only"
+      ? safeSeatCount
+      : seatLayout === "bottom-only"
+        ? 0
+        : Math.ceil(safeSeatCount / 2);
+  const bottomSeatCount =
+    seatLayout === "bottom-only"
+      ? safeSeatCount
+      : seatLayout === "top-only"
+        ? 0
+        : Math.floor(safeSeatCount / 2);
 
   const positions: SeatPosition[] = [];
 

@@ -102,6 +102,7 @@ export async function PUT(request: Request, context: RouteContext) {
               y: table.y,
               rotation: table.rotation,
               seatCount: table.seatCount,
+              seatLayout: table.seatLayout,
             },
           });
         } else {
@@ -115,6 +116,7 @@ export async function PUT(request: Request, context: RouteContext) {
               y: table.y,
               rotation: table.rotation,
               seatCount: table.seatCount,
+              seatLayout: table.seatLayout,
             },
           });
         }

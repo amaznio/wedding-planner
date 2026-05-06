@@ -32,12 +32,14 @@ export function RectTable({
   onSeatClick,
   onDragStateChange,
 }: RectTableProps) {
-  const dimensions = getRectangleTableDimensions(table.seatCount);
+  const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
   const seatPositions = getSeatPositions(
     table.seatCount,
     dimensions.width,
     dimensions.height,
+    table.seatLayout,
   );
+  const occupiedSeatCount = Object.keys(seatOccupants ?? {}).length;
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const movedDuringDragRef = useRef(false);
@@ -130,8 +132,11 @@ export function RectTable({
               : "border-zinc-300 hover:shadow-md"
           }`}
         >
-          <div className="flex h-full items-center justify-center text-sm font-semibold text-zinc-700">
-            {table.label}
+          <div className="flex h-full flex-col items-center justify-center gap-1 text-zinc-700">
+            <span className="text-sm font-semibold">{table.label}</span>
+            <span className="text-xs text-zinc-500">
+              {occupiedSeatCount}/{table.seatCount} occupied
+            </span>
           </div>
         </div>
 

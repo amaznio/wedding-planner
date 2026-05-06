@@ -30,6 +30,7 @@ model SeatingTable {
   y         Int
   rotation  Int         @default(0)
   seatCount Int
+  seatLayout String     @default("balanced")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

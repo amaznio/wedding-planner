@@ -26,6 +26,9 @@ type SeatingEditorState = {
   clearSelection: () => void;
   updateSelectedTableLabel: (label: string) => void;
   updateSelectedTableSeatCount: (seatCount: number) => void;
+  updateSelectedTableSeatLayout: (
+    seatLayout: "balanced" | "top-only" | "bottom-only",
+  ) => void;
   rotateSelectedTable: () => void;
   deleteSelectedTable: () => void;
   moveTable: (tableId: string, nextX: number, nextY: number) => void;
@@ -45,6 +48,7 @@ const DEFAULT_PLAN: SeatingPlan = {
       y: 180,
       rotation: 0,
       seatCount: 6,
+      seatLayout: "balanced",
     },
     {
       id: "table-2",
@@ -54,6 +58,7 @@ const DEFAULT_PLAN: SeatingPlan = {
       y: 320,
       rotation: 0,
       seatCount: 9,
+      seatLayout: "balanced",
     },
   ],
 };
@@ -73,6 +78,7 @@ function getNextTable(tableCount: number): SeatingTable {
     y: 120 + Math.floor(tableCount / 5) * 170,
     rotation: 0,
     seatCount: 8,
+    seatLayout: "balanced",
   };
 }
 
@@ -165,6 +171,21 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
           table.id === selectedTableId
             ? { ...table, seatCount: boundedSeatCount }
             : table,
+        ),
+      },
+      isDirty: true,
+    });
+  },
+  updateSelectedTableSeatLayout: (seatLayout) => {
+    const state = get();
+    if (state.selection?.type !== "table") return;
+    const selectedTableId = state.selection.tableId;
+
+    set({
+      plan: {
+        ...state.plan,
+        tables: state.plan.tables.map((table) =>
+          table.id === selectedTableId ? { ...table, seatLayout } : table,
         ),
       },
       isDirty: true,

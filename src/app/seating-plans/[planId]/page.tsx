@@ -25,6 +25,7 @@ type ApiPlan = {
     y: number;
     rotation: number;
     seatCount: number;
+    seatLayout?: "balanced" | "top-only" | "bottom-only";
   }>;
 };
 
@@ -64,6 +65,7 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
       y: table.y,
       rotation: table.rotation,
       seatCount: table.seatCount,
+      seatLayout: table.seatLayout ?? "balanced",
     })),
   };
 }
@@ -86,6 +88,7 @@ export default function SeatingPlanEditorPage() {
     clearSelection,
     updateSelectedTableLabel,
     updateSelectedTableSeatCount,
+    updateSelectedTableSeatLayout,
     rotateSelectedTable,
     deleteSelectedTable,
     moveTable,
@@ -156,6 +159,13 @@ export default function SeatingPlanEditorPage() {
         {},
       ),
     [guests],
+  );
+  const tableLabelById = useMemo(
+    () =>
+      Object.fromEntries(
+        plan.tables.map((table) => [table.id, table.label]),
+      ) as Record<string, string>,
+    [plan.tables],
   );
 
   const loadGuests = useCallback(async () => {
@@ -371,6 +381,7 @@ export default function SeatingPlanEditorPage() {
             y: table.y,
             rotation: table.rotation,
             seatCount: table.seatCount,
+            seatLayout: table.seatLayout,
           })),
         }),
       });
@@ -508,6 +519,7 @@ export default function SeatingPlanEditorPage() {
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <GuestPanel
           guests={guests}
+          tableLabelById={tableLabelById}
           selectedGuestId={selectedGuestId}
           isLoading={isGuestsLoading}
           error={guestsError}
@@ -526,6 +538,7 @@ export default function SeatingPlanEditorPage() {
             onSelectSeat={selectSeat}
             onMoveTable={moveTable}
             seatAssignments={seatAssignments}
+            tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             guests={guests.map((guest) => ({
               id: guest.id,
@@ -556,6 +569,7 @@ export default function SeatingPlanEditorPage() {
             onDeleteGuest={handleDeleteGuest}
             onTableLabelChange={updateSelectedTableLabel}
             onTableSeatCountChange={updateSelectedTableSeatCount}
+            onTableSeatLayoutChange={updateSelectedTableSeatLayout}
             onRotateTable={rotateSelectedTable}
             onDeleteTable={deleteSelectedTable}
           />

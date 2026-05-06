@@ -21,6 +21,7 @@ type Guest = {
 
 type GuestPanelProps = {
   guests: Guest[];
+  tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
   isLoading: boolean;
   error: string | null;
@@ -38,6 +39,7 @@ function getInitials(name: string): string {
 
 export function GuestPanel({
   guests,
+  tableLabelById,
   selectedGuestId,
   isLoading,
   error,
@@ -213,7 +215,7 @@ export function GuestPanel({
                     <p className="truncate text-sm font-medium text-zinc-900">{guest.name}</p>
                     <p className="truncate text-xs text-zinc-500">
                       {guest.assignment
-                        ? `Table ${guest.assignment.tableId.slice(0, 4)} • Seat ${guest.assignment.seatNumber}`
+                        ? `${tableLabelById[guest.assignment.tableId] ?? "Table"} • Seat ${guest.assignment.seatNumber}`
                         : "Unseated"}
                     </p>
                   </div>

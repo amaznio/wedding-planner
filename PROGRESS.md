@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
+Phase 28 - Reusable seat layout modes for rectangular tables (completed)
 
 ## Completed Phases
 
@@ -34,9 +34,25 @@ Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
 - Phase 25 - Stabilization pass (callback wiring + seat action surface lock)
 - Phase 26 - Inspector migrated to shadcn Sheet
 - Phase 27 - Inspector sheet made non-modal for canvas interactivity
+- Phase 28 - Reusable seat layout modes for rectangular tables
 
 ## Completed Work
 
+- Added reusable per-table seat layout modes for rectangle tables:
+  - `balanced`
+  - `top-only`
+  - `bottom-only`
+- Persisted seat layout to DB:
+  - added `seatLayout` column on `SeatingTable` with default `"balanced"`
+  - created and applied Prisma migration
+- Extended table schema/types/API payload support for `seatLayout`.
+- Updated pure geometry logic to derive seat positions by layout mode while preserving seat numbering and identity.
+- Updated table dimension logic so top-only/bottom-only width scales with all seats on one side.
+- Added inspector control for selected table to switch seat layout modes.
+- Preserved assignment model and behavior:
+  - no seat IDs added
+  - no assignment schema changes
+  - changing seat layout repositions seats only (no unassign side effects)
 - Refactored seating editor page handlers to stable `useCallback` wiring to remove hook dependency lint issues.
 - Consolidated assignment/unassignment helper usage so keyboard and inspector guest actions share stable helpers.
 - Kept behavior unchanged while reducing render churn risk:
@@ -185,6 +201,16 @@ Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
 - `src/components/ui/dropdown-menu.tsx`
 - `src/components/ui/sheet.tsx`
 - `src/features/seating-editor/components/InspectorPanel.tsx`
+- `prisma/schema.prisma`
+- `prisma/migrations/20260506200056_add_seat_layout/migration.sql`
+- `src/features/seating-editor/types/seating-plan.types.ts`
+- `src/features/seating-editor/schemas/seating-plan.schema.ts`
+- `src/features/seating-editor/lib/seat-positioning.ts`
+- `src/features/seating-editor/lib/table-dimensions.ts`
+- `src/features/seating-editor/store/seating-editor-store.ts`
+- `src/features/seating-editor/components/RectTable.tsx`
+- `src/app/api/seating-plans/[planId]/route.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
 - `src/components/ui/sheet.tsx`
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 - `src/features/seating-editor/store/seating-editor-store.ts`
@@ -213,6 +239,12 @@ Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm prisma migrate dev --name add-seat-layout` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm prisma generate` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm build` (pass)
@@ -247,6 +279,10 @@ Phase 27 - Inspector sheet made non-modal for canvas interactivity (completed)
 10. Click empty canvas and verify selection clears and inspector closes.
 11. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
 12. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
+13. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
+14. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
+15. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
+16. Save and refresh; verify `Seat layout` persists per table.
 
 ## Known Issues
 
@@ -260,3 +296,4 @@ Next recommended follow-up:
 
 - Optional UX phase: move seat assignment fully into inspector (or keep popover long-term), but maintain a single action surface.
 - Improve CSV parser robustness for quoted commas/newlines.
+- Optional future extension: add left-only/right-only layout modes (or orientation-aware mapping) if needed.

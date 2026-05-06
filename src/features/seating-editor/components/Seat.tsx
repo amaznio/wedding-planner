@@ -9,6 +9,11 @@ type SeatProps = {
   onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
 };
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
 export function Seat({
   seatNumber,
   x,
@@ -19,6 +24,8 @@ export function Seat({
   isConflict = false,
   onClick,
 }: SeatProps) {
+  const initials = occupantName ? getInitials(occupantName) : null;
+
   return (
     <button
       type="button"
@@ -40,7 +47,7 @@ export function Seat({
       }`}
       style={{ left: x, top: y }}
     >
-      {seatNumber}
+      {initials ?? seatNumber}
     </button>
   );
 }

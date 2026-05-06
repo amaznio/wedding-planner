@@ -38,6 +38,7 @@ type InspectorPanelProps = {
   onDeleteGuest: (guestId: string) => Promise<void>;
   onTableLabelChange: (label: string) => void;
   onTableSeatCountChange: (seatCount: number) => void;
+  onTableSeatLayoutChange: (seatLayout: "balanced" | "top-only" | "bottom-only") => void;
   onRotateTable: () => void;
   onDeleteTable: () => void;
 };
@@ -57,6 +58,7 @@ export function InspectorPanel({
   onDeleteGuest,
   onTableLabelChange,
   onTableSeatCountChange,
+  onTableSeatLayoutChange,
   onRotateTable,
   onDeleteTable,
 }: InspectorPanelProps) {
@@ -171,6 +173,22 @@ export function InspectorPanel({
                     onTableSeatCountChange(Number.parseInt(event.target.value, 10) || 1)
                   }
                 />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs text-zinc-600">Seat layout</span>
+                <select
+                  value={selectedTable.seatLayout}
+                  onChange={(event) =>
+                    onTableSeatLayoutChange(
+                      event.target.value as "balanced" | "top-only" | "bottom-only",
+                    )
+                  }
+                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                >
+                  <option value="balanced">Balanced (top + bottom)</option>
+                  <option value="top-only">Top side only</option>
+                  <option value="bottom-only">Bottom side only</option>
+                </select>
               </label>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={onRotateTable}>

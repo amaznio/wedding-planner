@@ -1,4 +1,5 @@
 export type SeatingTableType = "rectangle";
+export type RectangleSeatLayout = "balanced" | "top-only" | "bottom-only";
 
 export type SeatingTable = {
   id: string;
@@ -8,6 +9,7 @@ export type SeatingTable = {
   y: number;
   rotation: number;
   seatCount: number;
+  seatLayout: RectangleSeatLayout;
 };
 
 export type SeatingPlan = {

@@ -17,6 +17,7 @@ type SeatingCanvasProps = {
     string,
     Record<number, { guestId: string; guestName: string }>
   >;
+  tableLabelById?: Record<string, string>;
   selectedGuestId?: string | null;
   guests?: Array<{
     id: string;
@@ -36,6 +37,7 @@ export function SeatingCanvas({
   onSelectTable,
   onMoveTable,
   seatAssignments,
+  tableLabelById = {},
   selectedGuestId,
   guests = [],
   onSeatAssign,
@@ -120,6 +122,7 @@ export function SeatingCanvas({
     if (!viewport) return;
 
     viewport.setPointerCapture(event.pointerId);
+    setSeatMenu(null);
     panSessionRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -299,6 +302,11 @@ export function SeatingCanvas({
                 selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null
               }
               onSeatClick={handleSeatClick}
+              onDragStateChange={(isDragging) => {
+                if (isDragging) {
+                  setSeatMenu(null);
+                }
+              }}
               screenToCanvas={screenToCanvas}
             />
           ))}
@@ -341,7 +349,7 @@ export function SeatingCanvas({
               {guests.map((guest) => {
                 const isCurrent = menuSeatAssignment?.guestId === guest.id;
                 const assignmentLabel = guest.assignment
-                  ? `T:${guest.assignment.tableId.slice(0, 4)} S:${guest.assignment.seatNumber}`
+                  ? `${tableLabelById[guest.assignment.tableId] ?? "Table"} • Seat ${guest.assignment.seatNumber}`
                   : "Unseated";
                 return (
                   <button

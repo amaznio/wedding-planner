@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const tableTypeSchema = z.literal("rectangle");
+const seatLayoutSchema = z.enum(["balanced", "top-only", "bottom-only"]);
 
 const tableSchema = z.object({
   id: z.string().min(1).optional(),
@@ -10,6 +11,7 @@ const tableSchema = z.object({
   y: z.int(),
   rotation: z.int(),
   seatCount: z.int().min(1).max(50),
+  seatLayout: seatLayoutSchema.default("balanced"),
 });
 
 export const createSeatingPlanSchema = z.object({
