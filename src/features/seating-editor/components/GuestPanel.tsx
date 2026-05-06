@@ -126,25 +126,19 @@ export function GuestPanel({
     if (!file) return;
 
     const text = await file.text();
-    const lines = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
+    const normalized = text.replace(/\r?\n/g, ",");
+    const values = normalized
+      .split(",")
+      .map((part) => part.trim().replace(/^"|"$/g, "").replaceAll("\"\"", "\""))
       .filter(Boolean);
 
-    if (lines.length < 2) return;
+    if (values.length === 0) {
+      event.target.value = "";
+      return;
+    }
 
-    const parsed = lines
-      .slice(1)
-      .map((line) => {
-        const parts = line
-          .split(",")
-          .map((part) => part.trim().replace(/^"|"$/g, "").replaceAll("\"\"", "\""));
-        return {
-          name: parts[0] ?? "",
-          group: parts[1] ?? "",
-          notes: parts[2] ?? "",
-        };
-      })
+    const parsed = values
+      .map((name) => ({ name }))
       .filter((row) => row.name.length > 0);
 
     if (parsed.length > 0) {
