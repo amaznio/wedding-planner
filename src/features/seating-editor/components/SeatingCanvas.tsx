@@ -58,6 +58,16 @@ export function SeatingCanvas({
   mobileMode = false,
 }: SeatingCanvasProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const activeTouchPointersRef = useRef<
+    Map<number, { clientX: number; clientY: number }>
+  >(new Map());
+  const pinchSessionRef = useRef<{
+    startDistance: number;
+    startScale: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const suppressCanvasClickRef = useRef(false);
   const panSessionRef = useRef<{
     pointerId: number;
     startX: number;
@@ -92,6 +102,37 @@ export function SeatingCanvas({
       y: (clientY - rect.top - view.y) / view.scale,
     };
   };
+  const getMinScale = () => {
+    if (typeof window === "undefined") return 0.5;
+    const isMobileViewport = window.matchMedia("(max-width: 1023px)").matches;
+    return isMobileViewport ? 0.25 : 0.5;
+  };
+  const getTouchDistance = (
+    first: { clientX: number; clientY: number },
+    second: { clientX: number; clientY: number },
+  ) => {
+    const dx = second.clientX - first.clientX;
+    const dy = second.clientY - first.clientY;
+    return Math.hypot(dx, dy);
+  };
+  const getTouchMidpoint = (
+    first: { clientX: number; clientY: number },
+    second: { clientX: number; clientY: number },
+  ) => ({
+    clientX: (first.clientX + second.clientX) / 2,
+    clientY: (first.clientY + second.clientY) / 2,
+  });
+  const stopPanSession = (pointerId?: number) => {
+    const session = panSessionRef.current;
+    if (!session) return;
+    if (pointerId !== undefined && session.pointerId !== pointerId) return;
+    const viewport = viewportRef.current;
+    if (pointerId !== undefined && viewport && viewport.hasPointerCapture(pointerId)) {
+      viewport.releasePointerCapture(pointerId);
+    }
+    panSessionRef.current = null;
+    setIsPanning(false);
+  };
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -104,10 +145,7 @@ export function SeatingCanvas({
     const mouseY = event.clientY - rect.top;
 
     const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
-    const isMobileViewport =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 1023px)").matches;
-    const minScale = isMobileViewport ? 0.25 : 0.5;
+    const minScale = getMinScale();
     const nextScale = Math.max(
       minScale,
       Math.min(2.5, view.scale * zoomFactor),
@@ -132,6 +170,28 @@ export function SeatingCanvas({
 
     viewport.setPointerCapture(event.pointerId);
     setSeatMenu(null);
+    if (event.pointerType === "touch") {
+      activeTouchPointersRef.current.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+      if (activeTouchPointersRef.current.size >= 2) {
+        const touches = Array.from(activeTouchPointersRef.current.values());
+        const first = touches[0];
+        const second = touches[1];
+        const startDistance = getTouchDistance(first, second);
+        if (startDistance > 0) {
+          pinchSessionRef.current = {
+            startDistance,
+            startScale: view.scale,
+            startX: view.x,
+            startY: view.y,
+          };
+          stopPanSession();
+        }
+      }
+    }
+    if (pinchSessionRef.current) return;
     panSessionRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -144,6 +204,42 @@ export function SeatingCanvas({
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch" && activeTouchPointersRef.current.has(event.pointerId)) {
+      activeTouchPointersRef.current.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    }
+
+    if (pinchSessionRef.current && activeTouchPointersRef.current.size >= 2) {
+      const touches = Array.from(activeTouchPointersRef.current.values());
+      const first = touches[0];
+      const second = touches[1];
+      const midpoint = getTouchMidpoint(first, second);
+      const currentDistance = getTouchDistance(first, second);
+      if (currentDistance > 0) {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+        const rect = viewport.getBoundingClientRect();
+        const midX = midpoint.clientX - rect.left;
+        const midY = midpoint.clientY - rect.top;
+        const pinchSession = pinchSessionRef.current;
+        const nextScale = Math.max(
+          getMinScale(),
+          Math.min(2.5, pinchSession.startScale * (currentDistance / pinchSession.startDistance)),
+        );
+        const worldX = (midX - pinchSession.startX) / pinchSession.startScale;
+        const worldY = (midY - pinchSession.startY) / pinchSession.startScale;
+        setView({
+          scale: nextScale,
+          x: midX - worldX * nextScale,
+          y: midY - worldY * nextScale,
+        });
+        suppressCanvasClickRef.current = true;
+      }
+      return;
+    }
+
     const session = panSessionRef.current;
     if (!session || session.pointerId !== event.pointerId) return;
 
@@ -160,18 +256,20 @@ export function SeatingCanvas({
   };
 
   const endPan = (event: PointerEvent<HTMLDivElement>) => {
-    const session = panSessionRef.current;
-    if (!session || session.pointerId !== event.pointerId) return;
-
-    const viewport = viewportRef.current;
-    if (viewport && viewport.hasPointerCapture(event.pointerId)) {
-      viewport.releasePointerCapture(event.pointerId);
+    if (event.pointerType === "touch") {
+      activeTouchPointersRef.current.delete(event.pointerId);
+      if (pinchSessionRef.current && activeTouchPointersRef.current.size < 2) {
+        pinchSessionRef.current = null;
+      }
     }
-    panSessionRef.current = null;
-    setIsPanning(false);
+    stopPanSession(event.pointerId);
   };
 
   const handleCanvasClick = () => {
+    if (suppressCanvasClickRef.current) {
+      suppressCanvasClickRef.current = false;
+      return;
+    }
     const session = panSessionRef.current;
     if (session?.moved) return;
     setSeatMenu(null);
