@@ -33,37 +33,42 @@ export function SeatingToolbar({
             : "No local changes";
 
   return (
-    <header className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-4">
-      <div className="min-w-0 flex-1">
+    <header className="border-b border-zinc-200 bg-zinc-50/95 px-3 py-3 backdrop-blur sm:px-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex-1">
         <input
           type="text"
           value={planName}
           onChange={(event) => onPlanNameChange(event.target.value)}
-          className="block w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xl font-semibold text-zinc-900 focus:border-zinc-300 focus:bg-white focus:outline-none"
+          className="block w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-2xl font-semibold text-zinc-900 focus:border-zinc-300 focus:bg-white focus:outline-none"
           aria-label="Plan name"
         />
-        <p className="text-sm text-zinc-600">{statusText}</p>
-        <p className="text-xs text-zinc-500">
-          Seats: {occupiedSeats}/{totalSeats} occupied · Unseated guests: {unseatedGuests}
-        </p>
-      </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600">
+            <span>{statusText}</span>
+            <span className="text-zinc-400">|</span>
+            <span>Seats: {occupiedSeats}/{totalSeats} occupied</span>
+            <span className="text-zinc-400">|</span>
+            <span>Unseated guests: {unseatedGuests}</span>
+          </div>
+        </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={!isDirty || saveState === "saving"}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saveState === "saving" ? "Saving..." : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={onAddTable}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-        >
-          Add Table
-        </button>
+        <div className="flex items-center gap-2 self-start lg:self-auto">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!isDirty || saveState === "saving"}
+            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saveState === "saving" ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={onAddTable}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          >
+            Add Table
+          </button>
+        </div>
       </div>
     </header>
   );

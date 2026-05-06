@@ -151,7 +151,7 @@ export function GuestPanel({
   };
 
   return (
-    <aside className="order-2 w-full max-h-[42dvh] overflow-auto rounded-lg border border-zinc-200 bg-white p-4 lg:order-1 lg:max-h-none lg:max-w-sm lg:overflow-visible">
+    <aside className="order-2 w-full border-t border-zinc-200 bg-zinc-50 p-4 lg:order-1 lg:h-full lg:w-[340px] lg:shrink-0 lg:border-r lg:border-t-0 lg:p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold text-zinc-900">Guests</h2>
         <span className="text-xs text-zinc-600">Unseated: {unseatedCount}</span>

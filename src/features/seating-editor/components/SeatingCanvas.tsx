@@ -11,7 +11,10 @@ type SeatingCanvasProps = {
   selectedTableId?: string;
   onSelectTable?: (tableId: string | null) => void;
   onMoveTable?: (tableId: string, nextX: number, nextY: number) => void;
-  seatAssignments?: Record<string, Record<number, { guestId: string; guestName: string }>>;
+  seatAssignments?: Record<
+    string,
+    Record<number, { guestId: string; guestName: string }>
+  >;
   selectedGuestId?: string | null;
   guests?: Array<{
     id: string;
@@ -54,7 +57,10 @@ export function SeatingCanvas({
   } | null>(null);
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 });
+  const [viewportSize, setViewportSize] = useState({
+    width: 1200,
+    height: 800,
+  });
   const [isDraggingTable, setIsDraggingTable] = useState(false);
   const [seatMenu, setSeatMenu] = useState<{
     tableId: string;
@@ -72,7 +78,8 @@ export function SeatingCanvas({
     level: "info" | "success";
     message: string;
   } | null>(null);
-  const selectedTable = plan.tables.find((table) => table.id === selectedTableId) ?? null;
+  const selectedTable =
+    plan.tables.find((table) => table.id === selectedTableId) ?? null;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -122,7 +129,10 @@ export function SeatingCanvas({
       typeof window !== "undefined" &&
       window.matchMedia("(max-width: 1023px)").matches;
     const minScale = isMobileViewport ? 0.25 : 0.5;
-    const nextScale = Math.max(minScale, Math.min(2.5, view.scale * zoomFactor));
+    const nextScale = Math.max(
+      minScale,
+      Math.min(2.5, view.scale * zoomFactor),
+    );
 
     const worldX = (mouseX - view.x) / view.scale;
     const worldY = (mouseY - view.y) / view.scale;
@@ -200,23 +210,28 @@ export function SeatingCanvas({
     const rect = viewport.getBoundingClientRect();
     const menuWidth = 280;
     const menuHeight = 320;
-    const x = Math.max(12, Math.min(clientX - rect.left + 12, rect.width - menuWidth - 12));
-    const y = Math.max(12, Math.min(clientY - rect.top + 12, rect.height - menuHeight - 12));
+    const x = Math.max(
+      12,
+      Math.min(clientX - rect.left + 12, rect.width - menuWidth - 12),
+    );
+    const y = Math.max(
+      12,
+      Math.min(clientY - rect.top + 12, rect.height - menuHeight - 12),
+    );
     setSeatMenuError(null);
     setConflictSeat(null);
     setSeatMenu({ tableId, seatNumber, x, y });
   };
 
-  const menuSeatAssignment =
-    seatMenu
-      ? seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null
-      : null;
+  const menuSeatAssignment = seatMenu
+    ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
+    : null;
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-white p-2 sm:p-4">
+    <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden">
       <div
         ref={viewportRef}
-        className="relative h-full min-h-0 w-full select-none rounded-md border border-zinc-200"
+        className="relative h-full min-h-0 w-full select-none"
         onClick={handleCanvasClick}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
@@ -233,7 +248,7 @@ export function SeatingCanvas({
         }}
       >
         <div
-          className="absolute left-3 top-3 z-20 flex select-none items-center gap-2 rounded-md border border-zinc-200 bg-white/95 px-3 py-2 text-xs shadow-sm"
+          className="absolute left-3 top-3 z-20 flex select-none items-center gap-2 rounded-md bg-white/95 px-3 py-2 text-xs shadow-sm"
           onPointerDown={(event) => event.stopPropagation()}
         >
           <span className="text-zinc-600">{Math.round(view.scale * 100)}%</span>
@@ -246,11 +261,13 @@ export function SeatingCanvas({
           </button>
         </div>
         {assignmentStatus ? (
-          <div className={`absolute left-44 top-3 z-20 rounded-md border px-3 py-2 text-xs shadow-sm ${
-            assignmentStatus.level === "success"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-              : "border-blue-300 bg-blue-50 text-blue-800"
-          }`}>
+          <div
+            className={`absolute left-44 top-3 z-20 rounded-md border px-3 py-2 text-xs shadow-sm ${
+              assignmentStatus.level === "success"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                : "border-blue-300 bg-blue-50 text-blue-800"
+            }`}
+          >
             {assignmentStatus.message}
           </div>
         ) : null}
@@ -293,7 +310,11 @@ export function SeatingCanvas({
               }
               seatOccupants={seatAssignments?.[table.id]}
               selectedGuestId={selectedGuestId}
-              conflictSeatNumber={conflictSeat?.tableId === table.id ? conflictSeat.seatNumber : null}
+              conflictSeatNumber={
+                conflictSeat?.tableId === table.id
+                  ? conflictSeat.seatNumber
+                  : null
+              }
               onSeatClick={handleSeatClick}
               onDragStateChange={setIsDraggingTable}
               screenToCanvas={screenToCanvas}
@@ -303,7 +324,8 @@ export function SeatingCanvas({
         {plan.tables.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <div className="rounded-md border border-dashed border-zinc-300 bg-white/80 px-4 py-3 text-sm text-zinc-600">
-              No tables yet. Use <span className="font-medium">Add Table</span> to start.
+              No tables yet. Use <span className="font-medium">Add Table</span>{" "}
+              to start.
             </div>
           </div>
         ) : null}
@@ -311,13 +333,18 @@ export function SeatingCanvas({
           <div
             className="absolute z-30"
             style={(() => {
-              const dimensions = getRectangleTableDimensions(selectedTable.seatCount);
+              const dimensions = getRectangleTableDimensions(
+                selectedTable.seatCount,
+              );
               const editorWidth = 420;
               const editorHeight = 320;
               const viewportWidth = viewportSize.width;
               const viewportHeight = viewportSize.height;
               const anchorX =
-                selectedTable.x * view.scale + view.x + dimensions.width * view.scale + 20;
+                selectedTable.x * view.scale +
+                view.x +
+                dimensions.width * view.scale +
+                20;
               const anchorY = selectedTable.y * view.scale + view.y;
 
               const clampedX = Math.max(
@@ -372,8 +399,7 @@ export function SeatingCanvas({
             ) : null}
             <div className="mb-2 max-h-52 space-y-1 overflow-auto rounded-md border border-zinc-200 p-1">
               {guests.map((guest) => {
-                const isCurrent =
-                  menuSeatAssignment?.guestId === guest.id;
+                const isCurrent = menuSeatAssignment?.guestId === guest.id;
                 const assignmentLabel = guest.assignment
                   ? `T:${guest.assignment.tableId.slice(0, 4)} S:${guest.assignment.seatNumber}`
                   : "Unseated";
@@ -387,7 +413,11 @@ export function SeatingCanvas({
                       try {
                         setSeatMenuError(null);
                         setConflictSeat(null);
-                        const result = await onSeatAssign?.(seatMenu.tableId, seatMenu.seatNumber, guest.id);
+                        const result = await onSeatAssign?.(
+                          seatMenu.tableId,
+                          seatMenu.seatNumber,
+                          guest.id,
+                        );
                         if (result?.message) {
                           setAssignmentStatus({
                             level: result.level ?? "success",
@@ -398,7 +428,9 @@ export function SeatingCanvas({
                         setSeatMenu(null);
                       } catch (error) {
                         const message =
-                          error instanceof Error ? error.message : "Failed to assign seat";
+                          error instanceof Error
+                            ? error.message
+                            : "Failed to assign seat";
                         setSeatMenuError(message);
                         setConflictSeat({
                           tableId: seatMenu.tableId,
@@ -413,7 +445,9 @@ export function SeatingCanvas({
                     }`}
                   >
                     <span className="truncate text-zinc-800">{guest.name}</span>
-                    <span className="ml-2 text-zinc-500">{assignmentLabel}</span>
+                    <span className="ml-2 text-zinc-500">
+                      {assignmentLabel}
+                    </span>
                   </button>
                 );
               })}
@@ -427,7 +461,11 @@ export function SeatingCanvas({
                 try {
                   setSeatMenuError(null);
                   setConflictSeat(null);
-                  const result = await onSeatAssign?.(seatMenu.tableId, seatMenu.seatNumber, null);
+                  const result = await onSeatAssign?.(
+                    seatMenu.tableId,
+                    seatMenu.seatNumber,
+                    null,
+                  );
                   if (result?.message) {
                     setAssignmentStatus({
                       level: result.level ?? "success",
@@ -438,7 +476,9 @@ export function SeatingCanvas({
                   setSeatMenu(null);
                 } catch (error) {
                   const message =
-                    error instanceof Error ? error.message : "Failed to unassign seat";
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to unassign seat";
                   setSeatMenuError(message);
                   setConflictSeat({
                     tableId: seatMenu.tableId,

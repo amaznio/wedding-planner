@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 22 - Mobile zoom-out range adjustment (completed)
+Phase 23 - Layout shell refactor (navbar + non-card containers) (completed)
 
 ## Completed Phases
 
@@ -29,9 +29,21 @@ Phase 22 - Mobile zoom-out range adjustment (completed)
 - Phase 20 - Mobile canvas height-reference hotfix
 - Phase 21 - Table editor click propagation fix
 - Phase 22 - Mobile zoom-out range adjustment
+- Phase 23 - Layout shell refactor (navbar + non-card containers)
 
 ## Completed Work
 
+- Refactored the header card into a horizontal navbar style with:
+  - inline status + occupancy metadata
+  - right-aligned primary actions (`Save`, `Add Table`)
+- Changed page shell from stacked card blocks to workspace layout:
+  - top navbar
+  - split editor region
+  - left guest panel (desktop) and bottom guest section (mobile)
+- Removed card framing from major containers:
+  - guest panel now acts as a sidebar panel with divider borders
+  - canvas no longer wrapped in a rounded card container
+- Preserved existing light theme, typography, and color palette while changing structural layout.
 - Increased mobile zoom-out range in canvas interactions by lowering mobile minimum zoom scale from `0.5` to `0.25`.
 - Kept desktop minimum zoom unchanged at `0.5` to preserve existing behavior.
 - Fixed floating table editor closing when clicking inside inputs/buttons.
@@ -107,6 +119,7 @@ Phase 22 - Mobile zoom-out range adjustment (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/SeatingToolbar.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
