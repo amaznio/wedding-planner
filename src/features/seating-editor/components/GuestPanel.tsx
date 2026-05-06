@@ -208,7 +208,7 @@ export function GuestPanel({
             onChange={(event) => setNewGuestName(event.target.value)}
             placeholder="Add guest"
           />
-          <Button size="sm" disabled={isSubmitting} onClick={handleCreateGuest}>
+          <Button disabled={isSubmitting} onClick={handleCreateGuest}>
             Add
           </Button>
         </div>
