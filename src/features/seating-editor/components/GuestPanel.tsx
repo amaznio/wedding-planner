@@ -137,9 +137,17 @@ export function GuestPanel({
       return;
     }
 
+    const seen = new Set<string>();
     const parsed = values
-      .map((name) => ({ name }))
-      .filter((row) => row.name.length > 0);
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+      .filter((name) => {
+        const key = name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((name) => ({ name }));
 
     if (parsed.length > 0) {
       await onBulkCreateGuests(parsed);
