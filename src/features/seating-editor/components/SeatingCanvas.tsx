@@ -2,6 +2,12 @@ import type { PointerEvent, WheelEvent } from "react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
 import type { SeatingPlan } from "../types/seating-plan.types";
@@ -31,6 +37,7 @@ type SeatingCanvasProps = {
     guestId: string | null,
   ) => Promise<{ message?: string; level?: "info" | "success" }>;
   onTableDragStateChange?: (isDragging: boolean) => void;
+  onAddTable?: () => void;
 };
 
 export function SeatingCanvas({
@@ -46,6 +53,7 @@ export function SeatingCanvas({
   selectedSeat,
   onSelectSeat,
   onTableDragStateChange,
+  onAddTable,
 }: SeatingCanvasProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const panSessionRef = useRef<{
@@ -219,22 +227,65 @@ export function SeatingCanvas({
         }}
       >
         <div
-          className="absolute left-3 top-3 z-20 flex select-none items-center gap-2 rounded-md border border-zinc-200 bg-white/95 px-2 py-2 text-xs shadow-sm"
+          className="absolute right-3 top-3 z-20"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-10 px-4 text-sm">
+                Add Object
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onAddTable}>Rectangular table</DropdownMenuItem>
+              <DropdownMenuItem disabled>Round table (coming soon)</DropdownMenuItem>
+              <DropdownMenuItem disabled>Buffet (coming soon)</DropdownMenuItem>
+              <DropdownMenuItem disabled>Dance floor (coming soon)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div
+          className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-1 rounded-md border border-zinc-200 bg-white/95 px-1.5 py-1.5 text-[11px] shadow-sm"
           onPointerDown={(event) => event.stopPropagation()}
         >
           <span className="px-1 text-zinc-600">{Math.round(view.scale * 100)}%</span>
-          <Button size="sm" variant="outline" onClick={() => setView((current) => ({ ...current, scale: Math.min(2.5, current.scale * 1.1) }))}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-[11px]"
+            onClick={() =>
+              setView((current) => ({
+                ...current,
+                scale: Math.min(2.5, current.scale * 1.1),
+              }))
+            }
+          >
             +
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setView((current) => ({ ...current, scale: Math.max(0.25, current.scale * 0.9) }))}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-[11px]"
+            onClick={() =>
+              setView((current) => ({
+                ...current,
+                scale: Math.max(0.25, current.scale * 0.9),
+              }))
+            }
+          >
             -
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-[11px]"
+            onClick={() => setView({ scale: 1, x: 0, y: 0 })}
+          >
             Reset
           </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="outline">
+              <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">
                 Legend
               </Button>
             </PopoverTrigger>

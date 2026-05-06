@@ -1,13 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 
 type SeatingToolbarProps = {
   planName: string;
@@ -18,7 +11,6 @@ type SeatingToolbarProps = {
   totalSeats: number;
   unseatedGuests: number;
   onPlanNameChange: (name: string) => void;
-  onAddTable: () => void;
   onSave: () => void;
 };
 
@@ -31,7 +23,6 @@ export function SeatingToolbar({
   totalSeats,
   unseatedGuests,
   onPlanNameChange,
-  onAddTable,
   onSave,
 }: SeatingToolbarProps) {
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
@@ -67,28 +58,7 @@ export function SeatingToolbar({
           </div>
         </div>
 
-        <Separator orientation="vertical" className="hidden h-10 lg:block" />
-
-        <nav className="flex items-center gap-2">
-          {["Plan", "Guests", "Tables", "Settings"].map((item) => (
-            <Button key={item} variant="ghost" size="sm">
-              {item}
-            </Button>
-          ))}
-        </nav>
-
         <div className="ml-auto flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-9 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100">
-              Add Object
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onAddTable}>Rectangular table</DropdownMenuItem>
-              <DropdownMenuItem disabled>Round table (coming soon)</DropdownMenuItem>
-              <DropdownMenuItem disabled>Buffet (coming soon)</DropdownMenuItem>
-              <DropdownMenuItem disabled>Dance floor (coming soon)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Button onClick={onSave} disabled={saveState === "saving"}>
             {saveState === "saving" ? "Saving..." : "Save"}
           </Button>

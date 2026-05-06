@@ -140,7 +140,6 @@ export function GuestPanel({
       <div className="px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-900">Guests</h2>
-          <Badge>{guests.length}</Badge>
         </div>
         <div className="flex gap-2">
           <Input
@@ -152,9 +151,24 @@ export function GuestPanel({
             Add
           </Button>
         </div>
+        <div className="mt-2 flex gap-2">
+          <label className="cursor-pointer">
+            <Button size="sm" variant="outline" type="button">
+              Import
+            </Button>
+            <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportCsv} />
+          </label>
+          <Button size="sm" variant="outline" onClick={handleExportCsv}>
+            Export
+          </Button>
+        </div>
       </div>
       <Separator />
       <div className="space-y-3 px-4 py-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-zinc-900">Guest list</p>
+          <Badge>{visibleGuests.length}</Badge>
+        </div>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -171,17 +185,6 @@ export function GuestPanel({
               {next[0].toUpperCase() + next.slice(1)}
             </Button>
           ))}
-        </div>
-        <div className="flex gap-2">
-          <label className="cursor-pointer">
-            <Button size="sm" variant="outline" type="button">
-              Import
-            </Button>
-            <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportCsv} />
-          </label>
-          <Button size="sm" variant="outline" onClick={handleExportCsv}>
-            Export
-          </Button>
         </div>
       </div>
       {error ? (

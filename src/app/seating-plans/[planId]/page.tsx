@@ -654,7 +654,6 @@ export default function SeatingPlanEditorPage() {
         unseatedGuests={unseatedGuestCount}
         onPlanNameChange={updatePlanName}
         onSave={handleSave}
-        onAddTable={addTable}
       />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -690,6 +689,7 @@ export default function SeatingPlanEditorPage() {
             }))}
             onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
+            onAddTable={addTable}
           />
           <InspectorPanel
             selection={selection}
