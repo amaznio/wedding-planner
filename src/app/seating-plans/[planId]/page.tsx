@@ -105,6 +105,7 @@ export default function SeatingPlanEditorPage() {
   const [mobileGuestsOpen, setMobileGuestsOpen] = useState(false);
   const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [mobileTableDragEnabled, setMobileTableDragEnabled] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
   const [isDraggingGuest, setIsDraggingGuest] = useState(false);
@@ -739,6 +740,10 @@ export default function SeatingPlanEditorPage() {
             onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
             onAddTable={addTable}
+            enableTableDrag={mobileTableDragEnabled}
+            onToggleTableDrag={() =>
+              setMobileTableDragEnabled((current) => !current)
+            }
             mobileMode
           />
         </div>
@@ -909,6 +914,7 @@ export default function SeatingPlanEditorPage() {
               onSeatAssign={handleSeatAssign}
               onTableDragStateChange={setIsTableDragging}
               onAddTable={addTable}
+              enableTableDrag
               draggedGuestId={draggedGuestId}
               isDraggingGuest={isDraggingGuest}
               enableSeatDrag={isDesktopViewport}

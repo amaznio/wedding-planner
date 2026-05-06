@@ -214,7 +214,6 @@ export function GuestPanel({
       {error ? (
         <div className="px-4 pb-3 text-xs text-red-700">{error}</div>
       ) : null}
-      <Separator />
       <ScrollArea className="flex-1">
         {isLoading ? (
           <p className="p-4 text-sm text-zinc-600">Loading guests...</p>

@@ -42,6 +42,8 @@ type SeatingCanvasProps = {
   onTableDragStateChange?: (isDragging: boolean) => void;
   onAddTable?: () => void;
   mobileMode?: boolean;
+  enableTableDrag?: boolean;
+  onToggleTableDrag?: () => void;
   onViewChange?: (next: { scale: number; x: number; y: number }) => void;
   draggedGuestId?: string | null;
   isDraggingGuest?: boolean;
@@ -76,6 +78,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onTableDragStateChange,
   onAddTable,
   mobileMode = false,
+  enableTableDrag = true,
+  onToggleTableDrag,
   onViewChange,
   draggedGuestId = null,
   isDraggingGuest = false,
@@ -510,9 +514,14 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-2 rounded-xl border border-zinc-200/90 bg-white/95 px-2 py-2 text-xs shadow-md backdrop-blur"
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-700">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-full px-2.5 text-[11px] font-medium"
+              onClick={resetView}
+            >
               {Math.round(view.scale * 100)}%
-            </span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -577,20 +586,25 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="flex items-center gap-2">
-              <div className="inline-flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-sm">
-                <span>{Math.round(view.scale * 100)}%</span>
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-              </div>
               <Button
                 type="button"
                 variant="outline"
                 className="h-8 rounded-full bg-white px-2.5 text-xs"
                 onClick={resetView}
               >
-                Reset view
+                <span>{Math.round(view.scale * 100)}%</span>
+                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </Button>
+              <Button
+                type="button"
+                variant={enableTableDrag ? "default" : "outline"}
+                className="h-8 rounded-full px-2.5 text-xs"
+                onClick={onToggleTableDrag}
+              >
+                Move tables
               </Button>
             </div>
             <Button
@@ -663,6 +677,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   : null
               }
               isDragActive={isAnyGuestDragActive}
+              enableTableDrag={enableTableDrag}
               enableSeatDrag={enableSeatDrag}
               selectedSeatNumber={
                 selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null

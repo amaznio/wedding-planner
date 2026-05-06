@@ -17,6 +17,7 @@ type RectTableProps = {
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
   isDragActive?: boolean;
+  enableTableDrag?: boolean;
   enableSeatDrag?: boolean;
   onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
@@ -39,6 +40,7 @@ export function RectTable({
   conflictSeatNumber,
   dropTargetSeatNumber,
   isDragActive = false,
+  enableTableDrag = true,
   enableSeatDrag = false,
   onSeatClick,
   onSeatDragEnter,
@@ -85,6 +87,7 @@ export function RectTable({
             onSelect?.(table.id);
           }}
           onPointerDown={(event) => {
+            if (!enableTableDrag) return;
             event.preventDefault();
             event.stopPropagation();
 
@@ -102,6 +105,7 @@ export function RectTable({
             onDragStateChange?.(true);
           }}
           onPointerMove={(event) => {
+            if (!enableTableDrag) return;
             if (!dragOffsetRef.current) return;
             event.preventDefault();
 
@@ -121,6 +125,7 @@ export function RectTable({
             onMove?.(table.id, nextX, nextY);
           }}
           onPointerUp={(event) => {
+            if (!enableTableDrag) return;
             dragOffsetRef.current = null;
             pointerStartRef.current = null;
             suppressClickRef.current = movedDuringDragRef.current;
@@ -129,6 +134,7 @@ export function RectTable({
             onDragStateChange?.(false);
           }}
           onPointerCancel={() => {
+            if (!enableTableDrag) return;
             dragOffsetRef.current = null;
             pointerStartRef.current = null;
             suppressClickRef.current = true;
