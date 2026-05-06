@@ -715,9 +715,6 @@ export default function SeatingPlanEditorPage() {
           isDirty={isDirty}
           saveState={saveState}
           lastSavedLabel={lastSavedLabel}
-          occupiedSeats={occupiedSeatCount}
-          totalSeats={totalSeatCount}
-          unseatedGuests={unseatedGuestCount}
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
         />
@@ -872,9 +869,6 @@ export default function SeatingPlanEditorPage() {
           isDirty={isDirty}
           saveState={saveState}
           lastSavedLabel={lastSavedLabel}
-          occupiedSeats={occupiedSeatCount}
-          totalSeats={totalSeatCount}
-          unseatedGuests={unseatedGuestCount}
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
         />

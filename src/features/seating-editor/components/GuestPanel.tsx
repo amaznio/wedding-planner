@@ -80,6 +80,9 @@ export function GuestPanel({
       return matchesFilter && matchesQuery;
     });
   }, [filter, guests, query]);
+  const totalGuests = guests.length;
+  const seatedGuests = guests.filter((guest) => guest.assignment !== null).length;
+  const unseatedGuests = totalGuests - seatedGuests;
 
   const handleCreateGuest = async () => {
     const trimmed = newGuestName.trim();
@@ -183,7 +186,9 @@ export function GuestPanel({
       <div className="space-y-3 px-4 py-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-zinc-900">Guest list</p>
-          <Badge>{visibleGuests.length}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary">Guests seated {seatedGuests}/{totalGuests}</Badge>
+          </div>
         </div>
         <Input
           value={query}
@@ -202,6 +207,9 @@ export function GuestPanel({
             </Button>
           ))}
         </div>
+        <p className="text-xs text-zinc-500">
+          Showing {visibleGuests.length}
+        </p>
       </div>
       {error ? (
         <div className="px-4 pb-3 text-xs text-red-700">{error}</div>

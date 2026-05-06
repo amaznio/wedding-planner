@@ -9,9 +9,6 @@ type SeatingToolbarProps = {
   isDirty: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
   lastSavedLabel: string | null;
-  occupiedSeats: number;
-  totalSeats: number;
-  unseatedGuests: number;
   onPlanNameChange: (name: string) => void;
   onSave: () => void;
 };
@@ -21,9 +18,6 @@ export function SeatingToolbar({
   isDirty,
   saveState,
   lastSavedLabel,
-  occupiedSeats,
-  totalSeats,
-  unseatedGuests,
   onPlanNameChange,
   onSave,
 }: SeatingToolbarProps) {
@@ -36,33 +30,28 @@ export function SeatingToolbar({
         ? "Save failed"
         : isDirty
           ? "Unsaved changes"
-          : null;
+          : lastSavedLabel
+            ? `Saved ${lastSavedLabel}`
+            : "Saved";
 
   return (
-    <header className="border-b border-zinc-200 bg-white px-3 py-2 md:px-4 md:py-3">
-      <div className="hidden flex-wrap items-center gap-4 md:flex">
-        <div className="space-y-2">
+    <header className="border-b border-zinc-200 bg-white px-3 py-2 md:px-4">
+      <div className="hidden h-12 items-center md:flex">
+        <div className="flex min-w-0 items-center gap-2">
           <Input
             value={planName}
             onChange={(event) => onPlanNameChange(event.target.value)}
-            className="h-10 border-transparent bg-zinc-50 text-lg font-semibold"
+            className="h-9 border-transparent bg-zinc-50 text-base font-semibold"
             style={{ width: `${titleWidthCh}ch` }}
             aria-label="Plan name"
           />
-          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
-            {statusText ? <Badge>{statusText}</Badge> : null}
-            {lastSavedLabel ? (
-              <Badge variant="secondary">Last saved {lastSavedLabel}</Badge>
-            ) : null}
-            <Badge variant="secondary">
-              Seats: {occupiedSeats}/{totalSeats}
-            </Badge>
-            <Badge variant="secondary">Unseated: {unseatedGuests}</Badge>
-          </div>
+          <Badge variant="secondary" className="h-6 px-2 text-[11px]">
+            {statusText}
+          </Badge>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button onClick={onSave} disabled={saveState === "saving"}>
+          <Button className="h-9 px-4" onClick={onSave} disabled={saveState === "saving"}>
             {saveState === "saving" ? "Saving..." : "Save"}
           </Button>
         </div>

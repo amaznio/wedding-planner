@@ -1,5 +1,5 @@
 import type { PointerEvent, WheelEvent } from "react";
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,8 @@ import {
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
+import { getSeatPositions } from "../lib/seat-positioning";
+import { getRectangleTableDimensions } from "../lib/table-dimensions";
 import type { SeatingPlan } from "../types/seating-plan.types";
 import { RectTable } from "./RectTable";
 
@@ -121,6 +123,83 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     seatNumber: number;
   } | null>(null);
   const [mobileLegendOpen, setMobileLegendOpen] = useState(false);
+  const centeredPlanIdRef = useRef<string | null>(null);
+
+  const getFitView = (): { scale: number; x: number; y: number } | null => {
+    const viewport = viewportRef.current;
+    if (!viewport || !plan.tables.length) return null;
+    const viewportRect = viewport.getBoundingClientRect();
+    if (viewportRect.width <= 0 || viewportRect.height <= 0) return null;
+
+    const padding = mobileMode
+      ? { top: 24, right: 24, bottom: 24, left: 24 }
+      : { top: 68, right: 28, bottom: 28, left: 28 };
+    const availableWidth = Math.max(1, viewportRect.width - padding.left - padding.right);
+    const availableHeight = Math.max(1, viewportRect.height - padding.top - padding.bottom);
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (const table of plan.tables) {
+      const { width, height } = getRectangleTableDimensions(table.seatCount, table.seatLayout);
+      const seatPositions = getSeatPositions(table.seatCount, width, height, table.seatLayout);
+      const centerX = table.x + width / 2;
+      const centerY = table.y + height / 2;
+      const radians = (table.rotation * Math.PI) / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      const halfWidth = width / 2;
+      const halfHeight = height / 2;
+      const corners = [
+        { x: -halfWidth, y: -halfHeight },
+        { x: halfWidth, y: -halfHeight },
+        { x: halfWidth, y: halfHeight },
+        { x: -halfWidth, y: halfHeight },
+      ];
+
+      for (const corner of corners) {
+        const rotatedX = centerX + corner.x * cos - corner.y * sin;
+        const rotatedY = centerY + corner.x * sin + corner.y * cos;
+        minX = Math.min(minX, rotatedX);
+        minY = Math.min(minY, rotatedY);
+        maxX = Math.max(maxX, rotatedX);
+        maxY = Math.max(maxY, rotatedY);
+      }
+
+      const seatRadius = 18;
+      for (const seat of seatPositions) {
+        const localX = seat.x - width / 2;
+        const localY = seat.y - height / 2;
+        const rotatedSeatX = centerX + localX * cos - localY * sin;
+        const rotatedSeatY = centerY + localX * sin + localY * cos;
+        minX = Math.min(minX, rotatedSeatX - seatRadius);
+        minY = Math.min(minY, rotatedSeatY - seatRadius);
+        maxX = Math.max(maxX, rotatedSeatX + seatRadius);
+        maxY = Math.max(maxY, rotatedSeatY + seatRadius);
+      }
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return null;
+    }
+
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const contentWidth = Math.max(1, maxX - minX);
+    const contentHeight = Math.max(1, maxY - minY);
+    const fitScale = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
+    const nextScale = Math.max(getMinScale(), Math.min(2.5, fitScale));
+
+    const targetCenterX = padding.left + availableWidth / 2;
+    const targetCenterY = padding.top + availableHeight / 2;
+    return {
+      scale: nextScale,
+      x: targetCenterX - contentCenterX * nextScale,
+      y: targetCenterY - contentCenterY * nextScale,
+    };
+  };
   const screenToCanvas = (clientX: number, clientY: number) => {
     const viewport = viewportRef.current;
     if (!viewport) {
@@ -207,7 +286,10 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       ...view,
       scale: Math.max(getMinScale(), view.scale * 0.9),
     });
-  const resetView = () => applyView({ scale: 1, x: 0, y: 0 });
+  const resetView = () => {
+    const centeredView = getFitView();
+    applyView(centeredView ?? { scale: 1, x: 0, y: 0 });
+  };
   useImperativeHandle(ref, () => ({
     resetView,
     zoomIn,
@@ -364,6 +446,19 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     : null;
   const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
   const isAnyGuestDragActive = isDraggingGuest || draggedSeatGuestId !== null;
+  const totalSeats = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
+  const filledSeats = Object.values(seatAssignments ?? {}).reduce(
+    (sum, tableSeats) => sum + Object.keys(tableSeats).length,
+    0,
+  );
+
+  useEffect(() => {
+    if (centeredPlanIdRef.current === plan.id) return;
+    const centeredView = getFitView();
+    if (!centeredView) return;
+    applyView(centeredView);
+    centeredPlanIdRef.current = plan.id;
+  }, [mobileMode, plan.id, plan.tables]);
 
   return (
     <section className="flex h-full min-h-0 w-full flex-1 overflow-hidden">
@@ -404,15 +499,24 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           </DropdownMenu>
         </div>
         {!mobileMode ? (
+          <div className="absolute left-1/2 top-3 z-20 hidden -translate-x-1/2 lg:block">
+            <span className="inline-flex h-8 items-center rounded-full border border-zinc-200/90 bg-white/95 px-3 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur">
+              Seats {filledSeats}/{totalSeats}
+            </span>
+          </div>
+        ) : null}
+        {!mobileMode ? (
           <div
-            className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-1 rounded-md border border-zinc-200 bg-white/95 px-1.5 py-1.5 text-[11px] shadow-sm"
+            className="absolute bottom-3 right-3 z-20 flex select-none items-center gap-2 rounded-xl border border-zinc-200/90 bg-white/95 px-2 py-2 text-xs shadow-md backdrop-blur"
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <span className="px-1 text-zinc-600">{Math.round(view.scale * 100)}%</span>
+            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-700">
+              {Math.round(view.scale * 100)}%
+            </span>
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px]"
+              className="h-8 min-w-8 rounded-lg px-2 text-xs"
               onClick={() =>
                 zoomIn()
               }
@@ -422,7 +526,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px]"
+              className="h-8 min-w-8 rounded-lg px-2 text-xs"
               onClick={() =>
                 zoomOut()
               }
@@ -432,14 +536,14 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px]"
+              className="h-8 rounded-lg px-3 text-xs font-medium"
               onClick={resetView}
             >
               Reset
             </Button>
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">
+                <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-medium">
                   Legend
                 </Button>
               </PopoverTrigger>
@@ -469,24 +573,26 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
         ) : null}
         {mobileMode ? (
           <div
-            className="absolute left-3 top-3 z-20 flex items-center gap-2"
+            className="absolute left-3 right-3 top-3 z-20 flex items-center justify-between"
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <div className="inline-flex h-10 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm">
-              <span>{Math.round(view.scale * 100)}%</span>
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex h-10 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm">
+                <span>{Math.round(view.scale * 100)}%</span>
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-full bg-white px-3 text-sm"
+                onClick={resetView}
+              >
+                Reset view
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 rounded-full bg-white px-3 text-sm"
-              onClick={resetView}
-            >
-              Reset view
-            </Button>
             <Button
               type="button"
               variant="outline"
