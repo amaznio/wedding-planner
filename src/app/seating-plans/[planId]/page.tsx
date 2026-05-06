@@ -105,6 +105,7 @@ export default function SeatingPlanEditorPage() {
   const [mobileGuestsOpen, setMobileGuestsOpen] = useState(false);
   const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
@@ -116,6 +117,15 @@ export default function SeatingPlanEditorPage() {
   const isTableDraggingRef = useRef(false);
   const isDirtyRef = useRef(isDirty);
   const planRef = useRef(plan);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktopViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     isDirtyRef.current = isDirty;
@@ -160,6 +170,24 @@ export default function SeatingPlanEditorPage() {
       });
     },
     [guests, selectGuest],
+  );
+  const handleSelectTableWithMobileInspector = useCallback(
+    (tableId: string | null) => {
+      selectTable(tableId);
+      if (!isDesktopViewport) {
+        setMobileInspectorOpen(Boolean(tableId));
+      }
+    },
+    [isDesktopViewport, selectTable],
+  );
+  const handleSelectSeatWithMobileInspector = useCallback(
+    (tableId: string, seatNumber: number) => {
+      selectSeat(tableId, seatNumber);
+      if (!isDesktopViewport) {
+        setMobileInspectorOpen(true);
+      }
+    },
+    [isDesktopViewport, selectSeat],
   );
 
   const occupiedSeatCount = guests.filter((guest) => guest.assignment !== null).length;
@@ -648,7 +676,8 @@ export default function SeatingPlanEditorPage() {
 
   return (
     <main className="bg-zinc-50">
-      <div className="flex h-dvh flex-col overflow-hidden lg:hidden">
+      {!isDesktopViewport ? (
+      <div className="flex h-dvh flex-col overflow-hidden">
         <SeatingToolbar
           planName={plan.name}
           isDirty={isDirty}
@@ -665,8 +694,8 @@ export default function SeatingPlanEditorPage() {
             plan={plan}
             selectedTableId={canvasHighlightedTableId ?? undefined}
             selectedSeat={selectedSeat}
-            onSelectTable={selectTable}
-            onSelectSeat={selectSeat}
+            onSelectTable={handleSelectTableWithMobileInspector}
+            onSelectSeat={handleSelectSeatWithMobileInspector}
             onMoveTable={moveTable}
             seatAssignments={seatAssignments}
             tableLabelById={tableLabelById}
@@ -799,8 +828,10 @@ export default function SeatingPlanEditorPage() {
           showOverlay
         />
       </div>
+      ) : null}
 
-      <div className="hidden min-h-dvh flex-col lg:flex lg:h-dvh">
+      {isDesktopViewport ? (
+      <div className="min-h-dvh flex-col lg:h-dvh flex">
         <SeatingToolbar
           planName={plan.name}
           isDirty={isDirty}
@@ -874,6 +905,7 @@ export default function SeatingPlanEditorPage() {
           </div>
         </div>
       </div>
+      ) : null}
     </main>
   );
 }

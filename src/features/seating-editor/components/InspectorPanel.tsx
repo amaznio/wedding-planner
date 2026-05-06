@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -66,23 +67,14 @@ export function InspectorPanel({
   side = "right",
   showOverlay = false,
 }: InspectorPanelProps) {
-  const contentClassName =
-    side === "bottom"
-      ? "h-[56dvh] rounded-t-xl p-0"
-      : "h-full w-[340px] p-0 sm:max-w-[340px]";
-
-  return (
-    <Sheet
-      open={isOpen}
-      modal={showOverlay}
-      onOpenChange={(open) => (!open ? onClose() : undefined)}
-    >
-      <SheetContent
-        side={side}
-        showOverlay={showOverlay}
-        className={contentClassName}
-      >
-        <div className="flex h-full flex-col">
+  const isMobileDrawer = side === "bottom";
+  const contentAreaClassName = isMobileDrawer
+    ? "max-h-[56dvh] overflow-auto p-4"
+    : "flex-1 overflow-auto p-4";
+  const inspectorBody = (
+    <div className="flex flex-col">
+      {!isMobileDrawer ? (
+        <>
           <div className="flex items-center justify-between px-4 py-3">
             <h3 className="text-sm font-semibold text-zinc-900">Inspector</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -90,7 +82,9 @@ export function InspectorPanel({
             </Button>
           </div>
           <Separator />
-          <div className="flex-1 overflow-auto p-4">
+        </>
+      ) : null}
+      <div className={contentAreaClassName}>
           {!selection ? (
             <p className="text-sm text-zinc-600">Select a guest, table, or seat.</p>
           ) : null}
@@ -231,8 +225,30 @@ export function InspectorPanel({
               </Button>
             </div>
           ) : null}
-          </div>
-        </div>
+      </div>
+    </div>
+  );
+
+  if (side === "bottom") {
+    return (
+      <Drawer open={isOpen} onOpenChange={(open) => (!open ? onClose() : undefined)}>
+        <DrawerContent className="h-auto max-h-[56dvh] p-0">{inspectorBody}</DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Sheet
+      open={isOpen}
+      modal={showOverlay}
+      onOpenChange={(open) => (!open ? onClose() : undefined)}
+    >
+      <SheetContent
+        side={side}
+        showOverlay={showOverlay}
+        className="h-full w-[340px] p-0 sm:max-w-[340px]"
+      >
+        {inspectorBody}
       </SheetContent>
     </Sheet>
   );
