@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 type SeatingToolbarProps = {
   planName: string;
@@ -21,7 +23,9 @@ export function SeatingToolbar({
   onPlanNameChange,
   onSave,
 }: SeatingToolbarProps) {
+  const router = useRouter();
   const [isMobileEditingTitle, setIsMobileEditingTitle] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
     saveState === "saving"
@@ -35,7 +39,7 @@ export function SeatingToolbar({
             : "Saved";
 
   return (
-    <header className="border-b border-zinc-200 bg-white px-3 py-2 md:px-4">
+    <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
       <div className="hidden h-12 items-center md:flex">
         <div className="flex min-w-0 items-center gap-2">
           <Input
@@ -58,8 +62,14 @@ export function SeatingToolbar({
       </div>
 
       <div className="md:hidden">
-        <div className="flex h-12 items-center justify-between px-1">
-          <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="Menu">
+        <div className="flex h-10 items-center justify-between px-1">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 w-8 p-0"
+            aria-label="Menu"
+            onClick={() => setIsMobileNavOpen(true)}
+          >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18" />
               <path d="M3 12h18" />
@@ -87,7 +97,8 @@ export function SeatingToolbar({
               onClick={() => setIsMobileEditingTitle((current) => !current)}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m9 18 6-6-6-6" />
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
               </svg>
             </Button>
           </div>
@@ -106,23 +117,40 @@ export function SeatingToolbar({
                 <path d="M7 3v5h8" />
               </svg>
             </Button>
-            <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="Guests">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="8.5" cy="7" r="4" />
-                <path d="M20 8v6" />
-                <path d="M23 11h-6" />
-              </svg>
-            </Button>
-            <Button type="button" variant="ghost" className="h-8 w-8 p-0" aria-label="More">
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <circle cx="6" cy="12" r="1.5" />
-                <circle cx="12" cy="12" r="1.5" />
-                <circle cx="18" cy="12" r="1.5" />
-              </svg>
-            </Button>
           </div>
         </div>
+        <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+          <SheetContent side="left" showOverlay className="w-[280px] p-4 sm:max-w-[280px]">
+            <SheetTitle className="text-left text-sm font-semibold text-zinc-900">
+              Navigation
+            </SheetTitle>
+            <div className="mt-3 space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsMobileNavOpen(false);
+                  router.push("/");
+                }}
+              >
+                Home
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsMobileNavOpen(false);
+                  router.push("/seating-plans");
+                }}
+              >
+                Seating plans
+              </Button>
+              <Button variant="outline" className="w-full justify-start" disabled>
+                Current plan
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );

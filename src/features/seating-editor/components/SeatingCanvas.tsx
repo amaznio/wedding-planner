@@ -577,9 +577,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="flex items-center gap-2">
-              <div className="inline-flex h-10 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm">
+              <div className="inline-flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 shadow-sm">
                 <span>{Math.round(view.scale * 100)}%</span>
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
@@ -587,7 +587,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-full bg-white px-3 text-sm"
+                className="h-8 rounded-full bg-white px-2.5 text-xs"
                 onClick={resetView}
               >
                 Reset view
@@ -596,11 +596,11 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             <Button
               type="button"
               variant="outline"
-              className="h-10 w-10 rounded-full bg-white p-0"
+              className="h-8 w-8 rounded-full bg-white p-0"
               aria-label="Info"
               onClick={() => setMobileLegendOpen(true)}
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
