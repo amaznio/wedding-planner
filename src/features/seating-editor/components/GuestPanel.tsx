@@ -247,6 +247,9 @@ export function GuestPanel({
       if (current.includes(guestId)) {
         return current.filter((id) => id !== guestId);
       }
+      if (current.length >= 2) {
+        return [current[1], guestId];
+      }
       return [...current, guestId];
     });
   };
@@ -291,6 +294,9 @@ export function GuestPanel({
     ? relationshipsByGuestId[selectedGuestId] ?? []
     : [];
   const isLinkingMode = selectedRelationshipGuestIds.length > 0;
+  const selectedLinkGuests = selectedRelationshipGuestIds
+    .map((guestId) => guests.find((guest) => guest.id === guestId))
+    .filter((guest): guest is Guest => guest !== undefined);
 
   return (
     <aside className={rootClassName}>
@@ -443,7 +449,7 @@ export function GuestPanel({
                       onClick={() => toggleRelationshipGuest(guest.id)}
                     >
                       <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      {t("guestPanel.link")}
+                      {isSelectedForRelationship ? t("common.cancel") : t("guestPanel.link")}
                     </Button>
                   </div>
                 </li>
@@ -459,6 +465,27 @@ export function GuestPanel({
               count: selectedRelationshipGuestIds.length,
             })}
           </p>
+          <p className="mt-1 text-xs text-zinc-600">
+            {selectedRelationshipGuestIds.length < 2
+              ? t("guestPanel.linkPickSecond")
+              : t("guestPanel.linkReplaceNotice")}
+          </p>
+          <div className="mt-2 space-y-1">
+            {selectedLinkGuests.map((guest) => {
+              const existing = (relationshipsByGuestId[guest.id] ?? [])[0] ?? null;
+              return (
+                <p key={guest.id} className="text-xs text-zinc-600">
+                  <span className="font-medium text-zinc-800">{guest.name}</span>
+                  {" — "}
+                  {existing
+                    ? existing.name?.trim().length
+                      ? existing.name
+                      : relationshipTypeLabel[existing.type]
+                    : t("guestPanel.noRelationships")}
+                </p>
+              );
+            })}
+          </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <select
               value={newRelationshipType}
@@ -494,9 +521,13 @@ export function GuestPanel({
             onChange={(event) => setNewRelationshipName(event.target.value)}
           />
           <div className="mt-2 flex items-center gap-3 text-xs text-zinc-700">
-            <label className="inline-flex items-center gap-1">
+            <label
+              className="inline-flex items-center gap-1.5"
+              title={t("guestPanel.moveTogetherHelp")}
+            >
               <input
                 type="checkbox"
+                className="h-5 w-5 cursor-pointer rounded border-zinc-300"
                 checked={newRelationshipMoveTogetherDefault}
                 onChange={(event) =>
                   setNewRelationshipMoveTogetherDefault(event.target.checked)
@@ -504,9 +535,13 @@ export function GuestPanel({
               />
               {t("guestPanel.moveTogetherDefault")}
             </label>
-            <label className="inline-flex items-center gap-1">
+            <label
+              className="inline-flex items-center gap-1.5"
+              title={t("guestPanel.strictHelp")}
+            >
               <input
                 type="checkbox"
+                className="h-5 w-5 cursor-pointer rounded border-zinc-300"
                 checked={newRelationshipStrict}
                 onChange={(event) => setNewRelationshipStrict(event.target.checked)}
               />

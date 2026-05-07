@@ -90,6 +90,23 @@ export async function PUT(request: Request, context: RouteContext) {
       );
     }
 
+    const conflictingMemberships = await prisma.seatingRelationshipMember.findMany({
+      where: {
+        guestId: { in: payload.guestIds },
+        relationship: {
+          planId,
+          id: { not: relationshipId },
+        },
+      },
+      select: { guestId: true },
+    });
+    if (conflictingMemberships.length > 0) {
+      return NextResponse.json(
+        { error: "Each guest can belong to only one relationship" },
+        { status: 409 },
+      );
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       await tx.seatingRelationshipMember.deleteMany({
         where: { relationshipId },

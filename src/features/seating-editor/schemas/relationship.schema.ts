@@ -16,8 +16,7 @@ export const preferredSeatingSchema = z.enum([
 
 const relationshipGuestIdsSchema = z
   .array(z.string().min(1))
-  .min(2)
-  .max(20)
+  .length(2)
   .superRefine((guestIds, ctx) => {
     const deduped = new Set(guestIds);
     if (deduped.size !== guestIds.length) {

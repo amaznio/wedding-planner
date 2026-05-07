@@ -111,27 +111,50 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const relationship = await prisma.seatingRelationship.create({
-      data: {
-        planId,
-        type: payload.type,
-        name: payload.name?.trim() || null,
-        preferredSeating: payload.preferredSeating,
-        moveTogetherDefault: payload.moveTogetherDefault,
-        strict: payload.strict,
-        members: {
-          create: payload.guestIds.map((guestId, index) => ({
-            guestId,
-            sortOrder: index,
-          })),
+    const relationship = await prisma.$transaction(async (tx) => {
+      const membershipsToReplace = await tx.seatingRelationshipMember.findMany({
+        where: {
+          guestId: { in: payload.guestIds },
+          relationship: { planId },
         },
-      },
-      include: {
-        members: {
-          select: { guestId: true, sortOrder: true },
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: { relationshipId: true },
+      });
+
+      const relationshipIdsToReplace = Array.from(
+        new Set(membershipsToReplace.map((member) => member.relationshipId)),
+      );
+
+      if (relationshipIdsToReplace.length > 0) {
+        await tx.seatingRelationship.deleteMany({
+          where: {
+            id: { in: relationshipIdsToReplace },
+            planId,
+          },
+        });
+      }
+
+      return tx.seatingRelationship.create({
+        data: {
+          planId,
+          type: payload.type,
+          name: payload.name?.trim() || null,
+          preferredSeating: payload.preferredSeating,
+          moveTogetherDefault: payload.moveTogetherDefault,
+          strict: payload.strict,
+          members: {
+            create: payload.guestIds.map((guestId, index) => ({
+              guestId,
+              sortOrder: index,
+            })),
+          },
         },
-      },
+        include: {
+          members: {
+            select: { guestId: true, sortOrder: true },
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          },
+        },
+      });
     });
 
     return NextResponse.json(

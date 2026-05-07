@@ -85,6 +85,7 @@ model SeatingRelationshipMember {
   updatedAt      DateTime @updatedAt
 
   @@unique([relationshipId, guestId])
+  @@unique([guestId])
   @@index([relationshipId])
   @@index([guestId])
 }

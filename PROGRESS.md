@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 61 - Guest click exits link mode and opens guest details (completed)
+Phase 63 - Larger link options checkboxes + explanatory tooltips (completed)
 
 ## Completed Phases
 
@@ -68,9 +68,33 @@ Phase 61 - Guest click exits link mode and opens guest details (completed)
 - Phase 59 - Compact guest row link action and status placement
 - Phase 60 - Link mode and guest details made mutually exclusive
 - Phase 61 - Guest click exits link mode and opens guest details
+- Phase 62 - Single relationship per guest + pair-link UX enforcement
+- Phase 63 - Larger link options checkboxes + explanatory tooltips
 
 
 ## Completed Work
+
+- Improved link-options clarity in relationship form:
+  - confirmed link options were native checkboxes (not shadcn checkbox component)
+  - increased checkbox visual size/tap area (`h-5 w-5`) for both options
+  - added localized tooltips (`title`) for:
+    - `Domyślnie przenoś razem` / `Move together default`
+    - `Ścisłe` / `Strict`
+
+- Enforced single relationship per guest across UI, API, and DB:
+  - relationship payload now requires exactly 2 guests (pair-link flow)
+  - relationship create endpoint now replaces any existing relationships for selected guests before creating a new one
+  - relationship member-replace endpoint now rejects cross-relationship guest conflicts
+  - Prisma schema now enforces unique `guestId` in `SeatingRelationshipMember`
+  - added migration: `20260507123000_enforce_single_relationship_per_guest`
+
+- Updated link mode UX to match pair-link semantics:
+  - max 2 selected guests in link mode (sliding pair selection)
+  - link button toggles to `Cancel` state when guest is selected for linking
+  - link panel now explains:
+    - when only one guest is selected: pick second guest
+    - when two are selected: creating will replace existing relationships
+  - link panel now shows each selected guest with their current relationship label (or none)
 
 - Added reverse transition from link mode to guest-details mode:
   - when one or more guests are selected for linking, clicking any guest row now clears link selections
@@ -573,6 +597,12 @@ Phase 61 - Guest click exits link mode and opens guest details (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm i18n:audit` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm i18n:audit` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm typecheck` (pass)
