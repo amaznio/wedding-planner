@@ -283,25 +283,32 @@ export function GuestPanel({
         </>
       ) : null}
 
-      <div className="shrink-0 space-y-3 px-4 py-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
-          <Badge variant="secondary">
-            {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
-          </Badge>
-        </div>
+      <div
+        className={`shrink-0 px-4 ${variant === "sheet" ? "space-y-2 py-3" : "space-y-3 py-4"}`}
+      >
+        {variant === "desktop" ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
+            <Badge variant="secondary">
+              {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
+            </Badge>
+          </div>
+        ) : null}
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t("guestPanel.searchPlaceholder")}
+          className={variant === "sheet" ? "h-10" : undefined}
         />
-        <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2">
           {(["all", "unseated", "assigned"] as const).map((next) => (
             <Button
               key={next}
               type="button"
               size="sm"
               variant={filter === next ? "default" : "outline"}
+              className={variant === "sheet" ? "h-8 px-3" : undefined}
               onClick={() => setFilter(next)}
             >
               {next === "all"
@@ -311,8 +318,18 @@ export function GuestPanel({
                   : t("guestPanel.filterAssigned")}
             </Button>
           ))}
+          </div>
+          {variant === "sheet" ? (
+            <span className="text-xs text-zinc-500">
+              {visibleGuests.length}/{totalGuests}
+            </span>
+          ) : null}
         </div>
-        <p className="text-xs text-zinc-500">{t("guestPanel.showing", { count: visibleGuests.length })}</p>
+        {variant === "desktop" || query.trim().length > 0 ? (
+          <p className="text-xs text-zinc-500">
+            {t("guestPanel.showing", { count: visibleGuests.length })}
+          </p>
+        ) : null}
       </div>
 
       {error ? <div className="px-4 pb-3 text-xs text-red-700">{error}</div> : null}

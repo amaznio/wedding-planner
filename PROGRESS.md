@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 101 - Mobile Guests drawer hierarchy reorder (completed)
+Phase 103 - Mobile compact counter switched to visible results (completed)
 
 ## Completed Phases
 
@@ -108,9 +108,22 @@ Phase 101 - Mobile Guests drawer hierarchy reorder (completed)
 - Phase 99 - Active switch color set to green
 - Phase 100 - Mobile add guest inline in Guests drawer
 - Phase 101 - Mobile Guests drawer hierarchy reorder
+- Phase 102 - Mobile guest-list controls condensed
+- Phase 103 - Mobile compact counter switched to visible results
 
 
 ## Completed Work
+
+- Implemented Phase 103 mobile compact counter semantics fix:
+  - changed compact right-side mobile counter in guest filter row from `seated/total` to `visible/total`
+  - counter now correctly reflects current filter/search result count
+
+- Implemented Phase 102 mobile guest-list controls compaction:
+  - tightened mobile (`sheet`) spacing for list controls area
+  - reduced search input height in mobile guests view
+  - moved seated ratio into filter row as compact inline text (`seated/total`)
+  - removed persistent mobile `Wyświetlono ...` row unless search query is active
+  - preserved desktop layout behavior (title + badge + showing row always visible)
 
 - Implemented Phase 101 mobile Guests drawer hierarchy update:
   - moved `Goście / Grupy` tab switch row to the top of the drawer section hierarchy
@@ -865,6 +878,12 @@ Phase 101 - Mobile Guests drawer hierarchy reorder (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
 - `src/app/seating-plans/[planId]/page.tsx`
 - `PROGRESS.md`
 
@@ -1070,6 +1089,12 @@ Phase 101 - Mobile Guests drawer hierarchy reorder (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 103 mobile compact counter semantics fix)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 102 mobile list controls condensation)
+- `corepack pnpm lint` (pass with existing warnings)
 
 - `corepack pnpm typecheck` (pass; phase 101 guests/groups hierarchy reorder)
 - `corepack pnpm lint` (pass with existing warnings)
