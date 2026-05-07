@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEventHandler } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +20,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
-import { parseGuestCsvForImport } from "../lib/guest-import";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import type {
   PreferredSeating,
@@ -41,29 +46,6 @@ type Guest = {
   } | null;
 };
 
-type GuestGroup = {
-  id: string;
-  planId: string;
-  name: string;
-  color: string;
-  guestCount: number;
-};
-
-type GuestImportRow = {
-  lineNumber: number;
-  name: string;
-  include: boolean;
-};
-
-type GuestImportSummary = {
-  created: number;
-  createdPlusOnes: number;
-  skippedDuplicates: number;
-  skippedInvalidMarkers: number;
-  skippedRelationshipConflicts: number;
-  warnings: string[];
-};
-
 type RelationshipForm = {
   type: RelationshipType;
   name: string;
@@ -74,7 +56,6 @@ type RelationshipForm = {
 
 type GuestPanelProps = {
   guests: Guest[];
-  groups: GuestGroup[];
   relationships: SeatingRelationship[];
   tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
@@ -82,17 +63,15 @@ type GuestPanelProps = {
   error: string | null;
   onSelectGuest: (guestId: string | null) => void;
   onCreateGuest: (name: string) => Promise<void>;
-  onCreateGroup: (name: string) => Promise<GuestGroup>;
-  onUpdateGroup: (
-    groupId: string,
-    payload: Partial<{ name: string; color: string }>,
-  ) => Promise<GuestGroup>;
-  onDeleteGroup: (groupId: string) => Promise<void>;
-  onBulkImportGuests: (rows: GuestImportRow[]) => Promise<GuestImportSummary>;
   onCreateRelationship: (
     payload: RelationshipForm & { guestIds: string[] },
   ) => Promise<void>;
   variant?: "desktop" | "sheet";
+  showHeader?: boolean;
+  showQuickAdd?: boolean;
+  onOpenGroupsManager?: () => void;
+  onOpenDataTools?: () => void;
+  onExportGuests?: () => void;
   onGuestSelected?: (guestId: string | null) => void;
   enableGuestDnD?: boolean;
   onGuestDragStart?: (guestId: string) => void;
@@ -108,7 +87,6 @@ function getInitials(name: string): string {
 
 export function GuestPanel({
   guests,
-  groups,
   relationships,
   tableLabelById,
   selectedGuestId,
@@ -116,12 +94,13 @@ export function GuestPanel({
   error,
   onSelectGuest,
   onCreateGuest,
-  onCreateGroup,
-  onUpdateGroup,
-  onDeleteGroup,
-  onBulkImportGuests,
   onCreateRelationship,
   variant = "desktop",
+  showHeader = true,
+  showQuickAdd,
+  onOpenGroupsManager,
+  onOpenDataTools,
+  onExportGuests,
   onGuestSelected,
   enableGuestDnD = false,
   onGuestDragStart,
@@ -130,26 +109,10 @@ export function GuestPanel({
   onLinkingSourceApplied,
 }: GuestPanelProps) {
   const { t } = useI18n();
-  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
-  const [groupActionError, setGroupActionError] = useState<string | null>(null);
-  const [isImportSubmitting, setIsImportSubmitting] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importPreviewRows, setImportPreviewRows] = useState<
-    Array<{
-      lineNumber: number;
-      name: string;
-      include: boolean;
-      isDuplicate: boolean;
-      isMarker: boolean;
-    }>
-  >([]);
-  const [importSummary, setImportSummary] = useState<GuestImportSummary | null>(null);
   const [selectedRelationshipGuestIds, setSelectedRelationshipGuestIds] = useState<
     string[]
   >([]);
@@ -196,8 +159,6 @@ export function GuestPanel({
 
   const totalGuests = guests.length;
   const seatedGuests = guests.filter((guest) => guest.assignment !== null).length;
-  const unseatedGuests = totalGuests - seatedGuests;
-  void unseatedGuests;
 
   const handleCreateGuest = async () => {
     const trimmed = newGuestName.trim();
@@ -207,6 +168,8 @@ export function GuestPanel({
     try {
       await onCreateGuest(trimmed);
       setNewGuestName("");
+    } catch {
+      // Parent surface renders actionable guest errors.
     } finally {
       setIsSubmitting(false);
     }
@@ -214,87 +177,8 @@ export function GuestPanel({
 
   const rootClassName =
     variant === "sheet"
-      ? "flex h-full w-full flex-col bg-zinc-50"
-      : "order-2 flex w-full flex-col border-t border-zinc-200 bg-zinc-50 lg:order-1 lg:h-full lg:w-[360px] lg:shrink-0 lg:border-r lg:border-t-0";
-
-  const handleExportCsv = () => {
-    const header = "name,group,notes";
-    const rows = guests.map((guest) =>
-      [guest.name, guest.group?.name ?? "", guest.notes ?? ""]
-        .map((value) => `"${value.replaceAll("\"", "\"\"")}"`)
-        .join(","),
-    );
-    const csv = [header, ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "guests.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportCsv: ChangeEventHandler<HTMLInputElement> = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const text = await file.text();
-    const parseResult = parseGuestCsvForImport(
-      text,
-      guests.map((guest) => guest.name),
-    );
-
-    setImportSummary(null);
-    setImportError(null);
-    setImportPreviewRows(
-      parseResult.rows.map((row) => ({
-        lineNumber: row.lineNumber,
-        name: row.name,
-        isDuplicate: row.isDuplicate,
-        isMarker: row.isMarker,
-        include: row.isMarker ? true : !row.isDuplicate,
-      })),
-    );
-    event.target.value = "";
-  };
-
-  const toggleImportDuplicateRow = (lineNumber: number) => {
-    setImportPreviewRows((current) =>
-      current.map((row) =>
-        row.lineNumber === lineNumber && row.isDuplicate
-          ? { ...row, include: !row.include }
-          : row,
-      ),
-    );
-  };
-
-  const clearImportPreview = () => {
-    setImportPreviewRows([]);
-  };
-
-  const handleConfirmImport = async () => {
-    if (importPreviewRows.length === 0) return;
-
-    setIsImportSubmitting(true);
-    try {
-      setImportError(null);
-      const summary = await onBulkImportGuests(
-        importPreviewRows.map((row) => ({
-          lineNumber: row.lineNumber,
-          name: row.name,
-          include: row.include,
-        })),
-      );
-      setImportSummary(summary);
-      clearImportPreview();
-    } catch (error) {
-      setImportError(error instanceof Error ? error.message : t("guestPanel.importFailed"));
-    } finally {
-      setIsImportSubmitting(false);
-    }
-  };
+      ? "flex min-h-0 w-full flex-1 flex-col bg-zinc-50"
+      : "order-2 flex min-h-0 w-full flex-col border-t border-zinc-200 bg-zinc-50 lg:order-1 lg:h-full lg:w-[360px] lg:shrink-0 lg:border-r lg:border-t-0";
 
   useEffect(() => {
     if (!linkingSourceGuestId) return;
@@ -348,292 +232,63 @@ export function GuestPanel({
     plus_one: t("guestPanel.relationshipType.plus_one"),
   };
 
-  const handleCreateGroup = async () => {
-    const trimmed = newGroupName.trim();
-    if (!trimmed) return;
-    setGroupActionError(null);
-    setIsGroupSubmitting(true);
-    try {
-      await onCreateGroup(trimmed);
-      setNewGroupName("");
-    } catch (error) {
-      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupCreateFailed"));
-    } finally {
-      setIsGroupSubmitting(false);
-    }
-  };
-
-  const handleRenameGroup = async (groupId: string, currentName: string) => {
-    const nextName = window.prompt(t("guestPanel.groupRenamePrompt"), currentName);
-    if (nextName === null) return;
-    const trimmed = nextName.trim();
-    if (!trimmed || trimmed === currentName) return;
-    setGroupActionError(null);
-    try {
-      await onUpdateGroup(groupId, { name: trimmed });
-    } catch (error) {
-      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupUpdateFailed"));
-    }
-  };
-
-  const handleRecolorGroup = async (groupId: string, color: string) => {
-    setGroupActionError(null);
-    try {
-      await onUpdateGroup(groupId, { color });
-    } catch (error) {
-      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupUpdateFailed"));
-    }
-  };
-
-  const handleDeleteGroup = async (groupId: string, groupName: string) => {
-    const accepted = window.confirm(t("guestPanel.groupDeleteConfirm", { name: groupName }));
-    if (!accepted) return;
-    setGroupActionError(null);
-    try {
-      await onDeleteGroup(groupId);
-    } catch (error) {
-      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupDeleteFailed"));
-    }
-  };
-
   const isLinkingMode = selectedRelationshipGuestIds.length > 0;
   const selectedLinkGuests = selectedRelationshipGuestIds
     .map((guestId) => guests.find((guest) => guest.id === guestId))
     .filter((guest): guest is Guest => guest !== undefined);
+  const showAddRow = showQuickAdd ?? variant === "desktop";
 
   return (
     <aside className={rootClassName}>
-      <div className="px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-900">{t("guestPanel.title")}</h2>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            value={newGuestName}
-            onChange={(event) => setNewGuestName(event.target.value)}
-            placeholder={t("guestPanel.addGuestPlaceholder")}
-          />
-          <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
-            {t("common.add")}
-          </Button>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={handleImportCsv}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            type="button"
-            onClick={() => importInputRef.current?.click()}
-          >
-            {t("guestPanel.import")}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={handleExportCsv}>
-            {t("guestPanel.export")}
-          </Button>
-        </div>
-        <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
-          <p className="text-xs font-semibold text-zinc-900">{t("guestPanel.groupsTitle")}</p>
-          <div className="mt-2 flex gap-2">
-            <Input
-              value={newGroupName}
-              onChange={(event) => setNewGroupName(event.target.value)}
-              placeholder={t("guestPanel.addGroupPlaceholder")}
-            />
-            <Button
-              type="button"
-              size="sm"
-              disabled={isGroupSubmitting}
-              onClick={() => void handleCreateGroup()}
-            >
-              {t("common.add")}
-            </Button>
-          </div>
-          {groupActionError ? (
-            <p className="mt-2 text-xs text-red-700">{groupActionError}</p>
-          ) : null}
-          {groups.length > 0 ? (
-            <div className="mt-2 max-h-36 space-y-1 overflow-auto rounded border border-zinc-200 p-2">
-              {groups.map((group) => {
-                const groupedCount = guests.filter((guest) => guest.groupId === group.id).length;
-                return (
-                <div
-                  key={group.id}
-                  className="flex items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1"
-                >
-                  <span
-                    className="inline-block h-3.5 w-3.5 rounded-full border border-zinc-300"
-                    style={{ backgroundColor: group.color }}
-                  />
-                  <p className="min-w-0 flex-1 truncate text-xs text-zinc-800">
-                    {group.name} ({groupedCount})
-                  </p>
-                  <input
-                    type="color"
-                    value={group.color}
-                    className="h-6 w-8 rounded border border-zinc-300 bg-white p-0"
-                    aria-label={t("guestPanel.groupColor")}
-                    onChange={(event) => {
-                      void handleRecolorGroup(group.id, event.target.value);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-[10px]"
-                    onClick={() => void handleRenameGroup(group.id, group.name)}
-                  >
-                    {t("guestPanel.rename")}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-[10px] text-red-700"
-                    onClick={() => void handleDeleteGroup(group.id, group.name)}
-                  >
-                    {t("common.delete")}
-                  </Button>
-                </div>
-                );
-              })}
+      {showHeader ? (
+        <>
+          <div className="px-4 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-zinc-900">{t("guestPanel.title")}</h2>
+              {variant === "desktop" ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" aria-label={t("editor.more")}>
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                        <circle cx="6" cy="12" r="1.6" />
+                        <circle cx="12" cy="12" r="1.6" />
+                        <circle cx="18" cy="12" r="1.6" />
+                      </svg>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onOpenGroupsManager}>
+                      {t("guestPanel.manageGroups")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onOpenDataTools}>{t("guestPanel.import")}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={onExportGuests}>{t("guestPanel.export")}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
             </div>
-          ) : (
-            <p className="mt-2 text-xs text-zinc-500">{t("guestPanel.groupsEmpty")}</p>
-          )}
-        </div>
-        {importPreviewRows.length > 0 ? (
-          <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
-            <p className="text-xs font-semibold text-zinc-900">
-              {t("guestPanel.importReviewTitle")}
-            </p>
-            <p className="mt-1 text-xs text-zinc-600">
-              {t("guestPanel.importReviewSummary", {
-                total: importPreviewRows.length,
-                duplicates: importPreviewRows.filter((row) => row.isDuplicate).length,
-              })}
-            </p>
-            {importPreviewRows.some((row) => row.isDuplicate === true) ? (
-              <div className="mt-2 max-h-32 space-y-1 overflow-auto rounded border border-zinc-200 p-2">
-                {importPreviewRows
-                  .filter((row) => row.isDuplicate)
-                  .map((row) => (
-                    <label
-                      key={row.lineNumber}
-                      htmlFor={`import-duplicate-${row.lineNumber}`}
-                      className="flex items-center gap-2 text-xs text-zinc-700"
-                    >
-                      <Checkbox
-                        id={`import-duplicate-${row.lineNumber}`}
-                        checked={row.include}
-                        disabled={isImportSubmitting}
-                        onCheckedChange={() => toggleImportDuplicateRow(row.lineNumber)}
-                      />
-                      <span className="truncate">
-                        {t("guestPanel.importDuplicateRow", {
-                          line: row.lineNumber,
-                          name: row.name,
-                        })}
-                      </span>
-                    </label>
-                  ))}
+            {showAddRow ? (
+              <div className="flex gap-2">
+                <Input
+                  value={newGuestName}
+                  onChange={(event) => setNewGuestName(event.target.value)}
+                  placeholder={t("guestPanel.addGuestPlaceholder")}
+                />
+                <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
+                  {t("common.add")}
+                </Button>
               </div>
             ) : null}
-            <div className="mt-2 flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                disabled={isImportSubmitting}
-                aria-busy={isImportSubmitting}
-                onClick={() => void handleConfirmImport()}
-              >
-                {isImportSubmitting ? (
-                  <span className="inline-flex items-center gap-2">
-                    <svg
-                      className="h-3.5 w-3.5 animate-spin"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        className="opacity-25"
-                      />
-                      <path
-                        d="M21 12a9 9 0 0 0-9-9"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        className="opacity-90"
-                      />
-                    </svg>
-                    {t("guestPanel.importing")}
-                  </span>
-                ) : (
-                  t("guestPanel.importConfirm")
-                )}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={isImportSubmitting}
-                onClick={clearImportPreview}
-              >
-                {t("common.cancel")}
-              </Button>
-            </div>
-            {isImportSubmitting ? (
-              <p className="mt-2 text-xs text-zinc-600">
-                {t("guestPanel.importInProgress", { count: importPreviewRows.length })}
-              </p>
-            ) : null}
           </div>
-        ) : null}
-        {importError ? (
-          <p className="mt-2 text-xs text-red-700">{importError}</p>
-        ) : null}
-        {importSummary ? (
-          <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3 text-xs text-zinc-700">
-            <p className="font-semibold text-zinc-900">{t("guestPanel.importResultTitle")}</p>
-            <p>
-              {t("guestPanel.importResultCounts", {
-                created: importSummary.created,
-                plusOnes: importSummary.createdPlusOnes,
-                skippedDuplicates: importSummary.skippedDuplicates,
-                skippedInvalidMarkers: importSummary.skippedInvalidMarkers,
-                skippedConflicts: importSummary.skippedRelationshipConflicts,
-              })}
-            </p>
-            {importSummary.warnings.length > 0 ? (
-              <ul className="mt-1 list-disc pl-4">
-                {importSummary.warnings.slice(0, 5).map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-      <Separator />
-      <div className="space-y-3 px-4 py-4">
+          <Separator />
+        </>
+      ) : null}
+
+      <div className="shrink-0 space-y-3 px-4 py-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary">
-              {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
-            </Badge>
-          </div>
+          <Badge variant="secondary">
+            {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
+          </Badge>
         </div>
         <Input
           value={query}
@@ -659,96 +314,99 @@ export function GuestPanel({
         </div>
         <p className="text-xs text-zinc-500">{t("guestPanel.showing", { count: visibleGuests.length })}</p>
       </div>
-      {error ? <div className="px-4 pb-3 text-xs text-red-700">{error}</div> : null}
-      <ScrollArea className="flex-1 border-t border-zinc-200">
-        {isLoading ? (
-          <p className="p-4 text-sm text-zinc-600">{t("guestPanel.loading")}</p>
-        ) : visibleGuests.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-600">{t("guestPanel.empty")}</p>
-        ) : (
-          <ul className="p-2">
-            {visibleGuests.map((guest) => {
-              const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
-              const isSelectedForRelationship =
-                selectedRelationshipGuestIds.includes(guest.id);
-              const isSelectedGuestRow = selectedGuestId === guest.id;
 
-              return (
-                <li key={guest.id}>
-                  <div className="mb-1 flex min-w-0 items-center gap-1">
-                    <button
-                      type="button"
-                      draggable={variant === "desktop" && enableGuestDnD}
-                      onDragStart={(event) => {
-                        if (!(variant === "desktop" && enableGuestDnD)) return;
-                        event.dataTransfer.effectAllowed = "move";
-                        event.dataTransfer.setData("text/plain", guest.id);
-                        const preview = createGuestDragPreview(guest.name);
-                        event.dataTransfer.setDragImage(preview, 18, 18);
-                        requestAnimationFrame(() => {
-                          preview.remove();
-                        });
-                        onGuestDragStart?.(guest.id);
-                      }}
-                      onDragEnd={() => {
-                        if (!(variant === "desktop" && enableGuestDnD)) return;
-                        onGuestDragEnd?.();
-                      }}
-                      onClick={() => {
-                        if (isLinkingMode) {
-                          selectGuestForRelationship(guest.id);
-                          return;
-                        }
-                        const nextGuestId = selectedGuestId === guest.id ? null : guest.id;
-                        onSelectGuest(nextGuestId);
-                        onGuestSelected?.(nextGuestId);
-                      }}
-                      className={`flex min-w-0 flex-1 items-center gap-3 rounded-md border px-3 py-2 text-left ${
-                        isSelectedForRelationship
-                          ? "border-blue-300 bg-blue-50/70"
-                          : isSelectedGuestRow
-                          ? "border-zinc-400 bg-zinc-100"
-                          : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
-                      }`}
-                    >
-                      <Avatar>
-                        <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-zinc-900">
-                          {guest.name}
-                        </p>
-                        <p className="truncate text-xs text-zinc-500">
-                          {guest.assignment
-                            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })} • ${t("guestPanel.assigned")}`
-                            : t("guestPanel.unseated")}
-                        </p>
-                        {guestRelationships.length > 0 ? (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {guestRelationships.map((relationship) => (
-                              <Badge
-                                key={relationship.id}
-                                variant="secondary"
-                                className="text-[10px]"
-                              >
-                                {relationship.name?.trim().length
-                                  ? relationship.name
-                                  : relationshipTypeLabel[relationship.type]}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </ScrollArea>
+      {error ? <div className="px-4 pb-3 text-xs text-red-700">{error}</div> : null}
+
+      <div className="min-h-0 flex-1 border-t border-zinc-200">
+        <ScrollArea className="h-full">
+          {isLoading ? (
+            <p className="p-4 text-sm text-zinc-600">{t("guestPanel.loading")}</p>
+          ) : visibleGuests.length === 0 ? (
+            <p className="p-4 text-sm text-zinc-600">{t("guestPanel.empty")}</p>
+          ) : (
+            <ul className="p-2">
+              {visibleGuests.map((guest) => {
+                const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
+                const isSelectedForRelationship =
+                  selectedRelationshipGuestIds.includes(guest.id);
+                const isSelectedGuestRow = selectedGuestId === guest.id;
+
+                return (
+                  <li key={guest.id}>
+                    <div className="mb-1 flex min-w-0 items-center gap-1">
+                      <button
+                        type="button"
+                        draggable={variant === "desktop" && enableGuestDnD}
+                        onDragStart={(event) => {
+                          if (!(variant === "desktop" && enableGuestDnD)) return;
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", guest.id);
+                          const preview = createGuestDragPreview(guest.name);
+                          event.dataTransfer.setDragImage(preview, 18, 18);
+                          requestAnimationFrame(() => {
+                            preview.remove();
+                          });
+                          onGuestDragStart?.(guest.id);
+                        }}
+                        onDragEnd={() => {
+                          if (!(variant === "desktop" && enableGuestDnD)) return;
+                          onGuestDragEnd?.();
+                        }}
+                        onClick={() => {
+                          if (isLinkingMode) {
+                            selectGuestForRelationship(guest.id);
+                            return;
+                          }
+                          const nextGuestId = selectedGuestId === guest.id ? null : guest.id;
+                          onSelectGuest(nextGuestId);
+                          onGuestSelected?.(nextGuestId);
+                        }}
+                        className={`flex min-w-0 flex-1 items-center gap-3 rounded-md border px-3 py-2 text-left ${
+                          isSelectedForRelationship
+                            ? "border-blue-300 bg-blue-50/70"
+                            : isSelectedGuestRow
+                              ? "border-zinc-400 bg-zinc-100"
+                              : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
+                        }`}
+                      >
+                        <Avatar>
+                          <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-zinc-900">{guest.name}</p>
+                          <p className="truncate text-xs text-zinc-500">
+                            {guest.assignment
+                              ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })} • ${t("guestPanel.assigned")}`
+                              : t("guestPanel.unseated")}
+                          </p>
+                          {guestRelationships.length > 0 ? (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {guestRelationships.map((relationship) => (
+                                <Badge
+                                  key={relationship.id}
+                                  variant="secondary"
+                                  className="text-[10px]"
+                                >
+                                  {relationship.name?.trim().length
+                                    ? relationship.name
+                                    : relationshipTypeLabel[relationship.type]}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </ScrollArea>
+      </div>
+
       {isLinkingMode ? (
-        <div className="border-t border-zinc-200 px-4 py-3">
+        <div className="shrink-0 border-t border-zinc-200 px-4 py-3">
           <p className="text-xs font-semibold text-zinc-800">
             {t("guestPanel.createRelationship", {
               count: selectedRelationshipGuestIds.length,
@@ -829,9 +487,7 @@ export function GuestPanel({
             <label className="inline-flex items-center gap-1.5">
               <Checkbox
                 checked={newRelationshipStrict}
-                onCheckedChange={(checked) =>
-                  setNewRelationshipStrict(checked === true)
-                }
+                onCheckedChange={(checked) => setNewRelationshipStrict(checked === true)}
               />
               <TooltipProvider delayDuration={1000}>
                 <Tooltip>

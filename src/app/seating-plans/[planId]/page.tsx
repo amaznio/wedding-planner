@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 
 import { InspectorPanel } from "@/features/seating-editor/components/InspectorPanel";
 import { SeatingCanvas } from "@/features/seating-editor/components/SeatingCanvas";
+import { GuestDataTools } from "@/features/seating-editor/components/GuestDataTools";
 import { GuestPanel } from "@/features/seating-editor/components/GuestPanel";
+import { GroupsManager } from "@/features/seating-editor/components/GroupsManager";
 import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
@@ -21,6 +23,8 @@ import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.t
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -158,8 +162,15 @@ export default function SeatingPlanEditorPage() {
   const [mobileGuestsOpen, setMobileGuestsOpen] = useState(false);
   const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const [mobileMoreView, setMobileMoreView] = useState<"menu" | "legend">("menu");
+  const [mobileMoreView, setMobileMoreView] = useState<"menu" | "legend" | "data">("menu");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [mobileGuestsView, setMobileGuestsView] = useState<"guests" | "groups">("guests");
+  const [mobileAddGuestOpen, setMobileAddGuestOpen] = useState(false);
+  const [mobileNewGuestName, setMobileNewGuestName] = useState("");
+  const [mobileAddGuestError, setMobileAddGuestError] = useState<string | null>(null);
+  const [mobileAddGuestSubmitting, setMobileAddGuestSubmitting] = useState(false);
+  const [desktopGroupsManagerOpen, setDesktopGroupsManagerOpen] = useState(false);
+  const [desktopDataToolsOpen, setDesktopDataToolsOpen] = useState(false);
   const [mobileTableDragEnabled, setMobileTableDragEnabled] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
@@ -861,25 +872,39 @@ export default function SeatingPlanEditorPage() {
   }, []);
 
   const handleCreateGuest = useCallback(async (name: string) => {
-    try {
-      setGuestsError(null);
-      const response = await fetch(`/api/seating-plans/${planId}/guests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorData?.error ?? "Failed to create guest");
-      }
-      const data = (await response.json()) as { guest: ApiGuest };
-      setGuests((current) => [...current, data.guest]);
-      shouldAutosaveGuestsRef.current = true;
-      scheduleAutosave();
-    } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : "Failed to create guest");
+    setGuestsError(null);
+    const response = await fetch(`/api/seating-plans/${planId}/guests`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
+      const message = errorData?.error ?? "Failed to create guest";
+      setGuestsError(message);
+      throw new Error(message);
     }
+    const data = (await response.json()) as { guest: ApiGuest };
+    setGuests((current) => [...current, data.guest]);
+    shouldAutosaveGuestsRef.current = true;
+    scheduleAutosave();
   }, [planId, scheduleAutosave]);
+
+  const handleCreateGuestFromMobileSheet = useCallback(async () => {
+    const trimmed = mobileNewGuestName.trim();
+    if (!trimmed) return;
+    setMobileAddGuestSubmitting(true);
+    setMobileAddGuestError(null);
+    try {
+      await handleCreateGuest(trimmed);
+      setMobileNewGuestName("");
+      setMobileAddGuestOpen(false);
+    } catch (error) {
+      setMobileAddGuestError(error instanceof Error ? error.message : "Failed to create guest");
+    } finally {
+      setMobileAddGuestSubmitting(false);
+    }
+  }, [handleCreateGuest, mobileNewGuestName]);
 
   const handleCreateGroup = useCallback(
     async (name: string) => {
@@ -1006,6 +1031,25 @@ export default function SeatingPlanEditorPage() {
     },
     [planId, scheduleAutosave],
   );
+
+  const handleExportGuestsCsv = useCallback(() => {
+    const header = "name,group,notes";
+    const rows = guests.map((guest) =>
+      [guest.name, guest.group?.name ?? "", guest.notes ?? ""]
+        .map((value) => `"${value.replaceAll("\"", "\"\"")}"`)
+        .join(","),
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "guests.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [guests]);
 
   const handleUpdateGuest = useCallback(async (
     guestId: string,
@@ -1347,6 +1391,7 @@ export default function SeatingPlanEditorPage() {
               className="h-12 flex-col items-center justify-center gap-0.5 text-[11px]"
               onClick={() => {
                 setMobileGuestsOpen(true);
+                setMobileGuestsView("guests");
                 setMobileTablesOpen(false);
                 setMobileMoreOpen(false);
                 setMobileInspectorOpen(false);
@@ -1381,32 +1426,132 @@ export default function SeatingPlanEditorPage() {
         </div>
 
         <Drawer open={mobileGuestsOpen} onOpenChange={setMobileGuestsOpen}>
-          <DrawerContent className="h-[82dvh] p-0">
+          <DrawerContent className="flex h-[85dvh] flex-col p-0">
             <DrawerTitle className="sr-only">{t("editor.guests")}</DrawerTitle>
-            <GuestPanel
-              variant="sheet"
-              guests={guests}
-              groups={groups}
-              relationships={relationships}
-              tableLabelById={tableLabelById}
-              selectedGuestId={selectedGuestId}
-              isLoading={isGuestsLoading}
-              error={guestsError ?? groupsError ?? relationshipsError}
-              onSelectGuest={handleSelectGuest}
-              onCreateGuest={handleCreateGuest}
-              onCreateGroup={handleCreateGroup}
-              onUpdateGroup={handleUpdateGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onBulkImportGuests={handleBulkImportGuests}
-              onCreateRelationship={handleCreateRelationship}
-              linkingSourceGuestId={linkingSourceGuestId}
-              onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
-              onGuestSelected={(guestId) => {
-                if (!guestId) return;
-                setMobileGuestsOpen(false);
-                setMobileInspectorOpen(true);
-              }}
-            />
+            <div className="shrink-0 border-b border-zinc-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("editor.guests")}</h3>
+                  <p className="text-xs text-zinc-500">
+                    {guests.length} {t("guestPanel.guestCountLabel")} · {unseatedGuestCount}{" "}
+                    {t("guestPanel.unseatedCountLabel")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-8 w-8"
+                    onClick={() => setMobileAddGuestOpen(true)}
+                    aria-label={t("guestPanel.addGuest")}
+                  >
+                    +
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setMobileGuestsOpen(false);
+                      setMobileMoreOpen(true);
+                    }}
+                    aria-label={t("editor.more")}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <circle cx="6" cy="12" r="1.6" />
+                      <circle cx="12" cy="12" r="1.6" />
+                      <circle cx="18" cy="12" r="1.6" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant={mobileGuestsView === "guests" ? "default" : "outline"}
+                  onClick={() => setMobileGuestsView("guests")}
+                >
+                  {t("editor.guests")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={mobileGuestsView === "groups" ? "default" : "outline"}
+                  onClick={() => setMobileGuestsView("groups")}
+                >
+                  {t("guestPanel.groupsTitle")}
+                </Button>
+              </div>
+            </div>
+            {mobileGuestsView === "guests" ? (
+              <GuestPanel
+                variant="sheet"
+                showHeader={false}
+                showQuickAdd={false}
+                guests={guests}
+                relationships={relationships}
+                tableLabelById={tableLabelById}
+                selectedGuestId={selectedGuestId}
+                isLoading={isGuestsLoading}
+                error={guestsError ?? groupsError ?? relationshipsError}
+                onSelectGuest={handleSelectGuest}
+                onCreateGuest={handleCreateGuest}
+                onCreateRelationship={handleCreateRelationship}
+                linkingSourceGuestId={linkingSourceGuestId}
+                onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
+                onGuestSelected={(guestId) => {
+                  if (!guestId) return;
+                  setMobileGuestsOpen(false);
+                  setMobileInspectorOpen(true);
+                }}
+              />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
+                <GroupsManager
+                  guests={guests}
+                  groups={groups}
+                  onCreateGroup={handleCreateGroup}
+                  onUpdateGroup={handleUpdateGroup}
+                  onDeleteGroup={handleDeleteGroup}
+                />
+              </div>
+            )}
+          </DrawerContent>
+        </Drawer>
+
+        <Drawer open={mobileAddGuestOpen} onOpenChange={setMobileAddGuestOpen}>
+          <DrawerContent className="p-4">
+            <DrawerTitle className="text-left text-sm font-semibold text-zinc-900">
+              {t("guestPanel.addGuest")}
+            </DrawerTitle>
+            <div className="mt-3 space-y-3">
+              <Input
+                value={mobileNewGuestName}
+                onChange={(event) => setMobileNewGuestName(event.target.value)}
+                placeholder={t("guestPanel.addGuestPlaceholder")}
+              />
+              {mobileAddGuestError ? (
+                <p className="text-xs text-red-700">{mobileAddGuestError}</p>
+              ) : null}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  disabled={mobileAddGuestSubmitting}
+                  onClick={() => void handleCreateGuestFromMobileSheet()}
+                >
+                  {t("common.save")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setMobileAddGuestOpen(false);
+                    setMobileAddGuestError(null);
+                  }}
+                >
+                  {t("common.cancel")}
+                </Button>
+              </div>
+            </div>
           </DrawerContent>
         </Drawer>
 
@@ -1450,7 +1595,11 @@ export default function SeatingPlanEditorPage() {
         >
           <DrawerContent className="p-0">
             <DrawerTitle className="sr-only">
-              {mobileMoreView === "menu" ? t("editor.more") : t("canvas.legendTitle")}
+              {mobileMoreView === "menu"
+                ? t("editor.more")
+                : mobileMoreView === "legend"
+                  ? t("canvas.legendTitle")
+                  : t("editor.importExport")}
             </DrawerTitle>
             {mobileMoreView === "menu" ? (
               <>
@@ -1461,10 +1610,7 @@ export default function SeatingPlanEditorPage() {
                   <Button
                     variant="ghost"
                     className="h-11 w-full justify-between px-3 text-sm"
-                    onClick={() => {
-                      setMobileMoreOpen(false);
-                      setMobileGuestsOpen(true);
-                    }}
+                    onClick={() => setMobileMoreView("data")}
                   >
                     <span>{t("editor.importExport")}</span>
                     <span className="text-zinc-400">›</span>
@@ -1516,7 +1662,7 @@ export default function SeatingPlanEditorPage() {
                   </Button>
                 </div>
               </>
-            ) : (
+            ) : mobileMoreView === "legend" ? (
               <>
                 <div className="px-4 py-4">
                   <h3 className="text-sm font-semibold text-zinc-900">{t("canvas.legendTitle")}</h3>
@@ -1578,6 +1724,28 @@ export default function SeatingPlanEditorPage() {
                   </Button>
                 </div>
               </>
+            ) : (
+              <>
+                <div className="px-4 py-4">
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("editor.importExport")}</h3>
+                </div>
+                <div className="max-h-[62dvh] overflow-auto border-t border-zinc-200 px-4 py-4">
+                  <GuestDataTools
+                    guests={guests}
+                    onBulkImportGuests={handleBulkImportGuests}
+                    compact
+                  />
+                </div>
+                <div className="border-t border-zinc-200 p-3">
+                  <Button
+                    variant="outline"
+                    className="h-10 w-full"
+                    onClick={() => setMobileMoreView("menu")}
+                  >
+                    {t("common.close")}
+                  </Button>
+                </div>
+              </>
             )}
           </DrawerContent>
         </Drawer>
@@ -1597,6 +1765,7 @@ export default function SeatingPlanEditorPage() {
           onBackToGuestList={() => {
             handleSelectGuest(null);
             setMobileInspectorOpen(false);
+            setMobileGuestsView("guests");
             setMobileGuestsOpen(true);
           }}
           onSelectTable={(tableId) => selectTable(tableId)}
@@ -1612,6 +1781,7 @@ export default function SeatingPlanEditorPage() {
           onStartLinking={(guestId) => {
             setLinkingSourceGuestId(guestId);
             setMobileInspectorOpen(false);
+            setMobileGuestsView("guests");
             setMobileGuestsOpen(true);
           }}
           onTableLabelChange={updateSelectedTableLabel}
@@ -1638,7 +1808,6 @@ export default function SeatingPlanEditorPage() {
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
             guests={guests}
-            groups={groups}
             relationships={relationships}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
@@ -1646,11 +1815,10 @@ export default function SeatingPlanEditorPage() {
             error={guestsError ?? groupsError ?? relationshipsError}
             onSelectGuest={handleSelectGuest}
             onCreateGuest={handleCreateGuest}
-            onCreateGroup={handleCreateGroup}
-            onUpdateGroup={handleUpdateGroup}
-            onDeleteGroup={handleDeleteGroup}
-            onBulkImportGuests={handleBulkImportGuests}
             onCreateRelationship={handleCreateRelationship}
+            onOpenGroupsManager={() => setDesktopGroupsManagerOpen(true)}
+            onOpenDataTools={() => setDesktopDataToolsOpen(true)}
+            onExportGuests={handleExportGuestsCsv}
             linkingSourceGuestId={linkingSourceGuestId}
             onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
             enableGuestDnD
@@ -1723,6 +1891,32 @@ export default function SeatingPlanEditorPage() {
             />
           </div>
         </div>
+        <Sheet open={desktopGroupsManagerOpen} onOpenChange={setDesktopGroupsManagerOpen}>
+          <SheetContent side="right" className="w-[420px] p-0 sm:max-w-[420px]">
+            <SheetTitle className="px-4 py-4 text-left text-sm font-semibold text-zinc-900">
+              {t("guestPanel.groupsTitle")}
+            </SheetTitle>
+            <div className="max-h-[80dvh] overflow-auto px-4 py-4">
+              <GroupsManager
+                guests={guests}
+                groups={groups}
+                onCreateGroup={handleCreateGroup}
+                onUpdateGroup={handleUpdateGroup}
+                onDeleteGroup={handleDeleteGroup}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={desktopDataToolsOpen} onOpenChange={setDesktopDataToolsOpen}>
+          <SheetContent side="right" className="w-[420px] p-0 sm:max-w-[420px]">
+            <SheetTitle className="px-4 py-4 text-left text-sm font-semibold text-zinc-900">
+              {t("editor.importExport")}
+            </SheetTitle>
+            <div className="max-h-[80dvh] overflow-auto border-t border-zinc-200 px-4 py-4">
+              <GuestDataTools guests={guests} onBulkImportGuests={handleBulkImportGuests} />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       ) : null}
     </main>

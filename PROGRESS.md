@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 95 - Non-blocking save while typing/actions continue (completed)
+Phase 97 - Groups manager visual hierarchy flattening (completed)
 
 ## Completed Phases
 
@@ -102,9 +102,32 @@ Phase 95 - Non-blocking save while typing/actions continue (completed)
 - Phase 93 - Preserve inspector selection across save rehydrate
 - Phase 94 - Autosave debounce keyed to latest plan edits
 - Phase 95 - Non-blocking save while typing/actions continue
+- Phase 96 - Guest panel responsibility split (mobile + desktop)
+- Phase 97 - Groups manager visual hierarchy flattening
 
 
 ## Completed Work
+
+- Implemented Phase 97 groups manager visual hierarchy flattening:
+  - removed extra nested card layer around group management content
+  - simplified group list container to a single bordered surface with row dividers
+  - reduced per-row visual noise by removing nested row cards and tightening action sizing
+  - removed redundant desktop groups sheet body border layer to avoid stacked framing
+
+- Implemented Phase 96 guest panel responsibility split for mobile and desktop:
+  - extracted reusable `GroupsManager` component and removed embedded group management from `GuestPanel`
+  - extracted reusable `GuestDataTools` component for CSV import/export actions and import-review flow
+  - refactored `GuestPanel` to focus on quick add/search/filter/list/selection (+ contextual relationship linking only)
+  - desktop guest panel now uses compact header overflow actions for:
+    - groups manager
+    - import tools
+    - export CSV
+  - mobile Guests drawer now uses split workflows:
+    - `Guests` view for list-first browsing/search/filter/select
+    - `Groups` view for dedicated group management
+    - separate Add Guest drawer (header `+` action)
+  - mobile `More` drawer now owns Import/Export access via a dedicated data view
+  - guest-list vertical space increased on both desktop and mobile by removing persistent management blocks above the list
 
 - Implemented Phase 95 non-blocking save behavior for ongoing edits:
   - save success path now detects whether plan changed while request was in-flight
@@ -816,6 +839,18 @@ Phase 95 - Non-blocking save while typing/actions continue (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `src/features/seating-editor/components/GuestDataTools.tsx`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
 - `src/app/seating-plans/[planId]/page.tsx`
 - `PROGRESS.md`
 
@@ -997,6 +1032,14 @@ Phase 95 - Non-blocking save while typing/actions continue (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 97 groups manager hierarchy flattening)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 96 guest UX responsibility split refactor)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm build` (pass)
+- `corepack pnpm i18n:audit` (pass)
 
 - `corepack pnpm typecheck` (pass; phase 95 non-blocking in-flight save handling)
 - `corepack pnpm lint` (pass with existing warnings)
@@ -1221,7 +1264,7 @@ Phase 95 - Non-blocking save while typing/actions continue (completed)
 - Existing lint warnings remain:
   - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
   - `SeatingCanvas` `useEffect` dependency warning (still present)
-  - unused `totalSeatCount` / `unseatedGuestCount` warnings in `page.tsx` (pre-existing)
+  - unused `totalSeatCount` warning in `page.tsx` (pre-existing)
 - CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 - Group rename currently uses prompt dialog UX (functional but basic).
@@ -1230,6 +1273,11 @@ Phase 95 - Non-blocking save while typing/actions continue (completed)
 
 Next recommended follow-up:
 
+- Run targeted manual UX verification for new mobile/desktop guest flows:
+  - mobile Guests vs Groups vs More/Data split
+  - add-guest drawer behavior
+  - import/export placement and behavior
+- Replace prompt-based group rename with inline rename in `GroupsManager` for better mobile ergonomics.
 - Add focused UI regression coverage for in-flight save continuity (typing/actions remain uninterrupted while response/toast lands).
 - Add focused UI regression coverage for autosave debounce behavior (save after last edit, not first) and inspector selection persistence.
 - Refactor `savePlan` into a lint-clean stable callback shape that satisfies both React Compiler and exhaustive-deps without warnings.

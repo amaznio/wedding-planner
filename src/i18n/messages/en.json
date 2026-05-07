@@ -76,9 +76,13 @@
   },
   "guestPanel": {
     "title": "Guests",
+    "addGuest": "Add guest",
     "addGuestPlaceholder": "Add guest",
     "import": "Import",
     "export": "Export",
+    "manageGroups": "Manage groups",
+    "guestCountLabel": "guests",
+    "unseatedCountLabel": "unseated",
     "groupsTitle": "Groups",
     "addGroupPlaceholder": "Add group",
     "groupsEmpty": "No groups yet.",
