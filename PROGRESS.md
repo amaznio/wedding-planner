@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 56 - Boldness balance refinement for seat list (completed)
+Phase 58 - Rotate button icon in inspector (completed)
 
 ## Completed Phases
 
@@ -62,9 +62,20 @@ Phase 56 - Boldness balance refinement for seat list (completed)
 - Phase 53 - Current assignment label emphasis tweak
 - Phase 54 - Selected-assigned-row visual refinement
 - Phase 55 - Seat surface typography hierarchy tuning
+- Phase 56 - Boldness balance refinement for seat list
+- Phase 57 - Desktop guest click no longer opens right inspector
+- Phase 58 - Rotate button icon in inspector
 
 
 ## Completed Work
+
+- Added an icon to the inspector rotate action button:
+  - `RotateCw` icon now appears to the left of `Obróć o 90°`/`Rotate 90°`
+  - icon and label spacing aligned via `gap-2`
+
+- Removed desktop guest-selection coupling to the right inspector:
+  - desktop inspector now opens only for table selection
+  - clicking a guest in the left guest panel keeps focus in the left panel and does not open the right sheet
 
 - Refined bold usage to improve hierarchy clarity:
   - top `Current` line reduced from semibold to medium weight
@@ -542,6 +553,8 @@ Phase 56 - Boldness balance refinement for seat list (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm typecheck` (pass)
 - `corepack pnpm add @radix-ui/react-avatar @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-scroll-area @radix-ui/react-separator class-variance-authority clsx tailwind-merge` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
@@ -641,17 +654,18 @@ Phase 56 - Boldness balance refinement for seat list (completed)
 5. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
 6. Export guests to CSV and import the CSV back.
 7. Save and refresh; verify assignments still persist.
-8. Click a guest, table, and seat and verify inspector opens with contextual content.
-9. Verify seat assignment actions happen via seat popover only.
-10. Click empty canvas and verify selection clears and inspector closes.
-11. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
-12. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
-13. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
-14. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
-15. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
-16. Save and refresh; verify `Seat layout` persists per table.
-17. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
-18. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
+8. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
+9. Click a table and verify inspector opens with table controls.
+10. Verify seat assignment actions happen via seat popover only.
+11. Click empty canvas and verify selection clears and inspector closes.
+12. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
+13. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
+14. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
+15. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
+16. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
+17. Save and refresh; verify `Seat layout` persists per table.
+18. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
+19. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
 
 ## Known Issues
 

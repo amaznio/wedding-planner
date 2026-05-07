@@ -185,7 +185,7 @@ export default function SeatingPlanEditorPage() {
             guest.assignment?.seatNumber === selectedSeat.seatNumber,
         ) ?? null)
       : null;
-  const desktopInspectorSelection = selection?.type === "seat" ? null : selection;
+  const desktopInspectorSelection = selection?.type === "table" ? selection : null;
   const canvasHighlightedTableId =
     selectedTableId ??
     (selectedSeat ? selectedSeat.tableId : null) ??

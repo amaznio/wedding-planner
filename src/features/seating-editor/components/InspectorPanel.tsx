@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
+import { RotateCw } from "lucide-react";
 import type { SeatingTable } from "../types/seating-plan.types";
 
 type Guest = {
@@ -141,7 +142,8 @@ export function InspectorPanel({
                 </select>
               </label>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={onRotateTable}>
+                <Button variant="outline" onClick={onRotateTable} className="gap-2">
+                  <RotateCw className="h-4 w-4" aria-hidden="true" />
                   {t("inspector.rotate")}
                 </Button>
                 <Button variant="destructive" onClick={onDeleteTable}>
