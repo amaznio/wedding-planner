@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -1429,43 +1430,7 @@ export default function SeatingPlanEditorPage() {
           <DrawerContent className="flex h-[85dvh] flex-col p-0">
             <DrawerTitle className="sr-only">{t("editor.guests")}</DrawerTitle>
             <div className="shrink-0 border-b border-zinc-200 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-900">{t("editor.guests")}</h3>
-                  <p className="text-xs text-zinc-500">
-                    {guests.length} {t("guestPanel.guestCountLabel")} · {unseatedGuestCount}{" "}
-                    {t("guestPanel.unseatedCountLabel")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-8 w-8"
-                    onClick={() => setMobileAddGuestOpen(true)}
-                    aria-label={t("guestPanel.addGuest")}
-                  >
-                    +
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setMobileGuestsOpen(false);
-                      setMobileMoreOpen(true);
-                    }}
-                    aria-label={t("editor.more")}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                      <circle cx="6" cy="12" r="1.6" />
-                      <circle cx="12" cy="12" r="1.6" />
-                      <circle cx="18" cy="12" r="1.6" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   size="sm"
                   variant={mobileGuestsView === "guests" ? "default" : "outline"}
@@ -1476,82 +1441,131 @@ export default function SeatingPlanEditorPage() {
                 <Button
                   size="sm"
                   variant={mobileGuestsView === "groups" ? "default" : "outline"}
-                  onClick={() => setMobileGuestsView("groups")}
+                  onClick={() => {
+                    setMobileGuestsView("groups");
+                    setMobileAddGuestOpen(false);
+                    setMobileAddGuestError(null);
+                  }}
                 >
                   {t("guestPanel.groupsTitle")}
                 </Button>
               </div>
             </div>
             {mobileGuestsView === "guests" ? (
-              <GuestPanel
-                variant="sheet"
-                showHeader={false}
-                showQuickAdd={false}
-                guests={guests}
-                relationships={relationships}
-                tableLabelById={tableLabelById}
-                selectedGuestId={selectedGuestId}
-                isLoading={isGuestsLoading}
-                error={guestsError ?? groupsError ?? relationshipsError}
-                onSelectGuest={handleSelectGuest}
-                onCreateGuest={handleCreateGuest}
-                onCreateRelationship={handleCreateRelationship}
-                linkingSourceGuestId={linkingSourceGuestId}
-                onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
-                onGuestSelected={(guestId) => {
-                  if (!guestId) return;
-                  setMobileGuestsOpen(false);
-                  setMobileInspectorOpen(true);
-                }}
-              />
-            ) : (
-              <div className="min-h-0 flex-1 overflow-auto px-4 py-4">
-                <GroupsManager
+              <>
+                <div className="shrink-0 border-b border-zinc-200 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-900">{t("editor.guests")}</h3>
+                      <p className="text-xs text-zinc-500">
+                        {guests.length} {t("guestPanel.guestCountLabel")} · {unseatedGuestCount}{" "}
+                        {t("guestPanel.unseatedCountLabel")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setMobileAddGuestOpen((current) => !current);
+                          setMobileAddGuestError(null);
+                        }}
+                        aria-label={t("guestPanel.addGuest")}
+                      >
+                        +
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setMobileGuestsOpen(false);
+                          setMobileMoreOpen(true);
+                        }}
+                        aria-label={t("editor.more")}
+                      >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                          <circle cx="6" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="18" cy="12" r="1.6" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  {mobileAddGuestOpen ? (
+                    <div className="mt-3 space-y-2 border-t border-zinc-200 pt-3">
+                      <Input
+                        value={mobileNewGuestName}
+                        onChange={(event) => setMobileNewGuestName(event.target.value)}
+                        placeholder={t("guestPanel.addGuestPlaceholder")}
+                      />
+                      {mobileAddGuestError ? (
+                        <p className="text-xs text-red-700">{mobileAddGuestError}</p>
+                      ) : null}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={mobileAddGuestSubmitting}
+                          onClick={() => void handleCreateGuestFromMobileSheet()}
+                        >
+                          {t("common.save")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMobileAddGuestOpen(false);
+                            setMobileAddGuestError(null);
+                          }}
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+                <GuestPanel
+                  variant="sheet"
+                  showHeader={false}
+                  showQuickAdd={false}
                   guests={guests}
-                  groups={groups}
-                  onCreateGroup={handleCreateGroup}
-                  onUpdateGroup={handleUpdateGroup}
-                  onDeleteGroup={handleDeleteGroup}
+                  relationships={relationships}
+                  tableLabelById={tableLabelById}
+                  selectedGuestId={selectedGuestId}
+                  isLoading={isGuestsLoading}
+                  error={guestsError ?? groupsError ?? relationshipsError}
+                  onSelectGuest={handleSelectGuest}
+                  onCreateGuest={handleCreateGuest}
+                  onCreateRelationship={handleCreateRelationship}
+                  linkingSourceGuestId={linkingSourceGuestId}
+                  onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
+                  onGuestSelected={(guestId) => {
+                    if (!guestId) return;
+                    setMobileGuestsOpen(false);
+                    setMobileInspectorOpen(true);
+                  }}
                 />
+              </>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-auto">
+                <div className="shrink-0 border-b border-zinc-200 px-4 py-3">
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("guestPanel.groupsTitle")}</h3>
+                  <p className="text-xs text-zinc-500">{groups.length} {t("guestPanel.groupsTitle").toLowerCase()}</p>
+                </div>
+                <div className="px-4 py-4">
+                  <GroupsManager
+                    guests={guests}
+                    groups={groups}
+                    onCreateGroup={handleCreateGroup}
+                    onUpdateGroup={handleUpdateGroup}
+                    onDeleteGroup={handleDeleteGroup}
+                  />
+                </div>
               </div>
             )}
-          </DrawerContent>
-        </Drawer>
-
-        <Drawer open={mobileAddGuestOpen} onOpenChange={setMobileAddGuestOpen}>
-          <DrawerContent className="p-4">
-            <DrawerTitle className="text-left text-sm font-semibold text-zinc-900">
-              {t("guestPanel.addGuest")}
-            </DrawerTitle>
-            <div className="mt-3 space-y-3">
-              <Input
-                value={mobileNewGuestName}
-                onChange={(event) => setMobileNewGuestName(event.target.value)}
-                placeholder={t("guestPanel.addGuestPlaceholder")}
-              />
-              {mobileAddGuestError ? (
-                <p className="text-xs text-red-700">{mobileAddGuestError}</p>
-              ) : null}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  disabled={mobileAddGuestSubmitting}
-                  onClick={() => void handleCreateGuestFromMobileSheet()}
-                >
-                  {t("common.save")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setMobileAddGuestOpen(false);
-                    setMobileAddGuestError(null);
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-              </div>
-            </div>
           </DrawerContent>
         </Drawer>
 
@@ -1629,16 +1643,14 @@ export default function SeatingPlanEditorPage() {
                     <span>{t("editor.legend")}</span>
                     <span className="text-zinc-400">›</span>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="h-11 w-full justify-between px-3 text-sm"
-                    onClick={() => setShowGroupColors((current) => !current)}
-                  >
+                  <div className="flex h-11 items-center justify-between px-3 text-sm">
                     <span>{t("canvas.groupColorsMode")}</span>
-                    <span className="text-zinc-500">
-                      {showGroupColors ? t("guestPanel.on") : t("guestPanel.off")}
-                    </span>
-                  </Button>
+                    <Switch
+                      checked={showGroupColors}
+                      onCheckedChange={setShowGroupColors}
+                      aria-label={t("canvas.groupColorsMode")}
+                    />
+                  </div>
                   <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
                     <span>{t("editor.share")}</span>
                     <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">

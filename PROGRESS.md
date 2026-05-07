@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 97 - Groups manager visual hierarchy flattening (completed)
+Phase 101 - Mobile Guests drawer hierarchy reorder (completed)
 
 ## Completed Phases
 
@@ -104,9 +104,35 @@ Phase 97 - Groups manager visual hierarchy flattening (completed)
 - Phase 95 - Non-blocking save while typing/actions continue
 - Phase 96 - Guest panel responsibility split (mobile + desktop)
 - Phase 97 - Groups manager visual hierarchy flattening
+- Phase 98 - More menu group-colors switched to shadcn Switch
+- Phase 99 - Active switch color set to green
+- Phase 100 - Mobile add guest inline in Guests drawer
+- Phase 101 - Mobile Guests drawer hierarchy reorder
 
 
 ## Completed Work
+
+- Implemented Phase 101 mobile Guests drawer hierarchy update:
+  - moved `Goście / Grupy` tab switch row to the top of the drawer section hierarchy
+  - moved guest-specific header (title, counts, `+`, `...`) into Guests tab content only
+  - kept inline quick-add UI scoped to Guests tab only
+  - added groups-specific header in Groups tab to avoid cross-context controls
+
+- Implemented Phase 100 mobile add-guest flow simplification:
+  - removed stacked secondary add-guest drawer on mobile
+  - moved add-guest input/actions into inline expandable section inside Guests drawer header area
+  - `+` now toggles inline quick-add mode (same submit/validation behavior as before)
+  - switching to `Groups` tab collapses inline add mode to keep focus on group management
+
+- Implemented Phase 99 switch styling update:
+  - updated shared shadcn `Switch` styles so checked state uses green track (`emerald`)
+  - updated switch focus ring tone to match active green state
+
+- Implemented Phase 98 mobile More menu toggle control update:
+  - replaced text-based group-colors state control (`Wł.`/`Wył.`) with shadcn `Switch`
+  - wired switch to existing `showGroupColors` state (no behavior/API changes)
+  - added reusable UI primitive `src/components/ui/switch.tsx` using Radix Switch
+  - added dependency `@radix-ui/react-switch`
 
 - Implemented Phase 97 groups manager visual hierarchy flattening:
   - removed extra nested card layer around group management content
@@ -839,6 +865,18 @@ Phase 97 - Groups manager visual hierarchy flattening (completed)
 
 ## Files Changed
 
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/components/ui/switch.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `package.json`
+- `pnpm-lock.yaml`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GroupsManager.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
 - `PROGRESS.md`
@@ -1032,6 +1070,17 @@ Phase 97 - Groups manager visual hierarchy flattening (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 101 guests/groups hierarchy reorder)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 100 inline mobile add-guest flow)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm add @radix-ui/react-switch` (pass)
+- `corepack pnpm typecheck` (pass; phase 98 shadcn switch for group colors control)
+- `corepack pnpm lint` (pass with existing warnings)
 
 - `corepack pnpm typecheck` (pass; phase 97 groups manager hierarchy flattening)
 - `corepack pnpm lint` (pass with existing warnings)
