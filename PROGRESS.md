@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 58 - Rotate button icon in inspector (completed)
+Phase 61 - Guest click exits link mode and opens guest details (completed)
 
 ## Completed Phases
 
@@ -65,9 +65,29 @@ Phase 58 - Rotate button icon in inspector (completed)
 - Phase 56 - Boldness balance refinement for seat list
 - Phase 57 - Desktop guest click no longer opens right inspector
 - Phase 58 - Rotate button icon in inspector
+- Phase 59 - Compact guest row link action and status placement
+- Phase 60 - Link mode and guest details made mutually exclusive
+- Phase 61 - Guest click exits link mode and opens guest details
 
 
 ## Completed Work
+
+- Added reverse transition from link mode to guest-details mode:
+  - when one or more guests are selected for linking, clicking any guest row now clears link selections
+  - the click then applies normal guest selection, which reopens guest-specific details panels
+
+- Enforced mutually exclusive lower panels in guest sidebar:
+  - entering link mode now clears selected guest (`onSelectGuest(null)`)
+  - while link mode is active, guest-specific sections are hidden:
+    - `Relacje wybranego gościa`
+    - `Szczegóły gościa`
+  - clearing link mode restores normal guest-detail visibility on next guest selection
+
+- Compacted guest list row action/status layout:
+  - removed separate right-side `Assigned/Unseated` badge from each guest row
+  - moved assignment status into the metadata line (`Table • Seat • Assigned`)
+  - kept unseated guests on the single `Unseated` metadata line
+  - updated `Link` action button to icon + label using `Link2`
 
 - Added an icon to the inspector rotate action button:
   - `RotateCw` icon now appears to the left of `Obróć o 90°`/`Rotate 90°`
@@ -553,6 +573,9 @@ Phase 58 - Rotate button icon in inspector (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm typecheck` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm add @radix-ui/react-avatar @radix-ui/react-dropdown-menu @radix-ui/react-popover @radix-ui/react-scroll-area @radix-ui/react-separator class-variance-authority clsx tailwind-merge` (pass)

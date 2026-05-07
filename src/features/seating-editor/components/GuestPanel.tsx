@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/provider";
+import { Link2 } from "lucide-react";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import type {
   PreferredSeating,
@@ -241,6 +242,7 @@ export function GuestPanel({
   };
 
   const toggleRelationshipGuest = (guestId: string) => {
+    onSelectGuest(null);
     setSelectedRelationshipGuestIds((current) => {
       if (current.includes(guestId)) {
         return current.filter((id) => id !== guestId);
@@ -288,6 +290,7 @@ export function GuestPanel({
   const selectedGuestRelationships = selectedGuestId
     ? relationshipsByGuestId[selectedGuestId] ?? []
     : [];
+  const isLinkingMode = selectedRelationshipGuestIds.length > 0;
 
   return (
     <aside className={rootClassName}>
@@ -391,6 +394,9 @@ export function GuestPanel({
                         onGuestDragEnd?.();
                       }}
                       onClick={() => {
+                        if (selectedRelationshipGuestIds.length > 0) {
+                          setSelectedRelationshipGuestIds([]);
+                        }
                         onSelectGuest(selectedGuestId === guest.id ? null : guest.id);
                         onGuestSelected?.();
                       }}
@@ -409,7 +415,7 @@ export function GuestPanel({
                         </p>
                         <p className="truncate text-xs text-zinc-500">
                           {guest.assignment
-                            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
+                            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })} • ${t("guestPanel.assigned")}`
                             : t("guestPanel.unseated")}
                         </p>
                         {guestRelationships.length > 0 ? (
@@ -428,19 +434,15 @@ export function GuestPanel({
                           </div>
                         ) : null}
                       </div>
-                      {guest.assignment ? (
-                        <Badge variant="secondary">{t("guestPanel.assigned")}</Badge>
-                      ) : (
-                        <Badge>{t("guestPanel.unseated")}</Badge>
-                      )}
                     </button>
                     <Button
                       type="button"
                       size="sm"
                       variant={isSelectedForRelationship ? "default" : "outline"}
-                      className="h-8 px-2 text-[11px]"
+                      className="h-8 gap-1.5 px-2 text-[11px]"
                       onClick={() => toggleRelationshipGuest(guest.id)}
                     >
+                      <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
                       {t("guestPanel.link")}
                     </Button>
                   </div>
@@ -450,7 +452,7 @@ export function GuestPanel({
           </ul>
         )}
       </ScrollArea>
-      {selectedRelationshipGuestIds.length > 0 ? (
+      {isLinkingMode ? (
         <div className="border-t border-zinc-200 px-4 py-3">
           <p className="text-xs font-semibold text-zinc-800">
             {t("guestPanel.createRelationship", {
@@ -535,7 +537,7 @@ export function GuestPanel({
           </div>
         </div>
       ) : null}
-      {selectedGuestId ? (
+      {!isLinkingMode && selectedGuestId ? (
         <div
           className="border-t border-zinc-200 px-4 py-3"
           onPointerDown={(event) => event.stopPropagation()}
@@ -665,7 +667,7 @@ export function GuestPanel({
           )}
         </div>
       ) : null}
-      {selectedGuest ? (
+      {!isLinkingMode && selectedGuest ? (
         <div
           className="border-t border-zinc-200 px-4 py-3"
           onPointerDown={(event) => event.stopPropagation()}
