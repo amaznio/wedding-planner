@@ -1,5 +1,5 @@
 import type { PointerEvent, WheelEvent } from "react";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +131,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     moved: boolean;
   } | null>(null);
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const viewRef = useRef(view);
   const [isPanning, setIsPanning] = useState(false);
   const [seatMenu, setSeatMenu] = useState<{
     tableId: string;
@@ -232,18 +233,24 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       y: targetCenterY - contentCenterY * nextScale,
     };
   };
-  const screenToCanvas = (clientX: number, clientY: number) => {
+  const applyView = useCallback((next: { scale: number; x: number; y: number }) => {
+    viewRef.current = next;
+    setView(next);
+    onViewChange?.(next);
+  }, [onViewChange]);
+  const screenToCanvas = useCallback((clientX: number, clientY: number) => {
     const viewport = viewportRef.current;
     if (!viewport) {
       return { x: clientX, y: clientY };
     }
 
     const rect = viewport.getBoundingClientRect();
+    const currentView = viewRef.current;
     return {
-      x: (clientX - rect.left - view.x) / view.scale,
-      y: (clientY - rect.top - view.y) / view.scale,
+      x: (clientX - rect.left - currentView.x) / currentView.scale,
+      y: (clientY - rect.top - currentView.y) / currentView.scale,
     };
-  };
+  }, []);
   const getMinScale = () => {
     if (typeof window === "undefined") return 0.5;
     const isMobileViewport = window.matchMedia("(max-width: 1023px)").matches;
@@ -301,12 +308,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       x: mouseX - worldX * nextScale,
       y: mouseY - worldY * nextScale,
     };
-    setView(nextView);
-    onViewChange?.(nextView);
-  };
-  const applyView = (next: { scale: number; x: number; y: number }) => {
-    setView(next);
-    onViewChange?.(next);
+    applyView(nextView);
   };
   const zoomIn = () =>
     applyView({
@@ -402,8 +404,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           x: midX - worldX * nextScale,
           y: midY - worldY * nextScale,
         };
-        setView(nextView);
-        onViewChange?.(nextView);
+        applyView(nextView);
         suppressCanvasClickRef.current = true;
       }
       return;
@@ -422,8 +423,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       x: session.originX + deltaX,
       y: session.originY + deltaY,
     };
-    setView(nextView);
-    onViewChange?.(nextView);
+    applyView(nextView);
   };
 
   const endPan = (event: PointerEvent<HTMLDivElement>) => {

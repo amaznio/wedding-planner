@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { memo, useRef } from "react";
 
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
@@ -30,7 +30,7 @@ type RectTableProps = {
   onDragStateChange?: (isDragging: boolean) => void;
 };
 
-export function RectTable({
+function RectTableComponent({
   table,
   isSelected = false,
   onSelect,
@@ -199,3 +199,60 @@ export function RectTable({
     </div>
   );
 }
+
+function areNumberArraysEqual(a: number[] | undefined, b: number[] | undefined) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) return false;
+  }
+  return true;
+}
+
+function areSeatOccupantsEqual(
+  prev: RectTableProps["seatOccupants"],
+  next: RectTableProps["seatOccupants"],
+) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return false;
+  for (const key of prevKeys) {
+    const seatNumber = Number(key);
+    const prevOccupant = prev[seatNumber];
+    const nextOccupant = next[seatNumber];
+    if (
+      prevOccupant?.guestId !== nextOccupant?.guestId ||
+      prevOccupant?.guestName !== nextOccupant?.guestName
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
+  return (
+    prev.table.id === next.table.id &&
+    prev.table.x === next.table.x &&
+    prev.table.y === next.table.y &&
+    prev.table.label === next.table.label &&
+    prev.table.rotation === next.table.rotation &&
+    prev.table.seatCount === next.table.seatCount &&
+    prev.table.seatLayout === next.table.seatLayout &&
+    prev.isSelected === next.isSelected &&
+    prev.selectedGuestId === next.selectedGuestId &&
+    prev.selectedSeatNumber === next.selectedSeatNumber &&
+    prev.conflictSeatNumber === next.conflictSeatNumber &&
+    prev.dropTargetSeatNumber === next.dropTargetSeatNumber &&
+    prev.isDragActive === next.isDragActive &&
+    prev.enableTableDrag === next.enableTableDrag &&
+    prev.enableSeatDrag === next.enableSeatDrag &&
+    areNumberArraysEqual(prev.linkedDropPreviewSeatNumbers, next.linkedDropPreviewSeatNumbers) &&
+    areSeatOccupantsEqual(prev.seatOccupants, next.seatOccupants)
+  );
+}
+
+export const RectTable = memo(RectTableComponent, areRectTablePropsEqual);

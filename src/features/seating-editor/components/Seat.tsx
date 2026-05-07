@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import { useI18n } from "@/i18n/provider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,7 +29,7 @@ function getInitials(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function Seat({
+function SeatComponent({
   seatNumber,
   x,
   y,
@@ -126,3 +127,22 @@ export function Seat({
     </Tooltip>
   );
 }
+
+function areSeatPropsEqual(prev: SeatProps, next: SeatProps) {
+  return (
+    prev.seatNumber === next.seatNumber &&
+    prev.x === next.x &&
+    prev.y === next.y &&
+    prev.occupantGuestId === next.occupantGuestId &&
+    prev.occupantName === next.occupantName &&
+    prev.isSelectedGuestSeat === next.isSelectedGuestSeat &&
+    prev.isSelected === next.isSelected &&
+    prev.isConflict === next.isConflict &&
+    prev.isDropTarget === next.isDropTarget &&
+    prev.isLinkedDropPreview === next.isLinkedDropPreview &&
+    prev.isDragActive === next.isDragActive &&
+    prev.enableSeatDrag === next.enableSeatDrag
+  );
+}
+
+export const Seat = memo(SeatComponent, areSeatPropsEqual);

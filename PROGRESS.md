@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 66 - Checkbox tooltip delay + label-only trigger (completed)
+Phase 67 - Canvas drag performance optimization (completed)
 
 ## Completed Phases
 
@@ -73,9 +73,16 @@ Phase 66 - Checkbox tooltip delay + label-only trigger (completed)
 - Phase 64 - Standardize tooltips to shadcn/Radix Tooltip
 - Phase 65 - Switch relationship option checkboxes to shadcn Checkbox
 - Phase 66 - Checkbox tooltip delay + label-only trigger
+- Phase 67 - Canvas drag performance optimization
 
 
 ## Completed Work
+
+- Optimized canvas drag/pan render performance for large table/seat counts:
+  - memoized `RectTable` with a focused prop comparator so pan/zoom view updates do not re-render every table subtree
+  - memoized `Seat` with a focused prop comparator so unchanged seats are skipped during parent re-renders
+  - stabilized `screenToCanvas` using `viewRef` + `useCallback` so table drag math stays correct with memoized tables
+  - routed pointer/wheel view updates through a single `applyView` path to keep `viewRef` and state synchronized
 
 - Refined relationship option tooltip behavior:
   - tooltip now opens only when hovering the text label, not the checkbox control
@@ -633,6 +640,8 @@ Phase 66 - Checkbox tooltip delay + label-only trigger (completed)
 ## Commands Run
 
 - `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
 - `corepack pnpm add @radix-ui/react-checkbox` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing warnings)
@@ -767,7 +776,7 @@ Phase 66 - Checkbox tooltip delay + label-only trigger (completed)
 
 - Existing lint warnings remain:
   - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
-  - `SeatingCanvas` `useEffect` dependency warning (pre-existing)
+  - `SeatingCanvas` `useEffect` dependency warning (still present)
   - unused `totalSeatCount` / `unseatedGuestCount` warnings in `page.tsx` (pre-existing)
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 
