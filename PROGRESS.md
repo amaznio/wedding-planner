@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
+Phase 36 - Linked guest move-together (completed)
 
 ## Completed Phases
 
@@ -41,8 +41,63 @@ Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
 - Phase 32 - Desktop guest-to-seat drag-and-drop
 - Phase 33 - Desktop drag preview polish
 - Phase 34 - Desktop seat-to-seat drag-and-drop
+- Phase 35 - Optional guest seating relationships
+- Phase 36 - Linked guest move-together
 
 ## Completed Work
+
+- Added linked guest move-together orchestration (advisory relationships now drive grouped movement when enabled by relationship defaults):
+  - auto-detects move-together mode from initiator relationships with `moveTogetherDefault=true`
+  - builds deterministic grouped seat plans (no multi-hop expansion) from direct initiator-linked relationships
+  - enforces all-or-nothing group moves (no partial placement)
+  - blocks grouped moves when destination seats are occupied by unrelated guests (no implicit outsider swap)
+
+- Added shared group move planner utility:
+  - strict preference handling for `adjacent`, `same-table`, `nearby`, and `none`
+  - deterministic ordering and seat allocation
+  - structured planner errors for UI feedback
+
+- Added atomic batch-move assignment API:
+  - `POST /api/seating-plans/:planId/assignments/batch-move`
+  - validates payload shape, duplicate guests/seats, table seat ranges, and plan ownership
+  - validates strict relationships included in context and blocks on strict violations
+  - executes in one DB transaction (`deleteMany` moved guests, `createMany` new assignments), rollback on conflict
+
+- Integrated grouped move flow into seat assignment + drag/drop:
+  - grouped path used automatically when move-together defaults apply
+  - existing single-guest assign/swap/unassign behavior preserved when grouped path is not active
+  - grouped success feedback now reports moved guest count
+
+- Added seat popover preview hints for grouped moves:
+  - guest rows show relationship hints plus `group move: N` when move-together defaults would trigger grouped assignment
+
+- Added optional guest seating relationships end-to-end (advisory-only behavior):
+  - new relationship domain with plan-scoped records + membership join rows
+  - no changes to atomic seating assignment model (`one guest per seat`)
+  - no forced pairing, no double seats, no mandatory linking
+
+- Added relationship persistence to PostgreSQL/Prisma:
+  - `SeatingRelationship` model (`type`, `name`, `preferredSeating`, `moveTogetherDefault`, `strict`)
+  - `SeatingRelationshipMember` join model with unique `(relationshipId, guestId)`
+  - cascading cleanup on guest/relationship deletion
+  - created and applied Prisma migration
+
+- Added relationship API routes:
+  - `GET/POST /api/seating-plans/:planId/relationships`
+  - `PATCH/DELETE /api/seating-plans/:planId/relationships/:relationshipId`
+  - `PUT /api/seating-plans/:planId/relationships/:relationshipId/members`
+  - Zod validation for create/update/replace-members payloads
+  - cross-plan guest validation and duplicate guest-id rejection
+
+- Extended editor frontend with relationship state + UI:
+  - load relationships alongside guests
+  - relationship badges in guest list
+  - create relationship flow from selected guests (`Link` multi-select + metadata controls)
+  - per-selected-guest relationship actions (rename, toggle move-together, toggle strict, delete)
+
+- Added advisory seat hints in seat assignment popover:
+  - guests now display relationship labels and preferred seating hints
+  - hints are informational only (no blocking or auto-placement)
 
 - Added desktop seat-to-seat drag-and-drop:
   - occupied seats are now draggable as guest drag sources on desktop
@@ -283,6 +338,15 @@ Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
 - `src/features/seating-editor/components/SeatingToolbar.tsx`
+- `prisma/migrations/20260507000030_add_seating_relationships/migration.sql`
+- `src/features/seating-editor/schemas/relationship.schema.ts`
+- `src/features/seating-editor/types/relationship.types.ts`
+- `src/app/api/seating-plans/[planId]/relationships/route.ts`
+- `src/app/api/seating-plans/[planId]/relationships/[relationshipId]/route.ts`
+- `src/app/api/seating-plans/[planId]/relationships/[relationshipId]/members/route.ts`
+- `src/features/seating-editor/lib/group-move.ts`
+- `src/app/api/seating-plans/[planId]/assignments/batch-move/route.ts`
+- `src/features/seating-editor/schemas/guest-assignment.schema.ts`
 
 ## Commands Run
 
@@ -300,6 +364,14 @@ Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
 - `corepack pnpm build` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm prisma migrate dev --name add-seating-relationships` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm typecheck` (initial fail before Prisma client regeneration; then pass)
+- `corepack pnpm lint` (pass with warnings)
+- `corepack pnpm build` (initial fail from relationship name typing mismatch; then pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with warnings)
 - `corepack pnpm build` (pass)
 - `corepack pnpm prisma migrate dev --name add-seat-layout` (pass)
 - `corepack pnpm prisma:validate` (pass)
@@ -345,14 +417,15 @@ Phase 34 - Desktop seat-to-seat drag-and-drop (completed)
 
 ## Known Issues
 
-- Drag guest-to-seat interaction is not implemented yet (click/picker flow is primary).
+- Existing lint warnings remain:
+  - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
+  - `SeatingCanvas` `useEffect` dependency warning (pre-existing)
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
-- None from this phase-specific stabilization pass.
 
 ## Next Recommended Step
 
 Next recommended follow-up:
 
-- Optional UX phase: move seat assignment fully into inspector (or keep popover long-term), but maintain a single action surface.
-- Improve CSV parser robustness for quoted commas/newlines.
-- Optional future extension: add left-only/right-only layout modes (or orientation-aware mapping) if needed.
+- Add explicit grouped-move preview panel in seat popover (full seat-by-seat plan before commit).
+- Add dedicated relationship member editing UX wired to members `PUT` route.
+- Add unit tests for planner edge cases and API-level strict validation regressions.

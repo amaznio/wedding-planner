@@ -252,6 +252,12 @@ export function InspectorPanel({
         side={side}
         showOverlay={showOverlay}
         className="h-full w-[340px] p-0 sm:max-w-[340px]"
+        onInteractOutside={(event) => {
+          event.preventDefault();
+        }}
+        onPointerDownOutside={(event) => {
+          event.preventDefault();
+        }}
       >
         <SheetTitle className="sr-only">Inspector</SheetTitle>
         {inspectorBody}

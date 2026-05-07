@@ -17,6 +17,7 @@ model SeatingPlan {
   tables       SeatingTable[]
   guests       Guest[]
   assignments  SeatAssignment[]
+  relationships SeatingRelationship[]
 }
 
 model SeatingTable {
@@ -51,8 +52,41 @@ model Guest {
   updatedAt DateTime    @updatedAt
 
   assignment SeatAssignment?
+  relationshipMembers SeatingRelationshipMember[]
 
   @@index([planId])
+}
+
+model SeatingRelationship {
+  id                  String   @id @default(cuid())
+  planId              String
+  plan                SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  type                String
+  name                String?
+  preferredSeating    String
+  moveTogetherDefault Boolean  @default(false)
+  strict              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  members SeatingRelationshipMember[]
+
+  @@index([planId])
+}
+
+model SeatingRelationshipMember {
+  id             String   @id @default(cuid())
+  relationshipId String
+  relationship   SeatingRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  guestId        String
+  guest          Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  sortOrder      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([relationshipId, guestId])
+  @@index([relationshipId])
+  @@index([guestId])
 }
 
 model SeatAssignment {

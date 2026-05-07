@@ -18,6 +18,29 @@ export const assignSeatSchema = z.object({
   seatNumber: z.int().min(1).max(50),
 });
 
+export const batchMoveAssignmentsSchema = z.object({
+  initiatorGuestId: z.string().min(1),
+  targetTableId: z.string().min(1),
+  targetSeatNumber: z.int().min(1).max(50),
+  moveTogetherEnabled: z.boolean(),
+  plannedAssignments: z
+    .array(
+      z.object({
+        guestId: z.string().min(1),
+        tableId: z.string().min(1),
+        seatNumber: z.int().min(1).max(50),
+      }),
+    )
+    .min(1)
+    .max(50),
+  context: z.object({
+    relationshipIdsConsidered: z.array(z.string().min(1)),
+  }),
+});
+
 export type CreateGuestInput = z.infer<typeof createGuestSchema>;
 export type UpdateGuestInput = z.infer<typeof updateGuestSchema>;
 export type AssignSeatInput = z.infer<typeof assignSeatSchema>;
+export type BatchMoveAssignmentsInput = z.infer<
+  typeof batchMoveAssignmentsSchema
+>;

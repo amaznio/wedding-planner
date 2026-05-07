@@ -6,8 +6,17 @@ import { useParams } from "next/navigation";
 import { InspectorPanel } from "@/features/seating-editor/components/InspectorPanel";
 import { SeatingCanvas } from "@/features/seating-editor/components/SeatingCanvas";
 import { GuestPanel } from "@/features/seating-editor/components/GuestPanel";
+import {
+  buildGroupMovePlan,
+  getAutoMoveTogetherRelationships,
+} from "@/features/seating-editor/lib/group-move";
 import { SeatingToolbar } from "@/features/seating-editor/components/SeatingToolbar";
 import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-editor-store";
+import type {
+  PreferredSeating,
+  RelationshipType,
+  SeatingRelationship,
+} from "@/features/seating-editor/types/relationship.types";
 import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -53,6 +62,18 @@ type SeatAssignmentPayload = {
     seatNumber: number;
   };
 };
+
+type BatchMoveAssignmentsResponse = {
+  assignments: Array<{
+    id: string;
+    planId: string;
+    tableId: string;
+    guestId: string;
+    seatNumber: number;
+  }>;
+};
+
+type ApiRelationship = SeatingRelationship;
 
 function normalizePlan(plan: ApiPlan): SeatingPlan {
   return {
@@ -112,8 +133,10 @@ export default function SeatingPlanEditorPage() {
   const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
   const [isDraggingGuest, setIsDraggingGuest] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
+  const [relationships, setRelationships] = useState<ApiRelationship[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
+  const [relationshipsError, setRelationshipsError] = useState<string | null>(null);
   const [guestForm, setGuestForm] = useState({ name: "", group: "", notes: "" });
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
@@ -241,6 +264,18 @@ export default function SeatingPlanEditorPage() {
       ) as Record<string, string>,
     [plan.tables],
   );
+  const relationshipsByGuestId = useMemo(() => {
+    const next: Record<string, ApiRelationship[]> = {};
+    for (const relationship of relationships) {
+      for (const guestId of relationship.guestIds) {
+        if (!next[guestId]) {
+          next[guestId] = [];
+        }
+        next[guestId].push(relationship);
+      }
+    }
+    return next;
+  }, [relationships]);
 
   const loadGuests = useCallback(async () => {
     setIsGuestsLoading(true);
@@ -261,6 +296,24 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId]);
 
+  const loadRelationships = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/seating-plans/${planId}/relationships`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to load relationships");
+      }
+      const data = (await response.json()) as { relationships: ApiRelationship[] };
+      setRelationships(data.relationships ?? []);
+      setRelationshipsError(null);
+    } catch (error) {
+      setRelationshipsError(
+        error instanceof Error ? error.message : "Failed to load relationships",
+      );
+    }
+  }, [planId]);
+
   useEffect(() => {
     const loadPlan = async () => {
       try {
@@ -275,7 +328,7 @@ export default function SeatingPlanEditorPage() {
 
         const planData = (await planResponse.json()) as { plan: ApiPlan };
         setPlan(normalizePlan(planData.plan));
-        await loadGuests();
+        await Promise.all([loadGuests(), loadRelationships()]);
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : "Failed to load seating plan");
       } finally {
@@ -284,7 +337,7 @@ export default function SeatingPlanEditorPage() {
     };
 
     if (planId) void loadPlan();
-  }, [loadGuests, planId, setPlan]);
+  }, [loadGuests, loadRelationships, planId, setPlan]);
 
   const createAssignment = useCallback(async (guestId: string, tableId: string, seatNumber: number) => {
     const response = await fetch(`/api/seating-plans/${planId}/assignments`, {
@@ -314,6 +367,39 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId]);
 
+  const executeBatchMoveAssignments = useCallback(
+    async (payload: {
+      initiatorGuestId: string;
+      targetTableId: string;
+      targetSeatNumber: number;
+      moveTogetherEnabled: boolean;
+      plannedAssignments: Array<{
+        guestId: string;
+        tableId: string;
+        seatNumber: number;
+      }>;
+      context: { relationshipIdsConsidered: string[] };
+    }) => {
+      const response = await fetch(
+        `/api/seating-plans/${planId}/assignments/batch-move`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to move linked guests");
+      }
+      const data = (await response.json()) as BatchMoveAssignmentsResponse;
+      return data.assignments;
+    },
+    [planId],
+  );
+
   const handleUnassignGuest = useCallback(async (assignmentId: string, guestId: string) => {
     try {
       setGuestsError(null);
@@ -342,6 +428,74 @@ export default function SeatingPlanEditorPage() {
 
     const targetGuest = guests.find((guest) => guest.id === guestId);
     if (!targetGuest) throw new Error("Guest not found");
+
+    const autoMoveRelationships = getAutoMoveTogetherRelationships(
+      targetGuest.id,
+      relationshipsByGuestId,
+    );
+    const moveTogetherEnabled = autoMoveRelationships.length > 0;
+
+    if (moveTogetherEnabled) {
+      const planResult = buildGroupMovePlan({
+        initiatorGuestId: targetGuest.id,
+        targetTableId: tableId,
+        targetSeatNumber: seatNumber,
+        tables: plan.tables.map((table) => ({
+          id: table.id,
+          x: table.x,
+          y: table.y,
+          seatCount: table.seatCount,
+        })),
+        guests: guests.map((guest) => ({
+          id: guest.id,
+          assignment: guest.assignment
+            ? {
+                tableId: guest.assignment.tableId,
+                seatNumber: guest.assignment.seatNumber,
+              }
+            : null,
+        })),
+        relationships: autoMoveRelationships,
+      });
+
+      if (!planResult.ok) {
+        throw new Error(planResult.error);
+      }
+
+      const assignments = await executeBatchMoveAssignments({
+        initiatorGuestId: targetGuest.id,
+        targetTableId: tableId,
+        targetSeatNumber: seatNumber,
+        moveTogetherEnabled: true,
+        plannedAssignments: planResult.assignments,
+        context: {
+          relationshipIdsConsidered: planResult.relationshipIdsConsidered,
+        },
+      });
+
+      const assignmentsByGuestId = Object.fromEntries(
+        assignments.map((assignment) => [assignment.guestId, assignment]),
+      );
+      setGuests((current) =>
+        current.map((guest) => {
+          const assignment = assignmentsByGuestId[guest.id];
+          if (!assignment) return guest;
+          return {
+            ...guest,
+            assignment: {
+              id: assignment.id,
+              tableId: assignment.tableId,
+              seatNumber: assignment.seatNumber,
+            },
+          };
+        }),
+      );
+
+      return {
+        level: "success" as const,
+        message: `Linked group moved (${planResult.assignments.length} guests).`,
+      };
+    }
 
     const targetGuestAssignment = targetGuest.assignment;
     const clickedGuestAssignment = clickedGuest?.assignment ?? null;
@@ -374,7 +528,7 @@ export default function SeatingPlanEditorPage() {
     );
     if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: "Guests swapped" };
     return { level: "success" as const, message: "Seat assigned" };
-  }, [createAssignment, deleteAssignment, guests]);
+  }, [createAssignment, deleteAssignment, executeBatchMoveAssignments, guests, plan.tables, relationshipsByGuestId]);
   const dropGuestOnSeat = useCallback(
     async (tableId: string, seatNumber: number, guestId: string) => {
       if (!isDesktopViewport) return;
@@ -516,7 +670,7 @@ export default function SeatingPlanEditorPage() {
         if (payload.plan) {
           setPlan(normalizePlan(payload.plan));
         }
-        await loadGuests();
+        await Promise.all([loadGuests(), loadRelationships()]);
         shouldAutosaveGuestsRef.current = false;
         markSaved();
         setSaveState("saved");
@@ -654,6 +808,15 @@ export default function SeatingPlanEditorPage() {
         throw new Error(errorData?.error ?? "Failed to delete guest");
       }
       setGuests((current) => current.filter((guest) => guest.id !== guestId));
+      setRelationships((current) =>
+        current
+          .map((relationship) => ({
+            ...relationship,
+            guestIds: relationship.guestIds.filter((id) => id !== guestId),
+            members: relationship.members.filter((member) => member.guestId !== guestId),
+          }))
+          .filter((relationship) => relationship.guestIds.length >= 2),
+      );
       if (selectedGuestId === guestId) clearSelection();
       shouldAutosaveGuestsRef.current = true;
       scheduleAutosave();
@@ -661,6 +824,109 @@ export default function SeatingPlanEditorPage() {
       setGuestsError(error instanceof Error ? error.message : "Failed to delete guest");
     }
   }, [clearSelection, planId, scheduleAutosave, selectedGuestId]);
+
+  const handleCreateRelationship = useCallback(
+    async (payload: {
+      type: RelationshipType;
+      name: string;
+      preferredSeating: PreferredSeating;
+      moveTogetherDefault: boolean;
+      strict: boolean;
+      guestIds: string[];
+    }) => {
+      try {
+        setRelationshipsError(null);
+        const response = await fetch(`/api/seating-plans/${planId}/relationships`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to create relationship");
+        }
+        const data = (await response.json()) as { relationship: ApiRelationship };
+        setRelationships((current) => [...current, data.relationship]);
+      } catch (error) {
+        setRelationshipsError(
+          error instanceof Error ? error.message : "Failed to create relationship",
+        );
+      }
+    },
+    [planId],
+  );
+
+  const handleUpdateRelationship = useCallback(
+    async (
+      relationshipId: string,
+      payload: Partial<{
+        type: RelationshipType;
+        name: string | null;
+        preferredSeating: PreferredSeating;
+        moveTogetherDefault: boolean;
+        strict: boolean;
+      }>,
+    ) => {
+      try {
+        setRelationshipsError(null);
+        const response = await fetch(
+          `/api/seating-plans/${planId}/relationships/${relationshipId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to update relationship");
+        }
+        const data = (await response.json()) as { relationship: ApiRelationship };
+        setRelationships((current) =>
+          current.map((relationship) =>
+            relationship.id === relationshipId ? data.relationship : relationship,
+          ),
+        );
+      } catch (error) {
+        setRelationshipsError(
+          error instanceof Error ? error.message : "Failed to update relationship",
+        );
+      }
+    },
+    [planId],
+  );
+
+  const handleDeleteRelationship = useCallback(
+    async (relationshipId: string) => {
+      try {
+        setRelationshipsError(null);
+        const response = await fetch(
+          `/api/seating-plans/${planId}/relationships/${relationshipId}`,
+          {
+            method: "DELETE",
+          },
+        );
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to delete relationship");
+        }
+        setRelationships((current) =>
+          current.filter((relationship) => relationship.id !== relationshipId),
+        );
+      } catch (error) {
+        setRelationshipsError(
+          error instanceof Error ? error.message : "Failed to delete relationship",
+        );
+      }
+    },
+    [planId],
+  );
 
   useEffect(() => {
     if (isLoading) return;
@@ -746,6 +1012,7 @@ export default function SeatingPlanEditorPage() {
             onToggleTableDrag={() =>
               setMobileTableDragEnabled((current) => !current)
             }
+            relationshipsByGuestId={relationshipsByGuestId}
             mobileMode
           />
           <Button
@@ -804,16 +1071,20 @@ export default function SeatingPlanEditorPage() {
             <GuestPanel
               variant="sheet"
               guests={guests}
+              relationships={relationships}
               tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               isLoading={isGuestsLoading}
-              error={guestsError}
+              error={guestsError ?? relationshipsError}
               onSelectGuest={handleSelectGuest}
               onGuestSelected={() => setMobileGuestsOpen(false)}
               onCreateGuest={handleCreateGuest}
               onBulkCreateGuests={handleBulkCreateGuests}
               onUpdateGuest={handleUpdateGuest}
               onDeleteGuest={handleDeleteGuest}
+              onCreateRelationship={handleCreateRelationship}
+              onUpdateRelationship={handleUpdateRelationship}
+              onDeleteRelationship={handleDeleteRelationship}
             />
           </DrawerContent>
         </Drawer>
@@ -1006,15 +1277,19 @@ export default function SeatingPlanEditorPage() {
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
             guests={guests}
+            relationships={relationships}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             isLoading={isGuestsLoading}
-            error={guestsError}
+            error={guestsError ?? relationshipsError}
             onSelectGuest={handleSelectGuest}
             onCreateGuest={handleCreateGuest}
             onBulkCreateGuests={handleBulkCreateGuests}
             onUpdateGuest={handleUpdateGuest}
             onDeleteGuest={handleDeleteGuest}
+            onCreateRelationship={handleCreateRelationship}
+            onUpdateRelationship={handleUpdateRelationship}
+            onDeleteRelationship={handleDeleteRelationship}
             enableGuestDnD
             onGuestDragStart={startGuestDrag}
             onGuestDragEnd={endGuestDrag}
@@ -1047,6 +1322,7 @@ export default function SeatingPlanEditorPage() {
               onSeatGuestDragStart={startGuestDrag}
               onSeatGuestDragEnd={endGuestDrag}
               onGuestDropToSeat={dropGuestOnSeat}
+              relationshipsByGuestId={relationshipsByGuestId}
             />
             <InspectorPanel
               selection={selection}

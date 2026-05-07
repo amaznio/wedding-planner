@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/components/ui/use-toast";
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
+import type { SeatingRelationship } from "../types/relationship.types";
 import type { SeatingPlan } from "../types/seating-plan.types";
 import { RectTable } from "./RectTable";
 
@@ -55,6 +56,7 @@ type SeatingCanvasProps = {
     seatNumber: number,
     guestId: string,
   ) => Promise<void> | void;
+  relationshipsByGuestId?: Record<string, SeatingRelationship[]>;
 };
 
 export type SeatingCanvasHandle = {
@@ -87,6 +89,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
   onGuestDropToSeat,
+  relationshipsByGuestId = {},
 }, ref) {
   const [draggedSeatGuestId, setDraggedSeatGuestId] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -766,6 +769,13 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 const assignmentLabel = guest.assignment
                   ? `${tableLabelById[guest.assignment.tableId] ?? "Table"} • Seat ${guest.assignment.seatNumber}`
                   : "Unseated";
+                const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
+                const moveTogetherGuestIds = new Set(
+                  guestRelationships
+                    .filter((relationship) => relationship.moveTogetherDefault)
+                    .flatMap((relationship) => relationship.guestIds),
+                );
+                const moveTogetherPreviewCount = moveTogetherGuestIds.size;
                 return (
                   <button
                     key={guest.id}
@@ -812,6 +822,27 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                     <span className="ml-2 text-zinc-500">
                       {assignmentLabel}
                     </span>
+                    {guestRelationships.length > 0 ? (
+                      <span className="ml-2 text-[10px] text-emerald-700">
+                        {guestRelationships
+                          .map((relationship) =>
+                            relationship.name?.trim().length
+                              ? relationship.name
+                              : relationship.type,
+                          )
+                          .join(", ")}
+                        {" • "}
+                        {guestRelationships
+                          .map((relationship) => relationship.preferredSeating)
+                          .join(", ")}
+                        {moveTogetherPreviewCount > 0 ? (
+                          <>
+                            {" • "}
+                            group move: {moveTogetherPreviewCount}
+                          </>
+                        ) : null}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
