@@ -1404,6 +1404,11 @@ export default function SeatingPlanEditorPage() {
           selectedSeatGuest={selectedSeatGuest}
           tableLabelById={tableLabelById}
           onClose={() => setMobileInspectorOpen(false)}
+          onBackToGuestList={() => {
+            handleSelectGuest(null);
+            setMobileInspectorOpen(false);
+            setMobileGuestsOpen(true);
+          }}
           onSelectTable={(tableId) => selectTable(tableId)}
           onGuestFormChange={setGuestForm}
           onUpdateGuest={handleUpdateGuest}

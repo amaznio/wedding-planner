@@ -2,12 +2,19 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/i18n/provider";
-import { RotateCw } from "lucide-react";
+import { ChevronLeft, EllipsisVertical, RotateCw } from "lucide-react";
 import type {
   PreferredSeating,
   RelationshipType,
@@ -46,6 +53,7 @@ type InspectorPanelProps = {
   selectedSeatGuest: Guest | null;
   tableLabelById?: Record<string, string>;
   onClose: () => void;
+  onBackToGuestList?: () => void;
   onSelectTable: (tableId: string) => void;
   onGuestFormChange: (next: { name: string; group: string; notes: string }) => void;
   onUpdateGuest: (
@@ -77,6 +85,13 @@ type InspectorPanelProps = {
   showOverlay?: boolean;
 };
 
+type ConfirmAction = {
+  title: string;
+  description?: string;
+  confirmVariant?: "default" | "destructive";
+  onConfirm: () => Promise<void>;
+};
+
 export function InspectorPanel({
   selection,
   isOpen,
@@ -88,6 +103,7 @@ export function InspectorPanel({
   selectedSeatGuest,
   tableLabelById = {},
   onClose,
+  onBackToGuestList,
   onSelectTable,
   onGuestFormChange,
   onUpdateGuest,
@@ -112,6 +128,7 @@ export function InspectorPanel({
   );
   const [editingRelationshipName, setEditingRelationshipName] = useState("");
   const [isPlusOneSubmitting, setIsPlusOneSubmitting] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const relationshipTypeLabel: Record<RelationshipType, string> = {
     couple: t("guestPanel.relationshipType.couple"),
@@ -143,6 +160,9 @@ export function InspectorPanel({
   const selectedGuestRelationships = selectedGuest
     ? relationshipsByGuestId[selectedGuest.id] ?? []
     : [];
+  const hasNonPlusOneRelationship = selectedGuestRelationships.some(
+    (relationship) => relationship.type !== "plus_one",
+  );
   const selectedGuestPlusOneRelationship =
     selectedGuestRelationships.find((relationship) => relationship.type === "plus_one") ?? null;
   const selectedGuestPlusOneGuest =
@@ -156,70 +176,145 @@ export function InspectorPanel({
 
   const isMobileDrawer = side === "bottom";
   const contentAreaClassName = "flex-1 overflow-auto p-4";
+  const showBackAction =
+    isMobileDrawer && selection?.type === "guest" && Boolean(onBackToGuestList);
+  const showMoreActionsMenu = selection?.type === "guest" && selectedGuest !== null;
+  const hasHeaderActions = showBackAction || showMoreActionsMenu;
   const inspectorBody = (
     <div className="flex flex-col">
-      {!isMobileDrawer ? (
-        <>
-          <div className="flex items-center justify-between px-4 py-3">
-            <h3 className="text-sm font-semibold text-zinc-900">{t("inspector.title")}</h3>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              {t("common.close")}
+      {hasHeaderActions ? (
+        <div className="flex items-center gap-2 px-4 py-3">
+          {showBackAction ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={onBackToGuestList}
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              {t("inspector.backToGuests")}
             </Button>
-          </div>
-          <Separator />
-        </>
+          ) : null}
+          {showMoreActionsMenu && selectedGuest ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto"
+                  aria-label={t("inspector.moreActions")}
+                >
+                  <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-red-700 focus:text-red-700"
+                  onClick={() =>
+                    setConfirmAction({
+                      title: t("inspector.confirmDeleteGuestTitle"),
+                      description: t("inspector.confirmDeleteGuestDescription", {
+                        name: selectedGuest.name,
+                      }),
+                      onConfirm: () => onDeleteGuest(selectedGuest.id),
+                    })
+                  }
+                >
+                  {t("common.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
       ) : null}
+      {hasHeaderActions ? <Separator /> : null}
       <div className={contentAreaClassName}>
           {!selection ? (
             <p className="text-sm text-zinc-600">{t("inspector.selectPrompt")}</p>
           ) : null}
 
           {selection?.type === "guest" && selectedGuest ? (
-            <div className="space-y-3">
+            <div>
               <div>
-                <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
+                <p className="text-[22px] font-semibold leading-tight text-zinc-900">
+                  {selectedGuest.name}
+                </p>
                 {selectedGuest.assignment ? (
-                  <Badge variant="secondary" className="mt-1">
-                    {tableLabelById[selectedGuest.assignment.tableId] ?? t("guestPanel.tableFallback")} •{" "}
-                    {t("guestPanel.seat", { seat: selectedGuest.assignment.seatNumber })}
-                  </Badge>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {tableLabelById[selectedGuest.assignment.tableId] ?? t("guestPanel.tableFallback")} •{" "}
+                      {t("guestPanel.seat", { seat: selectedGuest.assignment.seatNumber })}
+                    </Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-[11px]"
+                      onClick={() =>
+                        setConfirmAction({
+                          title: t("inspector.confirmUnassignGuestTitle"),
+                          description: t("inspector.confirmUnassignGuestDescription"),
+                          confirmVariant: "default",
+                          onConfirm: () =>
+                            onUnassignGuest(selectedGuest.assignment!.id, selectedGuest.id),
+                        })
+                      }
+                    >
+                      {t("guestPanel.unassign")}
+                    </Button>
+                  </div>
                 ) : (
-                  <Badge className="mt-1">{t("inspector.unassigned")}</Badge>
+                  <Badge className="mt-2">{t("inspector.unassigned")}</Badge>
                 )}
               </div>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">{t("guestPanel.name")}</span>
-                <Input
-                  value={guestForm.name}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, name: event.target.value })
-                  }
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">{t("guestPanel.group")}</span>
-                <Input
-                  value={guestForm.group}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, group: event.target.value })
-                  }
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">{t("guestPanel.notes")}</span>
-                <textarea
-                  value={guestForm.notes}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, notes: event.target.value })
-                  }
-                  rows={3}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-                />
-              </label>
-              <div className="flex gap-2">
+
+              <Separator className="my-4" />
+
+              <section className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  {t("guestPanel.guestDetails")}
+                </p>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">{t("guestPanel.name")}</span>
+                  <Input
+                    value={guestForm.name}
+                    onChange={(event) =>
+                      onGuestFormChange({ ...guestForm, name: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">{t("guestPanel.group")}</span>
+                  <Input
+                    value={guestForm.group}
+                    onChange={(event) =>
+                      onGuestFormChange({ ...guestForm, group: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">{t("guestPanel.notes")}</span>
+                  <textarea
+                    value={guestForm.notes}
+                    onChange={(event) =>
+                      onGuestFormChange({ ...guestForm, notes: event.target.value })
+                    }
+                    rows={4}
+                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  />
+                </label>
+              </section>
+
+              <Separator className="my-4" />
+
+              <section className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  {t("inspector.actions")}
+                </p>
                 <Button
                   type="button"
-                  variant="outline"
+                  className="w-full"
                   onClick={() =>
                     void onUpdateGuest(selectedGuest.id, {
                       name: guestForm.name,
@@ -230,92 +325,110 @@ export function InspectorPanel({
                 >
                   {t("guestPanel.saveGuest")}
                 </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => void onDeleteGuest(selectedGuest.id)}
-                >
-                  {t("common.delete")}
-                </Button>
-              </div>
-              {selectedGuest.assignment ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void onUnassignGuest(selectedGuest.assignment!.id, selectedGuest.id)
-                  }
-                >
-                  {t("guestPanel.unassign")}
-                </Button>
+                {!selectedGuest.isPlaceholderPlusOne ? (
+                  selectedGuestPlusOneRelationship &&
+                  selectedGuestPlusOneGuest?.isPlaceholderPlusOne &&
+                  selectedGuestPlusOneGuest.plusOneHostGuestId === selectedGuest.id ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={isPlusOneSubmitting}
+                      onClick={() =>
+                        setConfirmAction({
+                          title: t("inspector.confirmRemovePlusOneTitle"),
+                          description: t("inspector.confirmRemovePlusOneDescription"),
+                          confirmVariant: "default",
+                          onConfirm: async () => {
+                            setIsPlusOneSubmitting(true);
+                            try {
+                              await onRemovePlusOne(selectedGuest.id);
+                            } finally {
+                              setIsPlusOneSubmitting(false);
+                            }
+                          },
+                        })
+                      }
+                    >
+                      {t("guestPanel.removePlusOne")}
+                    </Button>
+                    ) : !selectedGuestPlusOneRelationship &&
+                        !hasNonPlusOneRelationship ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                      className="w-full"
+                      disabled={isPlusOneSubmitting}
+                      onClick={() => {
+                        setIsPlusOneSubmitting(true);
+                        void onAddPlusOne(
+                          selectedGuest.id,
+                          t("guestPanel.plusOnePlaceholderName"),
+                        ).finally(() => {
+                          setIsPlusOneSubmitting(false);
+                        });
+                      }}
+                    >
+                      {t("guestPanel.addPlusOne")}
+                    </Button>
+                  ) : null
+                ) : null}
+              </section>
+
+              {selectedGuestRelationships.length === 0 ? (
+                <>
+                  <Separator className="my-4" />
+
+                  <section className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      {t("inspector.linking")}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => onStartLinking(selectedGuest.id)}
+                    >
+                      {t("guestPanel.startLinking")}
+                    </Button>
+                  </section>
+                </>
               ) : null}
-              {!selectedGuest.isPlaceholderPlusOne ? (
-                selectedGuestPlusOneRelationship &&
-                selectedGuestPlusOneGuest?.isPlaceholderPlusOne &&
-                selectedGuestPlusOneGuest.plusOneHostGuestId === selectedGuest.id ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isPlusOneSubmitting}
-                    onClick={() => {
-                      setIsPlusOneSubmitting(true);
-                      void onRemovePlusOne(selectedGuest.id).finally(() => {
-                        setIsPlusOneSubmitting(false);
-                      });
-                    }}
-                  >
-                    {t("guestPanel.removePlusOne")}
-                  </Button>
-                ) : !selectedGuestPlusOneRelationship ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isPlusOneSubmitting}
-                    onClick={() => {
-                      setIsPlusOneSubmitting(true);
-                      void onAddPlusOne(
-                        selectedGuest.id,
-                        t("guestPanel.plusOnePlaceholderName"),
-                      ).finally(() => {
-                        setIsPlusOneSubmitting(false);
-                      });
-                    }}
-                  >
-                    {t("guestPanel.addPlusOne")}
-                  </Button>
-                ) : null
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onStartLinking(selectedGuest.id)}
-              >
-                {t("guestPanel.startLinking")}
-              </Button>
-              <div className="space-y-2 rounded-md border border-zinc-200 bg-white p-2">
-                <p className="text-xs font-semibold text-zinc-800">
+
+              <Separator className="my-4" />
+
+              <section className="space-y-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   {t("guestPanel.relationshipsForSelected")}
                 </p>
                 {selectedGuestRelationships.length === 0 ? (
                   <p className="text-xs text-zinc-500">{t("guestPanel.noRelationships")}</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {selectedGuestRelationships.map((relationship) => (
-                      <div
-                        key={relationship.id}
-                        className="rounded-md border border-zinc-200 bg-white p-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-xs font-medium text-zinc-900">
-                            {relationship.name?.trim().length
-                              ? relationship.name
-                              : relationshipTypeLabel[relationship.type]}
-                          </p>
+                      <div key={relationship.id} className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-zinc-900">
+                              {relationship.name?.trim().length
+                                ? relationship.name
+                                : relationshipTypeLabel[relationship.type]}
+                            </p>
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <Badge variant="default" className="text-[10px]">
+                                {relationshipTypeLabel[relationship.type]}
+                              </Badge>
+                              <span className="truncate text-[11px] text-zinc-600">
+                                {preferredSeatingLabel[relationship.preferredSeating]} •{" "}
+                                {t("guestPanel.guestsCount", { count: relationship.guestIds.length })}
+                              </span>
+                            </div>
+                          </div>
                           <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            className="h-6 px-2 text-[11px]"
+                            className="h-7 px-2 text-[11px]"
                             onClick={(event) => {
                               event.stopPropagation();
                               setEditingRelationshipId(relationship.id);
@@ -325,17 +438,12 @@ export function InspectorPanel({
                             {t("guestPanel.rename")}
                           </Button>
                         </div>
-                        <p className="text-[11px] text-zinc-600">
-                          {relationshipTypeLabel[relationship.type]} •{" "}
-                          {preferredSeatingLabel[relationship.preferredSeating]} •{" "}
-                          {t("guestPanel.guestsCount", { count: relationship.guestIds.length })}
-                        </p>
-                        <div className="mt-2 flex gap-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <Button
                             type="button"
                             size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-[11px]"
+                            variant={relationship.moveTogetherDefault ? "default" : "outline"}
+                            className="h-7 px-2 text-[11px]"
                             onClick={(event) => {
                               event.stopPropagation();
                               void onUpdateRelationship(relationship.id, {
@@ -352,8 +460,8 @@ export function InspectorPanel({
                           <Button
                             type="button"
                             size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-[11px]"
+                            variant={relationship.strict ? "default" : "outline"}
+                            className="h-7 px-2 text-[11px]"
                             onClick={(event) => {
                               event.stopPropagation();
                               void onUpdateRelationship(relationship.id, {
@@ -371,10 +479,22 @@ export function InspectorPanel({
                             type="button"
                             size="sm"
                             variant="destructive"
-                            className="h-6 px-2 text-[11px]"
-                            onClick={(event) => {
+                            className="ml-auto h-7 px-2 text-[11px]"
+                            onClick={() => {
+                              const relationshipLabel =
+                                relationship.name?.trim().length
+                                  ? relationship.name
+                                  : relationshipTypeLabel[relationship.type];
+                              setConfirmAction({
+                                title: t("inspector.confirmDeleteRelationshipTitle"),
+                                description: t("inspector.confirmDeleteRelationshipDescription", {
+                                  name: relationshipLabel,
+                                }),
+                                onConfirm: () => onDeleteRelationship(relationship.id),
+                              });
+                            }}
+                            onPointerDown={(event) => {
                               event.stopPropagation();
-                              void onDeleteRelationship(relationship.id);
                             }}
                           >
                             {t("common.delete")}
@@ -383,7 +503,7 @@ export function InspectorPanel({
                         {editingRelationshipId === relationship.id ? (
                           <div className="mt-2 flex gap-2">
                             <Input
-                              className="h-7 text-xs"
+                              className="h-8 text-xs"
                               value={editingRelationshipName}
                               onChange={(event) =>
                                 setEditingRelationshipName(event.target.value)
@@ -392,7 +512,7 @@ export function InspectorPanel({
                             <Button
                               type="button"
                               size="sm"
-                              className="h-7 text-xs"
+                              className="h-8 text-xs"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 void onUpdateRelationship(relationship.id, {
@@ -408,7 +528,8 @@ export function InspectorPanel({
                     ))}
                   </div>
                 )}
-              </div>
+              </section>
+
             </div>
           ) : null}
 
@@ -455,7 +576,20 @@ export function InspectorPanel({
                   <RotateCw className="h-4 w-4" aria-hidden="true" />
                   {t("inspector.rotate")}
                 </Button>
-                <Button variant="destructive" onClick={onDeleteTable}>
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    setConfirmAction({
+                      title: t("inspector.confirmDeleteTableTitle"),
+                      description: t("inspector.confirmDeleteTableDescription", {
+                        name: selectedTable.label,
+                      }),
+                      onConfirm: async () => {
+                        onDeleteTable();
+                      },
+                    })
+                  }
+                >
                   {t("common.delete")}
                 </Button>
               </div>
@@ -486,6 +620,22 @@ export function InspectorPanel({
             </div>
           ) : null}
       </div>
+      <ConfirmDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+          }
+        }}
+        title={confirmAction?.title ?? ""}
+        description={confirmAction?.description}
+        confirmLabel={t("common.confirm")}
+        cancelLabel={t("common.cancel")}
+        confirmVariant={confirmAction?.confirmVariant ?? "destructive"}
+        onConfirm={async () => {
+          await confirmAction?.onConfirm();
+        }}
+      />
     </div>
   );
 
@@ -512,7 +662,7 @@ export function InspectorPanel({
       <SheetContent
         side={side}
         showOverlay={showOverlay}
-        className="h-full w-[340px] p-0 sm:max-w-[340px]"
+        className="h-full w-[380px] p-0 sm:max-w-[380px]"
         onInteractOutside={(event) => {
           event.preventDefault();
         }}

@@ -3,6 +3,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -147,6 +148,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     "unseated",
   );
   const [seatMenuQuery, setSeatMenuQuery] = useState("");
+  const [isSeatUnassignConfirmOpen, setIsSeatUnassignConfirmOpen] = useState(false);
   const [conflictSeat, setConflictSeat] = useState<{
     tableId: string;
     seatNumber: number;
@@ -511,7 +513,10 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
 
     return filtered.sort((a, b) => byName(a.name, b.name));
   }, [guests, seatMenuGuestFilter, seatMenuQuery]);
-  const closeSeatMenu = () => setSeatMenu(null);
+  const closeSeatMenu = () => {
+    setSeatMenu(null);
+    setIsSeatUnassignConfirmOpen(false);
+  };
   const handleSeatMenuAssign = async (guestId: string | null) => {
     if (!seatMenu) return;
     setIsAssigningSeat(true);
@@ -684,7 +689,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       <button
         type="button"
         disabled={!menuSeatAssignment || isAssigningSeat}
-        onClick={() => void handleSeatMenuAssign(null)}
+        onClick={() => setIsSeatUnassignConfirmOpen(true)}
         className="w-full rounded-md border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
       >
         {t("canvas.unassignSeat")}
@@ -1041,6 +1046,21 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             </DrawerContent>
           </Drawer>
         ) : null}
+        <ConfirmDialog
+          open={isSeatUnassignConfirmOpen}
+          onOpenChange={setIsSeatUnassignConfirmOpen}
+          title={t("canvas.confirmUnassignSeatTitle")}
+          description={t("canvas.confirmUnassignSeatDescription", {
+            name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
+            seat: seatMenu?.seatNumber ?? 0,
+          })}
+          confirmLabel={t("common.confirm")}
+          cancelLabel={t("common.cancel")}
+          confirmVariant="default"
+          onConfirm={async () => {
+            await handleSeatMenuAssign(null);
+          }}
+        />
       </div>
     </section>
   );

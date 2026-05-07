@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 77 - Link action UX cleanup + guest details relocation + large-list stability (completed)
+Phase 87 - Mobile back clears guest selection (completed)
 
 ## Completed Phases
 
@@ -84,9 +84,96 @@ Phase 77 - Link action UX cleanup + guest details relocation + large-list stabil
 - Phase 75 - Overflow + seat popover interaction fixes
 - Phase 76 - Guest details relocation to inspector/dedicated mobile drawer
 - Phase 77 - Link action UX cleanup
+- Phase 78 - Inspector visual hierarchy and action-priority redesign
+- Phase 79 - Inspector divider layout + singular relationship wording
+- Phase 80 - Contextual linking CTA visibility in inspector
+- Phase 81 - Unassign placement + plus-one eligibility guard
+- Phase 82 - Delete action moved to isolated danger zone
+- Phase 83 - Confirmation modal for destructive actions
+- Phase 84 - Safer delete placement + mobile back navigation
+- Phase 85 - Inspector header action-row cleanup
+- Phase 86 - Mobile back button style refinement
+- Phase 87 - Mobile back clears guest selection
 
 
 ## Completed Work
+
+- Implemented Phase 87 mobile back selection reset:
+  - updated mobile inspector back action callback to clear guest selection (`handleSelectGuest(null)`)
+  - returning from guest details to guest list now also unselects the previously active guest row
+  - behavior is limited to mobile back flow; no desktop selection behavior changes
+
+- Implemented Phase 86 mobile back-button style refinement:
+  - changed mobile inspector `Back to guests` action from text-like `ghost` style to `outline` button
+  - added left-chevron icon for clearer navigation affordance
+  - preserved current behavior and positioning (left action + right overflow menu)
+
+- Implemented Phase 85 inspector header action-row cleanup:
+  - kept the mobile inspector top row as actions-only
+  - removed any title/close affordance from that row, leaving back-navigation and contextual actions
+  - pinned the overflow (`...`) trigger to the far right via layout update (`ml-auto`)
+  - no behavior changes to delete confirmation or back-navigation flow
+
+- Implemented Phase 84 navigation and delete-visibility refinement:
+  - removed prominent guest delete button from the inspector body
+  - moved guest delete into a subtle header overflow menu (`More actions`) on both desktop and mobile inspector views
+  - retained delete confirmation modal behavior from Phase 83
+  - added mobile inspector back action (`Back to guests`) to return from guest-details drawer to guest-list drawer
+  - wired mobile back flow in plan page state: closes inspector drawer and reopens guest list drawer
+
+- Implemented Phase 83 confirmation flow for destructive actions:
+  - added reusable modal component: `src/components/ui/confirm-dialog.tsx` (question + confirm + cancel)
+  - wired confirmations in inspector for:
+    - unassign guest seat
+    - remove plus one
+    - delete relationship
+    - delete guest
+    - delete table
+  - wired confirmation in seat popover for `Unassign Seat`
+  - added localized confirmation copy for EN/PL (`common.confirm`, inspector confirmation prompts, canvas seat-unassign prompt)
+  - all destructive actions now require explicit confirm/cancel before execution
+
+- Implemented Phase 82 destructive-action spacing improvement:
+  - moved guest `Delete` action out of the main action group into a dedicated bottom `Danger zone` section
+  - added clear visual separation via divider and red section label to reduce accidental proximity with `Save Guest`
+  - no behavior changes to delete flow; placement and hierarchy only
+
+- Implemented Phase 81 inspector action-logic refinements:
+  - moved `Unassign` action next to current seat badge in the guest header for better contextual relevance
+  - removed duplicate `Unassign` control from generic actions block
+  - disallowed `Add Plus One` when the guest already has a non-`plus_one` relationship
+  - preserved existing `Remove Plus One` behavior for linked placeholder plus-ones
+
+- Implemented Phase 80 linking CTA context rule:
+  - `Start linking` section now appears only when the selected guest has no relationship
+  - when a relationship already exists, the linking CTA is hidden to avoid conflicting/duplicative intent in the same view
+  - relationship controls remain available in the relationship section
+
+- Implemented Phase 79 inspector structure refinements based on UX feedback:
+  - removed section-level card wrappers in guest inspector mode and replaced section transitions with clean dividers
+  - moved link CTA into a dedicated `Linking` section, separate from generic guest actions
+  - updated relationship wording to singular for single-relationship UX:
+    - EN: `Selected guest relationship`, `No relationship.`
+    - PL: `Relacja wybranego gościa`
+  - kept relationship row controls and behavior unchanged
+
+- Implemented Phase 78 inspector UI hierarchy and scanability redesign:
+  - rebuilt guest inspector into clearly separated cards:
+    - guest identity header
+    - guest form fields
+    - actions block
+    - relationships block
+  - strengthened action priority and recognition:
+    - `Save Guest` promoted to full-width primary action
+    - secondary actions (`Start linking`, plus-one, unassign) standardized as full-width outline controls
+    - destructive delete isolated at bottom as full-width destructive action
+  - improved relationship readability and control clarity:
+    - each relationship now renders as a compact card with stronger title hierarchy and metadata grouping
+    - relationship type shown as a badge for faster scanning
+    - `moveTogether` and `strict` controls now use stateful button styling (`default` when on, `outline` when off)
+    - delete relationship action anchored to the right as destructive
+  - widened desktop inspector sheet from `340px` to `380px` for better readability of long Polish labels
+  - no behavioral/API changes; styling and layout only
 
 - Implemented Phase 75 UX stabilization fixes for large guest volumes:
   - fixed left panel row width pressure by switching the guest row main action to `flex-1 min-w-0` in a `min-w-0` row container
@@ -648,6 +735,47 @@ Phase 77 - Link action UX cleanup + guest details relocation + large-list stabil
 
 ## Files Changed
 
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/components/ui/confirm-dialog.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `src/features/seating-editor/components/InspectorPanel.tsx`
@@ -751,6 +879,44 @@ Phase 77 - Link action UX cleanup + guest details relocation + large-list stabil
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 87 mobile back now clears selected guest)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 86 mobile back button icon/style tweak)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 85 inspector header action-row cleanup)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 84 delete moved to overflow menu + mobile back-to-list action)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 83 destructive-action confirmation modal wiring)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (initial fail from i18n hardcoded-text parser on TS union in `InspectorPanel`; refactored type and pass)
+
+- `corepack pnpm typecheck` (pass; phase 82 delete action moved to isolated danger zone)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 81 unassign placement + plus-one eligibility guard)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 80 contextual linking CTA visibility)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 79 divider-based inspector sections + link section relocation)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 78 inspector visual hierarchy and action-priority redesign)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
 
 - `corepack pnpm typecheck` (pass; phase 75 seat popover + overflow changes)
 - `corepack pnpm lint` (initial fail: missing `Input` import in `SeatingCanvas`; fixed, then pass with existing warnings)
@@ -927,6 +1093,6 @@ Phase 77 - Link action UX cleanup + guest details relocation + large-list stabil
 
 Next recommended follow-up:
 
+- Apply the same hierarchy/action styling pass to table and seat inspector modes for consistency.
 - Remove or repurpose currently unused seat summary counters in `page.tsx` to clear lint noise.
 - Add backend+UI unit tests for CSV parser edge cases and plus-one add/remove endpoint behavior.
-- Consider promoting marker list from hardcoded constant to plan-level configuration once import flow stabilizes.
