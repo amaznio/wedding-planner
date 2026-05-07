@@ -45,7 +45,12 @@ type ApiPlan = {
 type ApiGuest = {
   id: string;
   name: string;
-  group: string | null;
+  groupId: string | null;
+  group: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
   notes: string | null;
   isPlaceholderPlusOne: boolean;
   plusOneHostGuestId: string | null;
@@ -54,6 +59,14 @@ type ApiGuest = {
     seatNumber: number;
     tableId: string;
   } | null;
+};
+
+type ApiGroup = {
+  id: string;
+  planId: string;
+  name: string;
+  color: string;
+  guestCount: number;
 };
 
 type GuestImportRow = {
@@ -153,11 +166,18 @@ export default function SeatingPlanEditorPage() {
   const [isDraggingGuest, setIsDraggingGuest] = useState(false);
   const [linkingSourceGuestId, setLinkingSourceGuestId] = useState<string | null>(null);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
+  const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [relationships, setRelationships] = useState<ApiRelationship[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState<string | null>(null);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
   const [relationshipsError, setRelationshipsError] = useState<string | null>(null);
-  const [guestForm, setGuestForm] = useState({ name: "", group: "", notes: "" });
+  const [guestForm, setGuestForm] = useState<{
+    name: string;
+    groupId: string | null;
+    notes: string;
+  }>({ name: "", groupId: null, notes: "" });
+  const [showGroupColors, setShowGroupColors] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const pendingAutosaveRef = useRef(false);
@@ -217,7 +237,7 @@ export default function SeatingPlanEditorPage() {
       const guest = guests.find((item) => item.id === guestId);
       setGuestForm({
         name: guest?.name ?? "",
-        group: guest?.group ?? "",
+        groupId: guest?.groupId ?? null,
         notes: guest?.notes ?? "",
       });
     },
@@ -261,7 +281,20 @@ export default function SeatingPlanEditorPage() {
 
   const seatAssignments = useMemo(
     () =>
-      guests.reduce<Record<string, Record<number, { guestId: string; guestName: string }>>>(
+      guests.reduce<
+        Record<
+          string,
+          Record<
+            number,
+            {
+              guestId: string;
+              guestName: string;
+              guestGroupColor: string | null;
+              guestGroupName: string | null;
+            }
+          >
+        >
+      >(
         (acc, guest) => {
           if (!guest.assignment) {
             return acc;
@@ -270,6 +303,8 @@ export default function SeatingPlanEditorPage() {
           tableSeats[guest.assignment.seatNumber] = {
             guestId: guest.id,
             guestName: guest.name,
+            guestGroupColor: guest.group?.color ?? null,
+            guestGroupName: guest.group?.name ?? null,
           };
           acc[guest.assignment.tableId] = tableSeats;
           return acc;
@@ -317,6 +352,22 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId]);
 
+  const loadGroups = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/seating-plans/${planId}/groups`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to load groups");
+      }
+      const data = (await response.json()) as { groups: ApiGroup[] };
+      setGroups(data.groups ?? []);
+      setGroupsError(null);
+    } catch (error) {
+      setGroupsError(error instanceof Error ? error.message : "Failed to load groups");
+    }
+  }, [planId]);
+
   const loadRelationships = useCallback(async () => {
     try {
       const response = await fetch(`/api/seating-plans/${planId}/relationships`, {
@@ -349,7 +400,7 @@ export default function SeatingPlanEditorPage() {
 
         const planData = (await planResponse.json()) as { plan: ApiPlan };
         setPlan(normalizePlan(planData.plan));
-        await Promise.all([loadGuests(), loadRelationships()]);
+        await Promise.all([loadGuests(), loadGroups(), loadRelationships()]);
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : t("editor.loadError"));
       } finally {
@@ -358,7 +409,7 @@ export default function SeatingPlanEditorPage() {
     };
 
     if (planId) void loadPlan();
-  }, [loadGuests, loadRelationships, planId, setPlan]);
+  }, [loadGroups, loadGuests, loadRelationships, planId, setPlan]);
 
   const createAssignment = useCallback(async (guestId: string, tableId: string, seatNumber: number) => {
     const response = await fetch(`/api/seating-plans/${planId}/assignments`, {
@@ -819,6 +870,98 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId, scheduleAutosave]);
 
+  const handleCreateGroup = useCallback(
+    async (name: string) => {
+      const response = await fetch(`/api/seating-plans/${planId}/groups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to create group");
+      }
+      const data = (await response.json()) as { group: ApiGroup };
+      setGroups((current) => [...current, data.group]);
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
+      return data.group;
+    },
+    [planId, scheduleAutosave],
+  );
+
+  const handleUpdateGroup = useCallback(
+    async (groupId: string, payload: Partial<{ name: string; color: string }>) => {
+      const response = await fetch(`/api/seating-plans/${planId}/groups/${groupId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to update group");
+      }
+      const data = (await response.json()) as { group: ApiGroup };
+      setGroups((current) =>
+        current.map((group) => (group.id === groupId ? data.group : group)),
+      );
+      setGuests((current) =>
+        current.map((guest) =>
+          guest.group?.id === groupId
+            ? {
+                ...guest,
+                group: {
+                  id: data.group.id,
+                  name: data.group.name,
+                  color: data.group.color,
+                },
+              }
+            : guest,
+        ),
+      );
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
+      return data.group;
+    },
+    [planId, scheduleAutosave],
+  );
+
+  const handleDeleteGroup = useCallback(
+    async (groupId: string) => {
+      const response = await fetch(`/api/seating-plans/${planId}/groups/${groupId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to delete group");
+      }
+      setGroups((current) => current.filter((group) => group.id !== groupId));
+      setGuests((current) =>
+        current.map((guest) =>
+          guest.groupId === groupId
+            ? {
+                ...guest,
+                groupId: null,
+                group: null,
+              }
+            : guest,
+        ),
+      );
+      setGuestForm((current) =>
+        current.groupId === groupId ? { ...current, groupId: null } : current,
+      );
+      shouldAutosaveGuestsRef.current = true;
+      scheduleAutosave();
+    },
+    [planId, scheduleAutosave],
+  );
+
   const handleBulkImportGuests = useCallback(
     async (rows: GuestImportRow[]): Promise<GuestImportSummary> => {
       const response = await fetch(`/api/seating-plans/${planId}/guests/import`, {
@@ -855,14 +998,14 @@ export default function SeatingPlanEditorPage() {
 
   const handleUpdateGuest = useCallback(async (
     guestId: string,
-    payload: { name: string; group: string; notes: string },
+    payload: { name: string; groupId: string | null; notes: string },
   ) => {
     const response = await fetch(`/api/seating-plans/${planId}/guests/${guestId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: payload.name,
-        group: payload.group || null,
+        groupId: payload.groupId,
         notes: payload.notes || null,
       }),
     });
@@ -1158,14 +1301,17 @@ export default function SeatingPlanEditorPage() {
             guests={guests.map((guest) => ({
               id: guest.id,
               name: guest.name,
+              group: guest.group,
               assignment: guest.assignment
                 ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
                 : null,
             }))}
+            showGroupColors={showGroupColors}
             onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
             onAddTable={addTable}
             enableTableDrag={mobileTableDragEnabled}
+            onToggleGroupColors={() => setShowGroupColors((current) => !current)}
             onToggleTableDrag={() =>
               setMobileTableDragEnabled((current) => !current)
             }
@@ -1228,13 +1374,17 @@ export default function SeatingPlanEditorPage() {
             <GuestPanel
               variant="sheet"
               guests={guests}
+              groups={groups}
               relationships={relationships}
               tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               isLoading={isGuestsLoading}
-              error={guestsError ?? relationshipsError}
+              error={guestsError ?? groupsError ?? relationshipsError}
               onSelectGuest={handleSelectGuest}
               onCreateGuest={handleCreateGuest}
+              onCreateGroup={handleCreateGroup}
+              onUpdateGroup={handleUpdateGroup}
+              onDeleteGroup={handleDeleteGroup}
               onBulkImportGuests={handleBulkImportGuests}
               onCreateRelationship={handleCreateRelationship}
               linkingSourceGuestId={linkingSourceGuestId}
@@ -1321,6 +1471,16 @@ export default function SeatingPlanEditorPage() {
                     <span>{t("editor.legend")}</span>
                     <span className="text-zinc-400">›</span>
                   </Button>
+                  <Button
+                    variant="ghost"
+                    className="h-11 w-full justify-between px-3 text-sm"
+                    onClick={() => setShowGroupColors((current) => !current)}
+                  >
+                    <span>{t("canvas.groupColorsMode")}</span>
+                    <span className="text-zinc-500">
+                      {showGroupColors ? t("guestPanel.on") : t("guestPanel.off")}
+                    </span>
+                  </Button>
                   <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
                     <span>{t("editor.share")}</span>
                     <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">
@@ -1350,6 +1510,23 @@ export default function SeatingPlanEditorPage() {
                   <h3 className="text-sm font-semibold text-zinc-900">{t("canvas.legendTitle")}</h3>
                 </div>
                 <div className="space-y-4 border-t border-zinc-200 px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <span
+                      className="inline-block h-8 w-8 rounded-full border"
+                      style={{
+                        backgroundColor: showGroupColors ? "#2563EB" : "transparent",
+                        borderColor: showGroupColors ? "#1D4ED8" : "#D4D4D8",
+                      }}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-zinc-900">
+                        {t("canvas.groupColorsMode")}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {showGroupColors ? t("guestPanel.on") : t("guestPanel.off")}
+                      </p>
+                    </div>
+                  </div>
                   <div className="flex items-start gap-3">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500 bg-emerald-100 text-xs font-semibold text-emerald-900">AM</span>
                     <div>
@@ -1398,6 +1575,7 @@ export default function SeatingPlanEditorPage() {
           isOpen={mobileInspectorOpen}
           selectedGuest={selectedGuest}
           guests={guests}
+          groups={groups}
           relationships={relationships}
           guestForm={guestForm}
           selectedTable={selectedTable}
@@ -1412,6 +1590,7 @@ export default function SeatingPlanEditorPage() {
           onSelectTable={(tableId) => selectTable(tableId)}
           onGuestFormChange={setGuestForm}
           onUpdateGuest={handleUpdateGuest}
+          onCreateGroup={handleCreateGroup}
           onDeleteGuest={handleDeleteGuest}
           onUnassignGuest={handleUnassignGuest}
           onUpdateRelationship={handleUpdateRelationship}
@@ -1447,13 +1626,17 @@ export default function SeatingPlanEditorPage() {
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
             guests={guests}
+            groups={groups}
             relationships={relationships}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             isLoading={isGuestsLoading}
-            error={guestsError ?? relationshipsError}
+            error={guestsError ?? groupsError ?? relationshipsError}
             onSelectGuest={handleSelectGuest}
             onCreateGuest={handleCreateGuest}
+            onCreateGroup={handleCreateGroup}
+            onUpdateGroup={handleUpdateGroup}
+            onDeleteGroup={handleDeleteGroup}
             onBulkImportGuests={handleBulkImportGuests}
             onCreateRelationship={handleCreateRelationship}
             linkingSourceGuestId={linkingSourceGuestId}
@@ -1476,14 +1659,17 @@ export default function SeatingPlanEditorPage() {
               guests={guests.map((guest) => ({
                 id: guest.id,
                 name: guest.name,
+                group: guest.group,
                 assignment: guest.assignment
                   ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
                   : null,
               }))}
+              showGroupColors={showGroupColors}
               onSeatAssign={handleSeatAssign}
               onTableDragStateChange={setIsTableDragging}
               onAddTable={addTable}
               enableTableDrag
+              onToggleGroupColors={() => setShowGroupColors((current) => !current)}
               draggedGuestId={draggedGuestId}
               isDraggingGuest={isDraggingGuest}
               enableSeatDrag={isDesktopViewport}
@@ -1497,6 +1683,7 @@ export default function SeatingPlanEditorPage() {
               isOpen={desktopInspectorSelection !== null}
               selectedGuest={selectedGuest}
               guests={guests}
+              groups={groups}
               relationships={relationships}
               guestForm={guestForm}
               selectedTable={selectedTable}
@@ -1506,6 +1693,7 @@ export default function SeatingPlanEditorPage() {
               onSelectTable={(tableId) => selectTable(tableId)}
               onGuestFormChange={setGuestForm}
               onUpdateGuest={handleUpdateGuest}
+              onCreateGroup={handleCreateGroup}
               onDeleteGuest={handleDeleteGuest}
               onUnassignGuest={handleUnassignGuest}
               onUpdateRelationship={handleUpdateRelationship}

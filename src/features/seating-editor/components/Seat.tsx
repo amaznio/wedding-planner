@@ -9,6 +9,9 @@ type SeatProps = {
   y: number;
   occupantGuestId?: string | null;
   occupantName?: string | null;
+  occupantGroupColor?: string | null;
+  occupantGroupName?: string | null;
+  showGroupColors?: boolean;
   isSelectedGuestSeat?: boolean;
   isSelected?: boolean;
   isConflict?: boolean;
@@ -29,12 +32,28 @@ function getInitials(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
+function getContrastingTextColor(hexColor: string): string {
+  const value = hexColor.replace("#", "");
+  if (value.length !== 6) return "rgb(255 255 255)";
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  if (Number.isNaN(red) || Number.isNaN(green) || Number.isNaN(blue)) {
+    return "rgb(255 255 255)";
+  }
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+  return brightness >= 150 ? "rgb(24 24 27)" : "rgb(255 255 255)";
+}
+
 function SeatComponent({
   seatNumber,
   x,
   y,
   occupantGuestId,
   occupantName,
+  occupantGroupColor,
+  occupantGroupName,
+  showGroupColors = false,
   isSelectedGuestSeat = false,
   isSelected = false,
   isConflict = false,
@@ -52,6 +71,26 @@ function SeatComponent({
   const { t } = useI18n();
   const initials = occupantName ? getInitials(occupantName) : null;
   const isSeatDraggable = Boolean(enableSeatDrag && occupantGuestId);
+  const usesGroupColor =
+    Boolean(showGroupColors) &&
+    Boolean(occupantName) &&
+    Boolean(occupantGroupColor) &&
+    !isConflict &&
+    !isDropTarget &&
+    !isLinkedDropPreview &&
+    !isSelected &&
+    !isSelectedGuestSeat;
+  const resolvedGroupColor = occupantGroupColor ?? null;
+  const seatStyle =
+    usesGroupColor && resolvedGroupColor
+      ? {
+          left: x,
+          top: y,
+          backgroundColor: resolvedGroupColor,
+          borderColor: resolvedGroupColor,
+          color: getContrastingTextColor(resolvedGroupColor),
+        }
+      : { left: x, top: y };
 
   return (
     <Tooltip>
@@ -110,18 +149,23 @@ function SeatComponent({
               ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-200"
               : isSelectedGuestSeat
               ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+              : usesGroupColor
+                ? "border-transparent"
               : occupantName
                 ? "border-blue-300 bg-blue-50 text-blue-800"
                 : "border-zinc-300 bg-white text-zinc-700"
           }`}
-          style={{ left: x, top: y }}
+          style={seatStyle}
         >
           {initials ?? seatNumber}
         </button>
       </TooltipTrigger>
       <TooltipContent>
         {occupantName
-          ? t("seat.seatWithName", { seat: seatNumber, name: occupantName })
+          ? t("seat.seatWithName", {
+              seat: seatNumber,
+              name: occupantGroupName ? `${occupantName} (${occupantGroupName})` : occupantName,
+            })
           : t("seat.seatLabel", { seat: seatNumber })}
       </TooltipContent>
     </Tooltip>
@@ -135,6 +179,9 @@ function areSeatPropsEqual(prev: SeatProps, next: SeatProps) {
     prev.y === next.y &&
     prev.occupantGuestId === next.occupantGuestId &&
     prev.occupantName === next.occupantName &&
+    prev.occupantGroupColor === next.occupantGroupColor &&
+    prev.occupantGroupName === next.occupantGroupName &&
+    prev.showGroupColors === next.showGroupColors &&
     prev.isSelectedGuestSeat === next.isSelectedGuestSeat &&
     prev.isSelected === next.isSelected &&
     prev.isConflict === next.isConflict &&

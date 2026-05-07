@@ -2,13 +2,13 @@ import { z } from "zod";
 
 export const createGuestSchema = z.object({
   name: z.string().min(1).max(120),
-  group: z.string().max(120).optional(),
+  groupId: z.string().min(1).optional(),
   notes: z.string().max(500).optional(),
 });
 
 export const updateGuestSchema = z.object({
   name: z.string().min(1).max(120).optional(),
-  group: z.string().max(120).nullable().optional(),
+  groupId: z.string().min(1).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
 });
 

@@ -126,7 +126,7 @@ export async function POST(request: Request, context: RouteContext) {
             data: {
               planId,
               name,
-              group: null,
+              groupId: null,
               notes: null,
               ...(supportsPlaceholderField ? { isPlaceholderPlusOne: true } : {}),
               ...(supportsHostField
@@ -172,7 +172,7 @@ export async function POST(request: Request, context: RouteContext) {
           data: {
             planId,
             name,
-            group: null,
+            groupId: null,
             notes: null,
           },
           select: { id: true },
@@ -200,7 +200,16 @@ export async function POST(request: Request, context: RouteContext) {
       importResult.createdGuestIds.length > 0
         ? prisma.guest.findMany({
             where: { id: { in: importResult.createdGuestIds } },
-            include: { assignment: true },
+            include: {
+              assignment: true,
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
             orderBy: { createdAt: "asc" },
           })
         : Promise.resolve([]),

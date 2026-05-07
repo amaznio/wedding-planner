@@ -15,6 +15,7 @@ model SeatingPlan {
   updatedAt DateTime @updatedAt
 
   tables       SeatingTable[]
+  groups       SeatingGuestGroup[]
   guests       Guest[]
   assignments  SeatAssignment[]
   relationships SeatingRelationship[]
@@ -46,7 +47,8 @@ model Guest {
   planId    String
   plan      SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   name      String
-  group     String?
+  groupId   String?
+  group     SeatingGuestGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   notes     String?
   isPlaceholderPlusOne Boolean @default(false)
   plusOneHostGuestId String?
@@ -59,7 +61,24 @@ model Guest {
   relationshipMembers SeatingRelationshipMember[]
 
   @@index([planId])
+  @@index([groupId])
   @@index([plusOneHostGuestId])
+}
+
+model SeatingGuestGroup {
+  id             String      @id @default(cuid())
+  planId         String
+  plan           SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name           String
+  nameNormalized String
+  color          String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  guests Guest[]
+
+  @@index([planId])
+  @@unique([planId, nameNormalized])
 }
 
 model SeatingRelationship {

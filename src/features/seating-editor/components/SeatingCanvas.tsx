@@ -34,13 +34,26 @@ type SeatingCanvasProps = {
   onMoveTable?: (tableId: string, nextX: number, nextY: number) => void;
   seatAssignments?: Record<
     string,
-    Record<number, { guestId: string; guestName: string }>
+    Record<
+      number,
+      {
+        guestId: string;
+        guestName: string;
+        guestGroupColor: string | null;
+        guestGroupName: string | null;
+      }
+    >
   >;
   tableLabelById?: Record<string, string>;
   selectedGuestId?: string | null;
   guests?: Array<{
     id: string;
     name: string;
+    group: {
+      id: string;
+      name: string;
+      color: string;
+    } | null;
     assignment: { tableId: string; seatNumber: number } | null;
   }>;
   onSeatAssign?: (
@@ -51,6 +64,8 @@ type SeatingCanvasProps = {
   onTableDragStateChange?: (isDragging: boolean) => void;
   onAddTable?: () => void;
   mobileMode?: boolean;
+  showGroupColors?: boolean;
+  onToggleGroupColors?: () => void;
   enableTableDrag?: boolean;
   onToggleTableDrag?: () => void;
   onViewChange?: (next: { scale: number; x: number; y: number }) => void;
@@ -88,6 +103,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onTableDragStateChange,
   onAddTable,
   mobileMode = false,
+  showGroupColors = false,
+  onToggleGroupColors,
   enableTableDrag = true,
   onToggleTableDrag,
   onViewChange,
@@ -703,6 +720,19 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     (sum, tableSeats) => sum + Object.keys(tableSeats).length,
     0,
   );
+  const activeGroupSwatches = useMemo(() => {
+    const byKey = new Map<string, { name: string; color: string }>();
+    for (const guest of guests) {
+      if (!guest.assignment || !guest.group) continue;
+      const key = `${guest.group.name}:${guest.group.color}`;
+      if (!byKey.has(key)) {
+        byKey.set(key, { name: guest.group.name, color: guest.group.color });
+      }
+    }
+    return Array.from(byKey.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  }, [guests]);
 
   useEffect(() => {
     if (centeredPlanIdRef.current === plan.id) return;
@@ -810,6 +840,15 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             >
               {t("canvas.reset")}
             </Button>
+            <Button
+              size="sm"
+              variant={showGroupColors ? "default" : "outline"}
+              className="h-8 rounded-lg px-3 text-xs font-medium"
+              aria-pressed={showGroupColors}
+              onClick={onToggleGroupColors}
+            >
+              {t("canvas.groupColorsMode")}
+            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-medium">
@@ -832,9 +871,39 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                     <span>{t("editor.occupied")}</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full border"
+                      style={{
+                        backgroundColor: showGroupColors ? "#2563EB" : "white",
+                        borderColor: showGroupColors ? "#1D4ED8" : "#D4D4D8",
+                      }}
+                    />
+                    <span>
+                      {t("canvas.groupColorsMode")} ({showGroupColors ? t("guestPanel.on") : t("guestPanel.off")})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
                     <span>{t("editor.empty")}</span>
                   </div>
+                  {activeGroupSwatches.length > 0 ? (
+                    <div className="pt-1">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        {t("canvas.activeGroups")}
+                      </p>
+                      <div className="space-y-1">
+                        {activeGroupSwatches.map((group) => (
+                          <div key={`${group.name}:${group.color}`} className="flex items-center gap-2">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300"
+                              style={{ backgroundColor: group.color }}
+                            />
+                            <span className="truncate">{group.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </PopoverContent>
             </Popover>
@@ -902,6 +971,18 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             <p className="mb-2 text-sm font-semibold text-zinc-800">{t("canvas.legendTitle")}</p>
             <div className="space-y-2 text-sm text-zinc-600">
               <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full border"
+                  style={{
+                    backgroundColor: showGroupColors ? "#2563EB" : "white",
+                    borderColor: showGroupColors ? "#1D4ED8" : "#D4D4D8",
+                  }}
+                />
+                <span>
+                  {t("canvas.groupColorsMode")} ({showGroupColors ? t("guestPanel.on") : t("guestPanel.off")})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
                 <span>{t("editor.selectedGuest")}</span>
               </div>
@@ -917,6 +998,24 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
                 <span>{t("editor.empty")}</span>
               </div>
+              {activeGroupSwatches.length > 0 ? (
+                <div className="pt-1">
+                  <p className="mb-1 text-xs font-semibold text-zinc-800">
+                    {t("canvas.activeGroups")}
+                  </p>
+                  <div className="space-y-1">
+                    {activeGroupSwatches.map((group) => (
+                      <div key={`${group.name}:${group.color}`} className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300"
+                          style={{ backgroundColor: group.color }}
+                        />
+                        <span className="text-xs">{group.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </DrawerContent>
         </Drawer>
@@ -940,6 +1039,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }
               seatOccupants={seatAssignments?.[table.id]}
               selectedGuestId={selectedGuestId}
+              showGroupColors={showGroupColors}
               conflictSeatNumber={
                 conflictSeat?.tableId === table.id
                   ? conflictSeat.seatNumber

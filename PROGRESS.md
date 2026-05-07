@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 88 - Mobile move-tables toggle compact icon state (completed)
+Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 
 ## Completed Phases
 
@@ -95,9 +95,57 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
 - Phase 86 - Mobile back button style refinement
 - Phase 87 - Mobile back clears guest selection
 - Phase 88 - Mobile move-tables toggle compact icon state
+- Phase 89 - Plan-scoped guest groups data model + API foundation
+- Phase 90 - Group management + guest tagging UX
+- Phase 91 - Canvas utility group-color mode + legend swatches
 
 
 ## Completed Work
+
+- Implemented Phase 91 canvas utility group-color mode + legend swatches:
+  - added `showGroupColors` utility toggle in desktop canvas controls and wired mobile utilities toggle in `More` sheet
+  - seat bubbles now color by assigned guest group when mode is enabled
+  - preserved seat state priority order:
+    - conflict
+    - drop target
+    - linked preview
+    - selected seat
+    - selected guest seat
+    - group color
+    - default occupied
+  - extended desktop/mobile legend content with:
+    - group-colors mode status (`On`/`Off`)
+    - active group swatches currently represented on seated guests
+
+- Implemented Phase 90 group management + guest tagging UX:
+  - added compact Groups manager in `GuestPanel`:
+    - create group (auto palette color)
+    - inline recolor
+    - rename (prompt flow)
+    - delete with confirmation prompt
+  - group delete behavior now keeps guests and clears their group assignment
+  - replaced guest group free-text editing in inspector with:
+    - existing-group selector
+    - clear/no-group option
+    - inline quick-create group and auto-select for the guest
+  - guest search and CSV export now use resolved group names from related group records
+
+- Implemented Phase 89 guest group data model + migration + API foundation:
+  - added Prisma `SeatingGuestGroup` model (plan-scoped `name`, `nameNormalized`, `color`)
+  - replaced `Guest.group` string with relational `Guest.groupId` (`onDelete: SetNull`)
+  - added DB uniqueness on `(planId, nameNormalized)` for case-insensitive duplicate prevention
+  - created migration `20260507134721_add_guest_groups` with backfill:
+    - normalized legacy `Guest.group` values per plan
+    - deterministic palette assignment by first-seen order
+    - guest `groupId` mapping to created group rows
+    - legacy `Guest.group` column removal
+  - added groups API endpoints:
+    - `GET /api/seating-plans/:planId/groups`
+    - `POST /api/seating-plans/:planId/groups`
+    - `PATCH /api/seating-plans/:planId/groups/:groupId`
+    - `DELETE /api/seating-plans/:planId/groups/:groupId`
+  - updated guest API contracts to `groupId` + resolved `group` object and enforced plan ownership checks for guest-group assignment
+  - duplicate group names now return `409` conflict
 
 - Implemented Phase 88 mobile move-tables toggle compact icon state:
   - updated the mobile canvas drag toggle from full sentence text to compact icon + short state label (`Wł.` / `Wył.`)
@@ -744,6 +792,27 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
 
 ## Files Changed
 
+- `prisma/schema.prisma`
+- `prisma/migrations/20260507134721_add_guest_groups/migration.sql`
+- `src/features/seating-editor/lib/guest-groups.ts`
+- `src/features/seating-editor/schemas/guest-group.schema.ts`
+- `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+- `src/app/api/seating-plans/[planId]/groups/route.ts`
+- `src/app/api/seating-plans/[planId]/groups/[groupId]/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/[guestId]/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/import/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/[guestId]/plus-one/route.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/features/seating-editor/components/RectTable.tsx`
+- `src/features/seating-editor/components/Seat.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
 - `PROGRESS.md`
 
@@ -891,6 +960,14 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm prisma migrate dev --name add_guest_groups --create-only` (pass)
+- `corepack pnpm prisma migrate dev` (pass; applied `20260507134721_add_guest_groups`)
+- `corepack pnpm prisma generate` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
 
 - `corepack pnpm typecheck` (pass; phase 88 compact mobile move-tables toggle)
 - `corepack pnpm lint` (pass with existing warnings)
@@ -1059,7 +1136,7 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
 
 - Prisma schema validation: pass.
 - TypeScript: pass.
-- i18n audit: not run in this phase.
+- i18n audit: pass.
 - Lint: pass with existing warnings.
 - Build: not run in this phase set.
 
@@ -1067,36 +1144,22 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
-3. Switch to a mobile viewport and verify the top-right `Przesuwanie stołów` control is compact (icon + short `Wł.`/`Wył.` state).
-4. Tap the compact toggle and verify state changes still update both color and icon style (`enabled` emerald, `disabled` neutral).
-5. Verify the adjacent zoom/reset button still renders and works as before.
-6. In the guest panel, click `Import` and verify the file picker opens immediately (desktop and mobile sheet).
-7. Import a CSV with normal names plus `Osoba Tow.` marker rows; verify duplicate rows are unchecked by default in the review panel.
-8. Confirm import and verify summary counts/warnings are shown.
-9. Verify a marker directly after a newly created host row creates a placeholder plus one and a `plus_one` relationship.
-10. Select a guest without a link and verify `Add Plus One` appears in guest details.
-11. Click `Add Plus One` and verify placeholder guest + relationship are created.
-12. Click `Remove Plus One` for that host and verify linked placeholder guest is deleted.
-13. Add at least two guests and assign them to seats.
-14. Use keyboard:
+3. In the guest panel, create at least two groups and verify each gets an auto-assigned color.
+4. Rename and recolor a group; verify updates persist in the group list and guest selectors.
+5. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
+6. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
+7. Add at least two guests and assign them to seats.
+8. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
+9. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
+10. Open legend and verify active seated group swatches are listed.
+11. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
+12. Verify adjacent move-table toggle and zoom/reset controls still render and work.
+13. Use keyboard:
   - `]` to select next guest
   - `[` to select previous guest
   - `U` to unassign selected guest
-15. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
-16. Export guests to CSV and import the CSV back.
-17. Save and refresh; verify assignments still persist.
-18. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
-19. Click a table and verify inspector opens with table controls.
-20. Verify seat assignment actions happen via seat popover only.
-21. Click empty canvas and verify selection clears and inspector closes.
-22. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
-23. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
-24. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
-25. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
-26. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
-27. Save and refresh; verify `Seat layout` persists per table.
-28. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
-29. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
+14. Export guests to CSV and verify exported group names match selected groups.
+15. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
 
 ## Known Issues
 
@@ -1106,11 +1169,12 @@ Phase 88 - Mobile move-tables toggle compact icon state (completed)
   - unused `totalSeatCount` / `unseatedGuestCount` warnings in `page.tsx` (pre-existing)
 - CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
+- Group rename currently uses prompt dialog UX (functional but basic).
 
 ## Next Recommended Step
 
 Next recommended follow-up:
 
-- Apply the same hierarchy/action styling pass to table and seat inspector modes for consistency.
-- Remove or repurpose currently unused seat summary counters in `page.tsx` to clear lint noise.
-- Add backend+UI unit tests for CSV parser edge cases and plus-one add/remove endpoint behavior.
+- Add backend tests for group endpoint conflict and ownership validation.
+- Replace prompt-based group rename with inline editing UI for smoother UX.
+- Add unit tests for seat color-priority logic when group mode is enabled.

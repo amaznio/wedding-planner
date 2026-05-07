@@ -37,15 +37,39 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Guest not found" }, { status: 404 });
     }
 
+    if (payload.groupId !== undefined && payload.groupId !== null) {
+      const group = await prisma.seatingGuestGroup.findFirst({
+        where: {
+          id: payload.groupId,
+          planId,
+        },
+        select: { id: true },
+      });
+
+      if (!group) {
+        return NextResponse.json(
+          { error: "Group does not exist for this seating plan" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updatedGuest = await prisma.guest.update({
       where: { id: guestId },
       data: {
         name: payload.name,
-        group: payload.group,
+        groupId: payload.groupId,
         notes: payload.notes,
       },
       include: {
         assignment: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
       },
     });
 

@@ -25,7 +25,12 @@ import type {
 type Guest = {
   id: string;
   name: string;
-  group: string | null;
+  groupId: string | null;
+  group: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
   notes: string | null;
   isPlaceholderPlusOne: boolean;
   plusOneHostGuestId: string | null;
@@ -34,6 +39,14 @@ type Guest = {
     seatNumber: number;
     tableId: string;
   } | null;
+};
+
+type GuestGroup = {
+  id: string;
+  planId: string;
+  name: string;
+  color: string;
+  guestCount: number;
 };
 
 type GuestImportRow = {
@@ -61,6 +74,7 @@ type RelationshipForm = {
 
 type GuestPanelProps = {
   guests: Guest[];
+  groups: GuestGroup[];
   relationships: SeatingRelationship[];
   tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
@@ -68,6 +82,12 @@ type GuestPanelProps = {
   error: string | null;
   onSelectGuest: (guestId: string | null) => void;
   onCreateGuest: (name: string) => Promise<void>;
+  onCreateGroup: (name: string) => Promise<GuestGroup>;
+  onUpdateGroup: (
+    groupId: string,
+    payload: Partial<{ name: string; color: string }>,
+  ) => Promise<GuestGroup>;
+  onDeleteGroup: (groupId: string) => Promise<void>;
   onBulkImportGuests: (rows: GuestImportRow[]) => Promise<GuestImportSummary>;
   onCreateRelationship: (
     payload: RelationshipForm & { guestIds: string[] },
@@ -88,6 +108,7 @@ function getInitials(name: string): string {
 
 export function GuestPanel({
   guests,
+  groups,
   relationships,
   tableLabelById,
   selectedGuestId,
@@ -95,6 +116,9 @@ export function GuestPanel({
   error,
   onSelectGuest,
   onCreateGuest,
+  onCreateGroup,
+  onUpdateGroup,
+  onDeleteGroup,
   onBulkImportGuests,
   onCreateRelationship,
   variant = "desktop",
@@ -111,6 +135,9 @@ export function GuestPanel({
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
+  const [groupActionError, setGroupActionError] = useState<string | null>(null);
   const [isImportSubmitting, setIsImportSubmitting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importPreviewRows, setImportPreviewRows] = useState<
@@ -149,7 +176,7 @@ export function GuestPanel({
         queryLower.length === 0
           ? true
           : guest.name.toLowerCase().includes(queryLower) ||
-            (guest.group ?? "").toLowerCase().includes(queryLower);
+            (guest.group?.name ?? "").toLowerCase().includes(queryLower);
       return matchesFilter && matchesQuery;
     });
   }, [filter, guests, query]);
@@ -193,7 +220,7 @@ export function GuestPanel({
   const handleExportCsv = () => {
     const header = "name,group,notes";
     const rows = guests.map((guest) =>
-      [guest.name, guest.group ?? "", guest.notes ?? ""]
+      [guest.name, guest.group?.name ?? "", guest.notes ?? ""]
         .map((value) => `"${value.replaceAll("\"", "\"\"")}"`)
         .join(","),
     );
@@ -321,6 +348,54 @@ export function GuestPanel({
     plus_one: t("guestPanel.relationshipType.plus_one"),
   };
 
+  const handleCreateGroup = async () => {
+    const trimmed = newGroupName.trim();
+    if (!trimmed) return;
+    setGroupActionError(null);
+    setIsGroupSubmitting(true);
+    try {
+      await onCreateGroup(trimmed);
+      setNewGroupName("");
+    } catch (error) {
+      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupCreateFailed"));
+    } finally {
+      setIsGroupSubmitting(false);
+    }
+  };
+
+  const handleRenameGroup = async (groupId: string, currentName: string) => {
+    const nextName = window.prompt(t("guestPanel.groupRenamePrompt"), currentName);
+    if (nextName === null) return;
+    const trimmed = nextName.trim();
+    if (!trimmed || trimmed === currentName) return;
+    setGroupActionError(null);
+    try {
+      await onUpdateGroup(groupId, { name: trimmed });
+    } catch (error) {
+      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupUpdateFailed"));
+    }
+  };
+
+  const handleRecolorGroup = async (groupId: string, color: string) => {
+    setGroupActionError(null);
+    try {
+      await onUpdateGroup(groupId, { color });
+    } catch (error) {
+      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupUpdateFailed"));
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
+    const accepted = window.confirm(t("guestPanel.groupDeleteConfirm", { name: groupName }));
+    if (!accepted) return;
+    setGroupActionError(null);
+    try {
+      await onDeleteGroup(groupId);
+    } catch (error) {
+      setGroupActionError(error instanceof Error ? error.message : t("guestPanel.groupDeleteFailed"));
+    }
+  };
+
   const isLinkingMode = selectedRelationshipGuestIds.length > 0;
   const selectedLinkGuests = selectedRelationshipGuestIds
     .map((guestId) => guests.find((guest) => guest.id === guestId))
@@ -361,6 +436,77 @@ export function GuestPanel({
           <Button type="button" size="sm" variant="outline" onClick={handleExportCsv}>
             {t("guestPanel.export")}
           </Button>
+        </div>
+        <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
+          <p className="text-xs font-semibold text-zinc-900">{t("guestPanel.groupsTitle")}</p>
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={newGroupName}
+              onChange={(event) => setNewGroupName(event.target.value)}
+              placeholder={t("guestPanel.addGroupPlaceholder")}
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={isGroupSubmitting}
+              onClick={() => void handleCreateGroup()}
+            >
+              {t("common.add")}
+            </Button>
+          </div>
+          {groupActionError ? (
+            <p className="mt-2 text-xs text-red-700">{groupActionError}</p>
+          ) : null}
+          {groups.length > 0 ? (
+            <div className="mt-2 max-h-36 space-y-1 overflow-auto rounded border border-zinc-200 p-2">
+              {groups.map((group) => {
+                const groupedCount = guests.filter((guest) => guest.groupId === group.id).length;
+                return (
+                <div
+                  key={group.id}
+                  className="flex items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1"
+                >
+                  <span
+                    className="inline-block h-3.5 w-3.5 rounded-full border border-zinc-300"
+                    style={{ backgroundColor: group.color }}
+                  />
+                  <p className="min-w-0 flex-1 truncate text-xs text-zinc-800">
+                    {group.name} ({groupedCount})
+                  </p>
+                  <input
+                    type="color"
+                    value={group.color}
+                    className="h-6 w-8 rounded border border-zinc-300 bg-white p-0"
+                    aria-label={t("guestPanel.groupColor")}
+                    onChange={(event) => {
+                      void handleRecolorGroup(group.id, event.target.value);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-[10px]"
+                    onClick={() => void handleRenameGroup(group.id, group.name)}
+                  >
+                    {t("guestPanel.rename")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-[10px] text-red-700"
+                    onClick={() => void handleDeleteGroup(group.id, group.name)}
+                  >
+                    {t("common.delete")}
+                  </Button>
+                </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-zinc-500">{t("guestPanel.groupsEmpty")}</p>
+          )}
         </div>
         {importPreviewRows.length > 0 ? (
           <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">

@@ -25,6 +25,13 @@ export async function GET(_: Request, context: RouteContext) {
     where: { planId },
     include: {
       assignment: true,
+      group: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -48,15 +55,39 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
     }
 
+    if (payload.groupId) {
+      const group = await prisma.seatingGuestGroup.findFirst({
+        where: {
+          id: payload.groupId,
+          planId,
+        },
+        select: { id: true },
+      });
+
+      if (!group) {
+        return NextResponse.json(
+          { error: "Group does not exist for this seating plan" },
+          { status: 400 },
+        );
+      }
+    }
+
     const guest = await prisma.guest.create({
       data: {
         planId,
         name: payload.name,
-        group: payload.group,
+        groupId: payload.groupId ?? null,
         notes: payload.notes,
       },
       include: {
         assignment: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
       },
     });
 

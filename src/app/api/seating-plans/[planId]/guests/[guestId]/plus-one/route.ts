@@ -97,13 +97,20 @@ export async function POST(request: Request, context: RouteContext) {
         data: {
           planId,
           name: payload.placeholderName.trim(),
-          group: null,
+          groupId: null,
           notes: null,
           isPlaceholderPlusOne: true,
           plusOneHostGuestId: guestId,
         },
         include: {
           assignment: true,
+          group: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
         },
       });
 

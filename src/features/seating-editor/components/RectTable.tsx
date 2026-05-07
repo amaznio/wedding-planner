@@ -12,8 +12,17 @@ type RectTableProps = {
   onSelect?: (tableId: string) => void;
   onMove?: (tableId: string, nextX: number, nextY: number) => void;
   screenToCanvas?: (clientX: number, clientY: number) => { x: number; y: number };
-  seatOccupants?: Record<number, { guestId: string; guestName: string }>;
+  seatOccupants?: Record<
+    number,
+    {
+      guestId: string;
+      guestName: string;
+      guestGroupColor: string | null;
+      guestGroupName: string | null;
+    }
+  >;
   selectedGuestId?: string | null;
+  showGroupColors?: boolean;
   selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
@@ -38,6 +47,7 @@ function RectTableComponent({
   screenToCanvas,
   seatOccupants,
   selectedGuestId,
+  showGroupColors = false,
   selectedSeatNumber,
   conflictSeatNumber,
   dropTargetSeatNumber,
@@ -174,6 +184,9 @@ function RectTableComponent({
             y={seat.y}
             occupantGuestId={seatOccupants?.[seat.seatNumber]?.guestId ?? null}
             occupantName={seatOccupants?.[seat.seatNumber]?.guestName ?? null}
+            occupantGroupColor={seatOccupants?.[seat.seatNumber]?.guestGroupColor ?? null}
+            occupantGroupName={seatOccupants?.[seat.seatNumber]?.guestGroupName ?? null}
+            showGroupColors={showGroupColors}
             isSelectedGuestSeat={
               seatOccupants?.[seat.seatNumber]?.guestId === selectedGuestId
             }
@@ -225,7 +238,9 @@ function areSeatOccupantsEqual(
     const nextOccupant = next[seatNumber];
     if (
       prevOccupant?.guestId !== nextOccupant?.guestId ||
-      prevOccupant?.guestName !== nextOccupant?.guestName
+      prevOccupant?.guestName !== nextOccupant?.guestName ||
+      prevOccupant?.guestGroupColor !== nextOccupant?.guestGroupColor ||
+      prevOccupant?.guestGroupName !== nextOccupant?.guestGroupName
     ) {
       return false;
     }
@@ -244,6 +259,7 @@ function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
     prev.table.seatLayout === next.table.seatLayout &&
     prev.isSelected === next.isSelected &&
     prev.selectedGuestId === next.selectedGuestId &&
+    prev.showGroupColors === next.showGroupColors &&
     prev.selectedSeatNumber === next.selectedSeatNumber &&
     prev.conflictSeatNumber === next.conflictSeatNumber &&
     prev.dropTargetSeatNumber === next.dropTargetSeatNumber &&

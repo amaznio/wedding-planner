@@ -25,7 +25,12 @@ import type { SeatingTable } from "../types/seating-plan.types";
 type Guest = {
   id: string;
   name: string;
-  group: string | null;
+  groupId: string | null;
+  group: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
   notes: string | null;
   isPlaceholderPlusOne: boolean;
   plusOneHostGuestId: string | null;
@@ -34,6 +39,14 @@ type Guest = {
     seatNumber: number;
     tableId: string;
   } | null;
+};
+
+type GuestGroup = {
+  id: string;
+  planId: string;
+  name: string;
+  color: string;
+  guestCount: number;
 };
 
 type Selection =
@@ -47,19 +60,21 @@ type InspectorPanelProps = {
   isOpen: boolean;
   selectedGuest: Guest | null;
   guests: Guest[];
+  groups: GuestGroup[];
   relationships: SeatingRelationship[];
-  guestForm: { name: string; group: string; notes: string };
+  guestForm: { name: string; groupId: string | null; notes: string };
   selectedTable: SeatingTable | null;
   selectedSeatGuest: Guest | null;
   tableLabelById?: Record<string, string>;
   onClose: () => void;
   onBackToGuestList?: () => void;
   onSelectTable: (tableId: string) => void;
-  onGuestFormChange: (next: { name: string; group: string; notes: string }) => void;
+  onGuestFormChange: (next: { name: string; groupId: string | null; notes: string }) => void;
   onUpdateGuest: (
     guestId: string,
-    payload: { name: string; group: string; notes: string },
+    payload: { name: string; groupId: string | null; notes: string },
   ) => Promise<void>;
+  onCreateGroup: (name: string) => Promise<GuestGroup>;
   onDeleteGuest: (guestId: string) => Promise<void>;
   onUnassignGuest: (assignmentId: string, guestId: string) => Promise<void>;
   onUpdateRelationship: (
@@ -97,6 +112,7 @@ export function InspectorPanel({
   isOpen,
   selectedGuest,
   guests,
+  groups,
   relationships,
   guestForm,
   selectedTable,
@@ -107,6 +123,7 @@ export function InspectorPanel({
   onSelectTable,
   onGuestFormChange,
   onUpdateGuest,
+  onCreateGroup,
   onDeleteGuest,
   onUnassignGuest,
   onUpdateRelationship,
@@ -128,6 +145,9 @@ export function InspectorPanel({
   );
   const [editingRelationshipName, setEditingRelationshipName] = useState("");
   const [isPlusOneSubmitting, setIsPlusOneSubmitting] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
+  const [groupActionError, setGroupActionError] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const relationshipTypeLabel: Record<RelationshipType, string> = {
@@ -286,13 +306,65 @@ export function InspectorPanel({
                 </label>
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium text-zinc-500">{t("guestPanel.group")}</span>
-                  <Input
-                    value={guestForm.group}
+                  <select
+                    value={guestForm.groupId ?? ""}
                     onChange={(event) =>
-                      onGuestFormChange({ ...guestForm, group: event.target.value })
+                      onGuestFormChange({
+                        ...guestForm,
+                        groupId: event.target.value || null,
+                      })
                     }
-                  />
+                    className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  >
+                    <option value="">{t("guestPanel.noGroup")}</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">
+                    {t("guestPanel.createGroupInline")}
+                  </span>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newGroupName}
+                      onChange={(event) => setNewGroupName(event.target.value)}
+                      placeholder={t("guestPanel.addGroupPlaceholder")}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isGroupSubmitting}
+                      onClick={async () => {
+                        const trimmed = newGroupName.trim();
+                        if (!trimmed) return;
+                        setGroupActionError(null);
+                        setIsGroupSubmitting(true);
+                        try {
+                          const created = await onCreateGroup(trimmed);
+                          onGuestFormChange({ ...guestForm, groupId: created.id });
+                          setNewGroupName("");
+                        } catch (error) {
+                          setGroupActionError(
+                            error instanceof Error
+                              ? error.message
+                              : t("guestPanel.groupCreateFailed"),
+                          );
+                        } finally {
+                          setIsGroupSubmitting(false);
+                        }
+                      }}
+                    >
+                      {t("common.add")}
+                    </Button>
+                  </div>
+                  {groupActionError ? (
+                    <p className="text-xs text-red-700">{groupActionError}</p>
+                  ) : null}
+                </div>
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium text-zinc-500">{t("guestPanel.notes")}</span>
                   <textarea
@@ -318,7 +390,7 @@ export function InspectorPanel({
                   onClick={() =>
                     void onUpdateGuest(selectedGuest.id, {
                       name: guestForm.name,
-                      group: guestForm.group,
+                      groupId: guestForm.groupId,
                       notes: guestForm.notes,
                     })
                   }
