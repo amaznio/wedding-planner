@@ -414,15 +414,21 @@ export default function SeatingPlanEditorPage() {
 
   const handleSeatAssign = useCallback(async (tableId: string, seatNumber: number, guestId: string | null) => {
     setGuestsError(null);
+    const previousGuests = guests;
     const clickedGuest = guests.find(
       (guest) => guest.assignment?.tableId === tableId && guest.assignment?.seatNumber === seatNumber,
     );
     if (!guestId) {
       if (!clickedGuest?.assignment) return { level: "info" as const, message: "Seat is already unassigned" };
-      await deleteAssignment(clickedGuest.assignment.id);
       setGuests((current) =>
         current.map((guest) => (guest.id === clickedGuest.id ? { ...guest, assignment: null } : guest)),
       );
+      try {
+        await deleteAssignment(clickedGuest.assignment.id);
+      } catch (error) {
+        setGuests(previousGuests);
+        throw error;
+      }
       return { level: "success" as const, message: "Seat unassigned" };
     }
 
@@ -462,34 +468,57 @@ export default function SeatingPlanEditorPage() {
         throw new Error(planResult.error);
       }
 
-      const assignments = await executeBatchMoveAssignments({
-        initiatorGuestId: targetGuest.id,
-        targetTableId: tableId,
-        targetSeatNumber: seatNumber,
-        moveTogetherEnabled: true,
-        plannedAssignments: planResult.assignments,
-        context: {
-          relationshipIdsConsidered: planResult.relationshipIdsConsidered,
-        },
-      });
-
-      const assignmentsByGuestId = Object.fromEntries(
-        assignments.map((assignment) => [assignment.guestId, assignment]),
+      const plannedAssignmentsByGuestId = Object.fromEntries(
+        planResult.assignments.map((assignment) => [assignment.guestId, assignment]),
       );
       setGuests((current) =>
         current.map((guest) => {
-          const assignment = assignmentsByGuestId[guest.id];
+          const assignment = plannedAssignmentsByGuestId[guest.id];
           if (!assignment) return guest;
           return {
             ...guest,
             assignment: {
-              id: assignment.id,
+              id: guest.assignment?.id ?? `optimistic-${guest.id}`,
               tableId: assignment.tableId,
               seatNumber: assignment.seatNumber,
             },
           };
         }),
       );
+
+      try {
+        const assignments = await executeBatchMoveAssignments({
+          initiatorGuestId: targetGuest.id,
+          targetTableId: tableId,
+          targetSeatNumber: seatNumber,
+          moveTogetherEnabled: true,
+          plannedAssignments: planResult.assignments,
+          context: {
+            relationshipIdsConsidered: planResult.relationshipIdsConsidered,
+          },
+        });
+
+        const assignmentsByGuestId = Object.fromEntries(
+          assignments.map((assignment) => [assignment.guestId, assignment]),
+        );
+        setGuests((current) =>
+          current.map((guest) => {
+            const assignment = assignmentsByGuestId[guest.id];
+            if (!assignment) return guest;
+            return {
+              ...guest,
+              assignment: {
+                id: assignment.id,
+                tableId: assignment.tableId,
+                seatNumber: assignment.seatNumber,
+              },
+            };
+          }),
+        );
+      } catch (error) {
+        setGuests(previousGuests);
+        throw error;
+      }
 
       return {
         level: "success" as const,
@@ -506,26 +535,52 @@ export default function SeatingPlanEditorPage() {
       return { level: "info" as const, message: "Guest is already in this seat" };
     }
 
-    if (clickedGuestAssignment) await deleteAssignment(clickedGuestAssignment.id);
-    if (targetGuestAssignment) await deleteAssignment(targetGuestAssignment.id);
-
-    const targetToClickedSeat = await createAssignment(targetGuest.id, tableId, seatNumber);
-    let clickedToTargetSeat: SeatAssignmentPayload["assignment"] | null = null;
-    if (clickedGuest && targetGuestAssignment) {
-      clickedToTargetSeat = await createAssignment(
-        clickedGuest.id,
-        targetGuestAssignment.tableId,
-        targetGuestAssignment.seatNumber,
-      );
-    }
-
+    const optimisticTargetAssignment: ApiGuest["assignment"] = {
+      id: targetGuestAssignment?.id ?? `optimistic-${targetGuest.id}`,
+      tableId,
+      seatNumber,
+    };
+    const optimisticClickedAssignment: ApiGuest["assignment"] =
+      clickedGuest && targetGuestAssignment
+        ? {
+            id: clickedGuestAssignment?.id ?? `optimistic-${clickedGuest.id}`,
+            tableId: targetGuestAssignment.tableId,
+            seatNumber: targetGuestAssignment.seatNumber,
+          }
+        : null;
     setGuests((current) =>
       current.map((guest) => {
-        if (guest.id === targetGuest.id) return { ...guest, assignment: targetToClickedSeat };
-        if (clickedGuest && guest.id === clickedGuest.id) return { ...guest, assignment: clickedToTargetSeat };
+        if (guest.id === targetGuest.id) return { ...guest, assignment: optimisticTargetAssignment };
+        if (clickedGuest && guest.id === clickedGuest.id) return { ...guest, assignment: optimisticClickedAssignment };
         return guest;
       }),
     );
+    try {
+      if (clickedGuestAssignment) await deleteAssignment(clickedGuestAssignment.id);
+      if (targetGuestAssignment) await deleteAssignment(targetGuestAssignment.id);
+
+      const targetToClickedSeat = await createAssignment(targetGuest.id, tableId, seatNumber);
+      let clickedToTargetSeat: SeatAssignmentPayload["assignment"] | null = null;
+      if (clickedGuest && targetGuestAssignment) {
+        clickedToTargetSeat = await createAssignment(
+          clickedGuest.id,
+          targetGuestAssignment.tableId,
+          targetGuestAssignment.seatNumber,
+        );
+      }
+
+      setGuests((current) =>
+        current.map((guest) => {
+          if (guest.id === targetGuest.id) return { ...guest, assignment: targetToClickedSeat };
+          if (clickedGuest && guest.id === clickedGuest.id) return { ...guest, assignment: clickedToTargetSeat };
+          return guest;
+        }),
+      );
+    } catch (error) {
+      setGuests(previousGuests);
+      throw error;
+    }
+
     if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: "Guests swapped" };
     return { level: "success" as const, message: "Seat assigned" };
   }, [createAssignment, deleteAssignment, executeBatchMoveAssignments, guests, plan.tables, relationshipsByGuestId]);

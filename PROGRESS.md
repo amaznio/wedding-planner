@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 38 - Linked guest drag landing indicators (completed)
+Phase 39 - Optimistic guest seat assignment updates (completed)
 
 ## Completed Phases
 
@@ -44,8 +44,16 @@ Phase 38 - Linked guest drag landing indicators (completed)
 - Phase 35 - Optional guest seating relationships
 - Phase 36 - Linked guest move-together
 - Phase 37 - Guest editing moved from Inspector to guest panel/drawer
+- Phase 38 - Linked guest drag landing indicators
+
 
 ## Completed Work
+
+- Added optimistic client-side seat assignment updates to remove drag/drop latency:
+  - seat changes now render immediately for unassign, assign, swap, and linked group move flows
+  - assignment API calls now run after optimistic UI update
+  - on request failure, guest assignment state is rolled back to the pre-action snapshot
+  - successful responses still reconcile assignment IDs from server payloads
 
 - Added relationship-aware drag hover indicators on seats:
   - primary drop target remains highlighted for dragged guest
@@ -394,6 +402,8 @@ Phase 38 - Linked guest drag landing indicators (completed)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm prisma migrate dev --name add-seating-relationships` (pass)
 - `corepack pnpm prisma:validate` (pass)
 - `corepack pnpm typecheck` (initial fail before Prisma client regeneration; then pass)
