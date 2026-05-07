@@ -1,7 +1,8 @@
 import type { PointerEvent, WheelEvent } from "react";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   } | null>(null);
   const [isAssigningSeat, setIsAssigningSeat] = useState(false);
   const [seatMenuError, setSeatMenuError] = useState<string | null>(null);
+  const [seatMenuGuestFilter, setSeatMenuGuestFilter] = useState<"all" | "unseated" | "assigned">(
+    "unseated",
+  );
   const [conflictSeat, setConflictSeat] = useState<{
     tableId: string;
     seatNumber: number;
@@ -465,6 +469,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     );
     setSeatMenuError(null);
     setConflictSeat(null);
+    setSeatMenuGuestFilter(guests.some((guest) => guest.assignment === null) ? "unseated" : "all");
     setSeatMenu({ tableId, seatNumber, x, y });
     onSelectSeat?.(tableId, seatNumber);
   };
@@ -472,6 +477,200 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const menuSeatAssignment = seatMenu
     ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
     : null;
+  const seatMenuGuests = useMemo(() => {
+    const filtered = guests.filter((guest) => {
+      if (seatMenuGuestFilter === "assigned") return guest.assignment !== null;
+      if (seatMenuGuestFilter === "unseated") return guest.assignment === null;
+      return true;
+    });
+
+    const byName = (a: string, b: string) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" });
+
+    if (seatMenuGuestFilter === "all") {
+      return filtered.sort((a, b) => {
+        const assignmentRankA = a.assignment ? 1 : 0;
+        const assignmentRankB = b.assignment ? 1 : 0;
+        if (assignmentRankA !== assignmentRankB) {
+          return assignmentRankA - assignmentRankB;
+        }
+        return byName(a.name, b.name);
+      });
+    }
+
+    return filtered.sort((a, b) => byName(a.name, b.name));
+  }, [guests, seatMenuGuestFilter]);
+  const closeSeatMenu = () => setSeatMenu(null);
+  const handleSeatMenuAssign = async (guestId: string | null) => {
+    if (!seatMenu) return;
+    setIsAssigningSeat(true);
+    try {
+      setSeatMenuError(null);
+      setConflictSeat(null);
+      const result = await onSeatAssign?.(
+        seatMenu.tableId,
+        seatMenu.seatNumber,
+        guestId,
+      );
+      if (result?.message) {
+        toast({
+          variant: result.level === "info" ? "info" : "success",
+          title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
+          description: result.message,
+        });
+      }
+      closeSeatMenu();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : guestId === null
+          ? t("canvas.failedUnassign")
+          : t("canvas.failedAssign");
+      setSeatMenuError(message);
+      setConflictSeat({
+        tableId: seatMenu.tableId,
+        seatNumber: seatMenu.seatNumber,
+      });
+    } finally {
+      setIsAssigningSeat(false);
+    }
+  };
+  const seatMenuContent = seatMenu ? (
+    <>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="truncate text-lg font-medium leading-tight text-zinc-900 lg:text-base">
+          {t("canvas.current", {
+            name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
+          })}
+        </p>
+        <button
+          type="button"
+          onClick={closeSeatMenu}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+          aria-label={t("common.close")}
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 6l12 12" />
+            <path d="M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+      {seatMenuError ? (
+        <div className="mb-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
+          {seatMenuError}
+        </div>
+      ) : null}
+      <div className="mb-2 flex items-center gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant={seatMenuGuestFilter === "unseated" ? "default" : "outline"}
+          className="h-6 rounded-full px-2 text-[10px]"
+          onClick={() => setSeatMenuGuestFilter("unseated")}
+        >
+          {t("guestPanel.filterUnseated")}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={seatMenuGuestFilter === "assigned" ? "default" : "outline"}
+          className="h-6 rounded-full px-2 text-[10px]"
+          onClick={() => setSeatMenuGuestFilter("assigned")}
+        >
+          {t("guestPanel.filterAssigned")}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={seatMenuGuestFilter === "all" ? "default" : "outline"}
+          className="h-6 rounded-full px-2 text-[10px]"
+          onClick={() => setSeatMenuGuestFilter("all")}
+        >
+          {t("guestPanel.filterAll")}
+        </Button>
+      </div>
+      <div className="mb-2 max-h-64 overflow-auto rounded-lg border border-zinc-200 bg-white/60">
+        {seatMenuGuests.map((guest) => {
+          const isCurrent = menuSeatAssignment?.guestId === guest.id;
+          const assignmentLabel = guest.assignment
+            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
+            : t("guestPanel.unseated");
+          const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
+          const moveTogetherGuestIds = new Set(
+            guestRelationships
+              .filter((relationship) => relationship.moveTogetherDefault)
+              .flatMap((relationship) => relationship.guestIds),
+          );
+          const moveTogetherPreviewCount = moveTogetherGuestIds.size;
+          return (
+            <button
+              key={guest.id}
+              type="button"
+              disabled={isAssigningSeat}
+              onClick={() => void handleSeatMenuAssign(guest.id)}
+              className={`w-full border-b border-zinc-200/70 px-3 py-1.5 text-left transition-colors last:border-b-0 hover:bg-zinc-100/60 ${
+                isCurrent ? "border-l-2 border-l-amber-500 bg-zinc-50" : ""
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span
+                    className={`truncate text-base leading-tight text-zinc-900 lg:text-[15px] ${
+                      isCurrent ? "font-semibold" : "font-medium"
+                    }`}
+                  >
+                    {guest.name}
+                  </span>
+                  {guestRelationships.length > 0 ? (
+                    <span className="truncate text-[11px] leading-tight text-zinc-500 lg:text-[10px]">
+                      {guestRelationships
+                        .map((relationship) =>
+                          relationship.name?.trim().length
+                            ? relationship.name
+                            : relationshipTypeLabel[relationship.type],
+                        )
+                        .join(", ")}
+                      {" • "}
+                      {guestRelationships
+                        .map((relationship) => preferredSeatingLabel[relationship.preferredSeating])
+                        .join(", ")}
+                      {moveTogetherPreviewCount > 0 ? (
+                        <>
+                          {" • "}
+                          {t("canvas.groupMove", { count: moveTogetherPreviewCount })}
+                        </>
+                      ) : null}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-0.5">
+                  <Badge
+                    variant={guest.assignment ? "success" : "default"}
+                    className="px-1.5 py-0 text-[8px] leading-4"
+                  >
+                    {guest.assignment ? t("guestPanel.assigned") : t("guestPanel.unseated")}
+                  </Badge>
+                  <span className="text-right text-xs text-zinc-500 lg:text-[11px]">{assignmentLabel}</span>
+                </span>
+              </div>
+            </button>
+          );
+        })}
+        {seatMenuGuests.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-zinc-500">{t("guestPanel.empty")}</div>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        disabled={!menuSeatAssignment || isAssigningSeat}
+        onClick={() => void handleSeatMenuAssign(null)}
+        className="w-full rounded-md border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+      >
+        {t("canvas.unassignSeat")}
+      </button>
+    </>
+  ) : null;
   const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
   const isAnyGuestDragActive = isDraggingGuest || draggedSeatGuestId !== null;
   const totalSeats = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
@@ -801,159 +1000,25 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             </div>
           </div>
         ) : null}
-        {seatMenu ? (
+        {seatMenu && !mobileMode ? (
           <div
-            className="absolute z-40 w-[min(92vw,420px)] rounded-2xl border border-zinc-300 bg-white/95 p-4 shadow-xl backdrop-blur"
+            className="absolute z-40 w-[min(92vw,380px)] rounded-2xl border border-zinc-300 bg-white/95 p-3 shadow-xl backdrop-blur"
             style={{ left: seatMenu.x, top: seatMenu.y }}
             onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-lg font-semibold text-zinc-900">
-                {t("guestPanel.seat", { seat: seatMenu.seatNumber })}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setSeatMenu(null)}
-                className="rounded-md border border-zinc-300 px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-100"
-              >
-                {t("common.close")}
-              </button>
-            </div>
-            <p className="mb-3 text-sm text-zinc-600">
-              {t("canvas.current", {
-                name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
-              })}
-            </p>
-            {seatMenuError ? (
-              <div className="mb-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
-                {seatMenuError}
-              </div>
-            ) : null}
-            <div className="mb-3 max-h-64 space-y-1.5 overflow-auto rounded-lg border border-zinc-200 p-2">
-              {guests.map((guest) => {
-                const isCurrent = menuSeatAssignment?.guestId === guest.id;
-                const assignmentLabel = guest.assignment
-                  ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
-                  : t("guestPanel.unseated");
-                const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
-                const moveTogetherGuestIds = new Set(
-                  guestRelationships
-                    .filter((relationship) => relationship.moveTogetherDefault)
-                    .flatMap((relationship) => relationship.guestIds),
-                );
-                const moveTogetherPreviewCount = moveTogetherGuestIds.size;
-                return (
-                  <button
-                    key={guest.id}
-                    type="button"
-                    disabled={isAssigningSeat}
-                    onClick={async () => {
-                      setIsAssigningSeat(true);
-                      try {
-                        setSeatMenuError(null);
-                        setConflictSeat(null);
-                        const result = await onSeatAssign?.(
-                          seatMenu.tableId,
-                          seatMenu.seatNumber,
-                          guest.id,
-                        );
-                        if (result?.message) {
-                          toast({
-                            variant:
-                              result.level === "info" ? "info" : "success",
-                            title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
-                            description: result.message,
-                          });
-                        }
-                        setSeatMenu(null);
-                      } catch (error) {
-                        const message =
-                          error instanceof Error
-                            ? error.message
-                            : t("canvas.failedAssign");
-                        setSeatMenuError(message);
-                        setConflictSeat({
-                          tableId: seatMenu.tableId,
-                          seatNumber: seatMenu.seatNumber,
-                        });
-                      } finally {
-                        setIsAssigningSeat(false);
-                      }
-                    }}
-                    className={`w-full rounded-lg px-3 py-2 text-left hover:bg-zinc-100 ${
-                      isCurrent ? "bg-zinc-100 font-medium ring-1 ring-zinc-300" : ""
-                    }`}
-                  >
-                    <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
-                      <span className="truncate text-sm text-zinc-900">{guest.name}</span>
-                      <span className="text-right text-sm text-zinc-600">{assignmentLabel}</span>
-                    </div>
-                    {guestRelationships.length > 0 ? (
-                      <span className="mt-1 block text-[11px] text-emerald-700">
-                        {guestRelationships
-                          .map((relationship) =>
-                            relationship.name?.trim().length
-                              ? relationship.name
-                              : relationshipTypeLabel[relationship.type],
-                          )
-                          .join(", ")}
-                        {" • "}
-                        {guestRelationships
-                          .map((relationship) => preferredSeatingLabel[relationship.preferredSeating])
-                          .join(", ")}
-                        {moveTogetherPreviewCount > 0 ? (
-                          <>
-                            {" • "}
-                            {t("canvas.groupMove", { count: moveTogetherPreviewCount })}
-                          </>
-                        ) : null}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              disabled={!menuSeatAssignment || isAssigningSeat}
-              onClick={async () => {
-                if (!menuSeatAssignment) return;
-                setIsAssigningSeat(true);
-                try {
-                  setSeatMenuError(null);
-                  setConflictSeat(null);
-                  const result = await onSeatAssign?.(
-                    seatMenu.tableId,
-                    seatMenu.seatNumber,
-                    null,
-                  );
-                  if (result?.message) {
-                    toast({
-                      variant: result.level === "info" ? "info" : "success",
-                      title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
-                      description: result.message,
-                    });
-                  }
-                  setSeatMenu(null);
-                } catch (error) {
-                  const message =
-                    error instanceof Error
-                      ? error.message
-                      : t("canvas.failedUnassign");
-                  setSeatMenuError(message);
-                  setConflictSeat({
-                    tableId: seatMenu.tableId,
-                    seatNumber: seatMenu.seatNumber,
-                  });
-                } finally {
-                  setIsAssigningSeat(false);
-                }
-              }}
-              className="w-full rounded-md border border-red-300 px-3 py-2 text-base font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
-              {t("canvas.unassignSeat")}
-            </button>
+            {seatMenuContent}
           </div>
+        ) : null}
+        {seatMenu && mobileMode ? (
+          <Drawer open onOpenChange={(open) => (!open ? closeSeatMenu() : undefined)}>
+            <DrawerContent className="h-auto max-h-[72dvh] p-3">
+              <DrawerTitle className="sr-only">
+                {t("guestPanel.seat", { seat: seatMenu.seatNumber })}
+              </DrawerTitle>
+              {seatMenuContent}
+            </DrawerContent>
+          </Drawer>
         ) : null}
       </div>
     </section>

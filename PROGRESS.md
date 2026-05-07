@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 42 - Relationship label localization in seat/guest UI (completed)
+Phase 56 - Boldness balance refinement for seat list (completed)
 
 ## Completed Phases
 
@@ -48,9 +48,114 @@ Phase 42 - Relationship label localization in seat/guest UI (completed)
 - Phase 39 - Optimistic guest seat assignment updates
 - Phase 40 - Polish localization foundation + UI coverage audit
 - Phase 41 - Seat interaction surface cleanup (mobile drawer + desktop inspector)
+- Phase 42 - Relationship label localization in seat/guest UI
+- Phase 43 - Seat popover seated-status badge
+- Phase 44 - Seat popover badge alignment polish
+- Phase 45 - Seat popover metadata column layout
+- Phase 46 - Seat popover hierarchy and rhythm polish
+- Phase 47 - Seat popover row density tightening
+- Phase 48 - Seat popover single-row two-column structure
+- Phase 49 - Seat popover guest filtering + unseated-default priority
+- Phase 50 - Seat popover click propagation fix
+- Phase 51 - Compact seat surface + mobile drawer variant
+- Phase 52 - Top-row current assignment indicator
+- Phase 53 - Current assignment label emphasis tweak
+- Phase 54 - Selected-assigned-row visual refinement
+- Phase 55 - Seat surface typography hierarchy tuning
 
 
 ## Completed Work
+
+- Refined bold usage to improve hierarchy clarity:
+  - top `Current` line reduced from semibold to medium weight
+  - non-selected candidate names reduced to medium
+  - selected/current candidate name remains semibold
+  - metadata unchanged (still secondary/tertiary)
+
+- Tuned seat surface typography hierarchy to prioritize current occupant:
+  - top `Current` line promoted to dominant size/weight (`text-lg` mobile, `text-base` desktop)
+  - candidate guest names kept secondary (`text-base` mobile, slightly smaller desktop)
+  - relationship and assignment metadata demoted with smaller/muted text
+  - spacing above filter row slightly increased for clearer hierarchy separation
+
+- Refined selected assigned-guest row styling in seat surface:
+  - removed inset selection ring
+  - added subtle left accent border for selected/current row
+  - applied lighter selected background tint
+  - kept hover state distinct but less visually heavy
+
+- Increased visual emphasis for top-row current assignment label:
+  - changed to semibold weight and slightly darker text color for faster scanning
+  - no behavior changes
+
+- Added current seat assignment summary back in compact form:
+  - top row now shows `Current: {guestName}` or unassigned state on the left
+  - close `X` remains on the same row at right
+  - applies to both desktop popover and mobile drawer (shared content block)
+
+- Implemented compact seat assignment surface with viewport-specific rendering:
+  - desktop/tablet keeps anchored seat popover
+  - mobile now uses bottom drawer to prevent overflow/cropping
+  - both variants share one content block and the same assignment/filter logic
+
+- Simplified and compacted seat surface chrome:
+  - removed top seat title and current-occupant context lines
+  - replaced text close control with icon-only `X` button
+  - tightened chip/row/button typography and paddings for denser scanning
+
+- Improved filter default behavior:
+  - still defaults to `Unseated`
+  - now auto-falls back to `All` on open when there are no unseated guests
+
+- Fixed seat popover premature close on internal clicks:
+  - popover container now stops `click` propagation in addition to `pointerdown`
+  - clicking inside popover content no longer triggers canvas click handler that closes popover
+  - seat assignment and controls behavior unchanged
+
+- Added basic guest filtering inside seat popover list:
+  - filter chips: `Unseated`, `Assigned`, `All`
+  - localized labels reused from existing guest panel i18n keys
+  - empty state message shown when no guests match active filter
+
+- Prioritized unassigned guests by default:
+  - opening a seat popover now defaults to `Unseated` filter
+  - `All` filter sorts unseated guests first, then assigned guests
+  - both groups are then sorted by guest name
+
+- Refactored seat popover guest row into a single flex row container with two columns:
+  - left column: guest name + relationship hint stacked with minimal internal gap
+  - right column: status badge + assignment text stacked with minimal internal gap
+  - `justify-between` now controls column spacing in one parent container
+  - removed separate relationship block container that previously increased row height
+
+- Tightened seat popover row density to remove excess vertical whitespace:
+  - reduced row vertical padding (`py-3` -> `py-2`)
+  - reduced gap before relationship hint (`mt-1.5` -> `mt-0.5`)
+  - tightened relationship line typography (`text-[11px]`, `leading-tight`)
+  - preserved layout structure and assignment behavior
+
+- Implemented seat popover hierarchy-focused visual polish (no behavior changes):
+  - promoted guest name to primary emphasis (`text-base`, semibold)
+  - kept right metadata as a vertical column (`status badge` above `table • seat`)
+  - demoted relationship hint to tertiary muted text for reduced visual competition
+  - normalized row rhythm with comfortable padding and subtle row separators
+  - softened hover/current-row emphasis to stay distinct without overpowering content hierarchy
+
+- Updated seat popover right-side metadata to a vertical column:
+  - badge shown above assignment text (`Table • Seat`)
+  - right side now scans top-to-bottom instead of inline left-to-right
+  - keeps compact badge sizing from prior phase
+
+- Polished seat popover guest row status layout:
+  - moved assigned/unseated badge from next to guest name to the right-side metadata area
+  - aligned badge directly near `Table • Seat` label for faster glance scanning
+  - reduced badge size (`text-[9px]`, tighter padding) to keep row visual weight balanced
+
+- Added clear seated-status badges to guest rows in the seat popover list:
+  - `Assigned` badge for guests with an assignment
+  - `Unseated` badge for guests without an assignment
+  - reused existing localized labels (`guestPanel.assigned`, `guestPanel.unseated`)
+  - used existing badge variants for quick visual scanning
 
 - Localized relationship labels in assignment surfaces:
   - translated relationship type labels in seat popover hints (`couple`, `family`, `group`, `custom`)
@@ -443,6 +548,34 @@ Phase 42 - Relationship label localization in seat/guest UI (completed)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm typecheck` (pass)
