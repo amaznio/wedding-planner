@@ -185,6 +185,7 @@ export default function SeatingPlanEditorPage() {
             guest.assignment?.seatNumber === selectedSeat.seatNumber,
         ) ?? null)
       : null;
+  const desktopInspectorSelection = selection?.type === "seat" ? null : selection;
   const canvasHighlightedTableId =
     selectedTableId ??
     (selectedSeat ? selectedSeat.tableId : null) ??
@@ -213,11 +214,8 @@ export default function SeatingPlanEditorPage() {
   const handleSelectSeatWithMobileInspector = useCallback(
     (tableId: string, seatNumber: number) => {
       selectSeat(tableId, seatNumber);
-      if (!isDesktopViewport) {
-        setMobileInspectorOpen(true);
-      }
     },
-    [isDesktopViewport, selectSeat],
+    [selectSeat],
   );
   const startGuestDrag = useCallback((guestId: string) => {
     setDraggedGuestId(guestId);
@@ -1379,8 +1377,8 @@ export default function SeatingPlanEditorPage() {
               relationshipsByGuestId={relationshipsByGuestId}
             />
             <InspectorPanel
-              selection={selection}
-              isOpen={selection !== null}
+              selection={desktopInspectorSelection}
+              isOpen={desktopInspectorSelection !== null}
               selectedGuest={selectedGuest}
               selectedTable={selectedTable}
               selectedSeatGuest={selectedSeatGuest}

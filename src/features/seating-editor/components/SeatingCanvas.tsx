@@ -97,6 +97,18 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   relationshipsByGuestId = {},
 }, ref) {
   const { t } = useI18n();
+  const relationshipTypeLabel: Record<SeatingRelationship["type"], string> = {
+    couple: t("guestPanel.relationshipType.couple"),
+    family: t("guestPanel.relationshipType.family"),
+    group: t("guestPanel.relationshipType.group"),
+    custom: t("guestPanel.relationshipType.custom"),
+  };
+  const preferredSeatingLabel: Record<SeatingRelationship["preferredSeating"], string> = {
+    none: t("guestPanel.preferredSeating.none"),
+    adjacent: t("guestPanel.preferredSeating.adjacent"),
+    nearby: t("guestPanel.preferredSeating.nearby"),
+    "same-table": t("guestPanel.preferredSeating.same-table"),
+  };
   const [draggedSeatGuestId, setDraggedSeatGuestId] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
@@ -791,23 +803,23 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
         ) : null}
         {seatMenu ? (
           <div
-            className="absolute z-40 w-[280px] rounded-xl border border-zinc-300 bg-white/95 p-3 shadow-xl backdrop-blur"
+            className="absolute z-40 w-[min(92vw,420px)] rounded-2xl border border-zinc-300 bg-white/95 p-4 shadow-xl backdrop-blur"
             style={{ left: seatMenu.x, top: seatMenu.y }}
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-zinc-900">
+              <h4 className="text-lg font-semibold text-zinc-900">
                 {t("guestPanel.seat", { seat: seatMenu.seatNumber })}
               </h4>
               <button
                 type="button"
                 onClick={() => setSeatMenu(null)}
-                className="rounded border border-zinc-300 px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-100"
+                className="rounded-md border border-zinc-300 px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-100"
               >
                 {t("common.close")}
               </button>
             </div>
-            <p className="mb-2 text-xs text-zinc-600">
+            <p className="mb-3 text-sm text-zinc-600">
               {t("canvas.current", {
                 name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
               })}
@@ -817,7 +829,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 {seatMenuError}
               </div>
             ) : null}
-            <div className="mb-2 max-h-52 space-y-1 overflow-auto rounded-md border border-zinc-200 p-1">
+            <div className="mb-3 max-h-64 space-y-1.5 overflow-auto rounded-lg border border-zinc-200 p-2">
               {guests.map((guest) => {
                 const isCurrent = menuSeatAssignment?.guestId === guest.id;
                 const assignmentLabel = guest.assignment
@@ -868,26 +880,26 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                         setIsAssigningSeat(false);
                       }
                     }}
-                    className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-100 ${
-                      isCurrent ? "bg-zinc-100 font-medium" : ""
+                    className={`w-full rounded-lg px-3 py-2 text-left hover:bg-zinc-100 ${
+                      isCurrent ? "bg-zinc-100 font-medium ring-1 ring-zinc-300" : ""
                     }`}
                   >
-                    <span className="truncate text-zinc-800">{guest.name}</span>
-                    <span className="ml-2 text-zinc-500">
-                      {assignmentLabel}
-                    </span>
+                    <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
+                      <span className="truncate text-sm text-zinc-900">{guest.name}</span>
+                      <span className="text-right text-sm text-zinc-600">{assignmentLabel}</span>
+                    </div>
                     {guestRelationships.length > 0 ? (
-                      <span className="ml-2 text-[10px] text-emerald-700">
+                      <span className="mt-1 block text-[11px] text-emerald-700">
                         {guestRelationships
                           .map((relationship) =>
                             relationship.name?.trim().length
                               ? relationship.name
-                              : relationship.type,
+                              : relationshipTypeLabel[relationship.type],
                           )
                           .join(", ")}
                         {" • "}
                         {guestRelationships
-                          .map((relationship) => relationship.preferredSeating)
+                          .map((relationship) => preferredSeatingLabel[relationship.preferredSeating])
                           .join(", ")}
                         {moveTogetherPreviewCount > 0 ? (
                           <>
@@ -937,7 +949,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   setIsAssigningSeat(false);
                 }
               }}
-              className="w-full rounded-md border border-red-300 px-2 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+              className="w-full rounded-md border border-red-300 px-3 py-2 text-base font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
             >
               {t("canvas.unassignSeat")}
             </button>

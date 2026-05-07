@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 40 - Polish localization foundation + UI coverage audit (completed)
+Phase 42 - Relationship label localization in seat/guest UI (completed)
 
 ## Completed Phases
 
@@ -46,9 +46,28 @@ Phase 40 - Polish localization foundation + UI coverage audit (completed)
 - Phase 37 - Guest editing moved from Inspector to guest panel/drawer
 - Phase 38 - Linked guest drag landing indicators
 - Phase 39 - Optimistic guest seat assignment updates
+- Phase 40 - Polish localization foundation + UI coverage audit
+- Phase 41 - Seat interaction surface cleanup (mobile drawer + desktop inspector)
 
 
 ## Completed Work
+
+- Localized relationship labels in assignment surfaces:
+  - translated relationship type labels in seat popover hints (`couple`, `family`, `group`, `custom`)
+  - translated preferred seating labels in seat popover hints (`adjacent`, `nearby`, `same-table`, `none`)
+  - translated preferred seating labels in selected-guest relationship cards
+  - removed remaining raw enum value rendering for those labels in UI
+
+- Updated seat interaction surfaces:
+  - mobile seat taps no longer open the bottom inspector drawer
+  - desktop inspector no longer opens for seat selections
+  - seat selection still works for in-canvas seat popover assignment flow
+
+- Improved seat popover UI readability:
+  - wider responsive popover container
+  - stronger title/current-assignment hierarchy
+  - cleaner guest row layout with better spacing and wrapping behavior
+  - more prominent unassign action button
 
 - Added app-wide client localization foundation for English and Polish:
   - new locale contract (`en`/`pl`) with `localStorage` persistence
@@ -426,6 +445,8 @@ Phase 40 - Polish localization foundation + UI coverage audit (completed)
 - `corepack pnpm build` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 - `pnpm dlx shadcn@latest add @shadcn/select` (pass)
 - `corepack pnpm add lucide-react` (pass)
 - `corepack pnpm typecheck` (pass)
@@ -466,10 +487,12 @@ Phase 40 - Polish localization foundation + UI coverage audit (completed)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 
 ## Check Results
 
-- Lint: pass.
+- Lint: pass with existing warnings.
 - TypeScript: pass.
 - Build: pass.
 
@@ -494,18 +517,21 @@ Phase 40 - Polish localization foundation + UI coverage audit (completed)
 14. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
 15. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
 16. Save and refresh; verify `Seat layout` persists per table.
+17. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
+18. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
 
 ## Known Issues
 
 - Existing lint warnings remain:
   - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
   - `SeatingCanvas` `useEffect` dependency warning (pre-existing)
+  - unused `totalSeatCount` / `unseatedGuestCount` warnings in `page.tsx` (pre-existing)
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 
 ## Next Recommended Step
 
 Next recommended follow-up:
 
-- Add explicit grouped-move preview panel in seat popover (full seat-by-seat plan before commit).
+- Remove or repurpose currently unused seat summary counters in `page.tsx` to clear lint noise.
+- Add grouped-move preview panel in seat popover (full seat-by-seat plan before commit).
 - Add dedicated relationship member editing UX wired to members `PUT` route.
-- Add unit tests for planner edge cases and API-level strict validation regressions.

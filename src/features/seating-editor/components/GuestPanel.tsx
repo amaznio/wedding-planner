@@ -278,6 +278,12 @@ export function GuestPanel({
     group: t("guestPanel.relationshipType.group"),
     custom: t("guestPanel.relationshipType.custom"),
   };
+  const preferredSeatingLabel: Record<PreferredSeating, string> = {
+    none: t("guestPanel.preferredSeating.none"),
+    adjacent: t("guestPanel.preferredSeating.adjacent"),
+    nearby: t("guestPanel.preferredSeating.nearby"),
+    "same-table": t("guestPanel.preferredSeating.same-table"),
+  };
 
   const selectedGuestRelationships = selectedGuestId
     ? relationshipsByGuestId[selectedGuestId] ?? []
@@ -569,7 +575,7 @@ export function GuestPanel({
                   </div>
                   <p className="text-[11px] text-zinc-600">
                     {relationshipTypeLabel[relationship.type]} •{" "}
-                    {relationship.preferredSeating} •{" "}
+                    {preferredSeatingLabel[relationship.preferredSeating]} •{" "}
                     {t("guestPanel.guestsCount", { count: relationship.guestIds.length })}
                   </p>
                   <div className="mt-2 flex gap-1">
