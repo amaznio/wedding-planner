@@ -16,6 +16,7 @@ type RectTableProps = {
   selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
+  linkedDropPreviewSeatNumbers?: number[];
   isDragActive?: boolean;
   enableTableDrag?: boolean;
   enableSeatDrag?: boolean;
@@ -39,6 +40,7 @@ export function RectTable({
   selectedSeatNumber,
   conflictSeatNumber,
   dropTargetSeatNumber,
+  linkedDropPreviewSeatNumbers = [],
   isDragActive = false,
   enableTableDrag = true,
   enableSeatDrag = false,
@@ -176,6 +178,7 @@ export function RectTable({
             isSelected={selectedSeatNumber === seat.seatNumber}
             isConflict={conflictSeatNumber === seat.seatNumber}
             isDropTarget={dropTargetSeatNumber === seat.seatNumber}
+            isLinkedDropPreview={linkedDropPreviewSeatNumbers.includes(seat.seatNumber)}
             isDragActive={isDragActive}
             enableSeatDrag={enableSeatDrag}
             onClick={(seatNumber, clientX, clientY) =>

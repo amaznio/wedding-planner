@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 37 - Guest editing moved from Inspector to guest panel/drawer (completed)
+Phase 38 - Linked guest drag landing indicators (completed)
 
 ## Completed Phases
 
@@ -46,6 +46,12 @@ Phase 37 - Guest editing moved from Inspector to guest panel/drawer (completed)
 - Phase 37 - Guest editing moved from Inspector to guest panel/drawer
 
 ## Completed Work
+
+- Added relationship-aware drag hover indicators on seats:
+  - primary drop target remains highlighted for dragged guest
+  - linked guest predicted landing seats now highlight simultaneously during drag
+  - preview uses existing grouped move planner and relationship defaults (`moveTogetherDefault`)
+  - linked indicators are preview-only and clear on drag leave/end/drop
 
 - Refactored guest editing UX to use a single surface in guest list:
   - guest edit form/actions (`name`, `group`, `notes`, save/delete/unassign) moved into `GuestPanel`
@@ -337,6 +343,8 @@ Phase 37 - Guest editing moved from Inspector to guest panel/drawer (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 - `src/features/seating-editor/components/SeatingToolbar.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/features/seating-editor/components/RectTable.tsx`
+- `src/features/seating-editor/components/Seat.tsx`
 - `src/app/seating-plans/[planId]/page.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/features/seating-editor/components/SeatingCanvas.tsx`
@@ -372,6 +380,8 @@ Phase 37 - Guest editing moved from Inspector to guest panel/drawer (completed)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with warnings)
 - `corepack pnpm build` (pass)

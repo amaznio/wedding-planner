@@ -10,6 +10,7 @@ type SeatProps = {
   isSelected?: boolean;
   isConflict?: boolean;
   isDropTarget?: boolean;
+  isLinkedDropPreview?: boolean;
   isDragActive?: boolean;
   enableSeatDrag?: boolean;
   onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
@@ -35,6 +36,7 @@ export function Seat({
   isSelected = false,
   isConflict = false,
   isDropTarget = false,
+  isLinkedDropPreview = false,
   isDragActive = false,
   enableSeatDrag = false,
   onClick,
@@ -97,6 +99,8 @@ export function Seat({
           ? "border-red-500 bg-red-100 text-red-800"
           : isDropTarget
           ? "border-blue-500 bg-blue-100 text-blue-900 ring-2 ring-blue-200"
+          : isLinkedDropPreview
+          ? "border-cyan-500 bg-cyan-50 text-cyan-900 ring-2 ring-cyan-200"
           : isSelected
           ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-200"
           : isSelectedGuestSeat

@@ -11,6 +11,10 @@ import {
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
+import {
+  buildGroupMovePlan,
+  getAutoMoveTogetherRelationships,
+} from "../lib/group-move";
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
 import type { SeatingRelationship } from "../types/relationship.types";
@@ -129,6 +133,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     tableId: string;
     seatNumber: number;
   } | null>(null);
+  const [linkedDragPreviewSeatsByTable, setLinkedDragPreviewSeatsByTable] = useState<
+    Record<string, number[]>
+  >({});
   const [mobileLegendOpen, setMobileLegendOpen] = useState(false);
   const centeredPlanIdRef = useRef<string | null>(null);
 
@@ -681,6 +688,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   ? dragHoverSeat.seatNumber
                   : null
               }
+              linkedDropPreviewSeatNumbers={linkedDragPreviewSeatsByTable[table.id] ?? []}
               isDragActive={isAnyGuestDragActive}
               enableTableDrag={enableTableDrag}
               enableSeatDrag={enableSeatDrag}
@@ -697,6 +705,44 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               onSeatDragEnter={(tableId, seatNumber) => {
                 if (!isAnyGuestDragActive) return;
                 setDragHoverSeat({ tableId, seatNumber });
+                const hoverGuestId = effectiveDraggedGuestId;
+                if (!hoverGuestId) {
+                  setLinkedDragPreviewSeatsByTable({});
+                  return;
+                }
+                const moveTogetherRelationships = getAutoMoveTogetherRelationships(
+                  hoverGuestId,
+                  relationshipsByGuestId,
+                );
+                if (moveTogetherRelationships.length === 0) {
+                  setLinkedDragPreviewSeatsByTable({});
+                  return;
+                }
+                const planResult = buildGroupMovePlan({
+                  initiatorGuestId: hoverGuestId,
+                  targetTableId: tableId,
+                  targetSeatNumber: seatNumber,
+                  tables: plan.tables.map((table) => ({
+                    id: table.id,
+                    x: table.x,
+                    y: table.y,
+                    seatCount: table.seatCount,
+                  })),
+                  guests,
+                  relationships: moveTogetherRelationships,
+                });
+                if (!planResult.ok) {
+                  setLinkedDragPreviewSeatsByTable({});
+                  return;
+                }
+                const nextPreviewByTable: Record<string, number[]> = {};
+                for (const assignment of planResult.assignments) {
+                  if (assignment.guestId === hoverGuestId) continue;
+                  const seats = nextPreviewByTable[assignment.tableId] ?? [];
+                  seats.push(assignment.seatNumber);
+                  nextPreviewByTable[assignment.tableId] = seats;
+                }
+                setLinkedDragPreviewSeatsByTable(nextPreviewByTable);
               }}
               onSeatDragLeave={(tableId, seatNumber) => {
                 if (
@@ -704,10 +750,12 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   dragHoverSeat?.seatNumber === seatNumber
                 ) {
                   setDragHoverSeat(null);
+                  setLinkedDragPreviewSeatsByTable({});
                 }
               }}
               onSeatDrop={async (tableId, seatNumber, guestId) => {
                 setDragHoverSeat(null);
+                setLinkedDragPreviewSeatsByTable({});
                 if (!isAnyGuestDragActive) return;
                 const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
@@ -723,6 +771,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               onSeatGuestDragEnd={() => {
                 setDraggedSeatGuestId(null);
                 setDragHoverSeat(null);
+                setLinkedDragPreviewSeatsByTable({});
                 onSeatGuestDragEnd?.();
               }}
               screenToCanvas={screenToCanvas}
