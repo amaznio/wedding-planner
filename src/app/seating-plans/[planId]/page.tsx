@@ -180,6 +180,7 @@ export default function SeatingPlanEditorPage() {
   const [showGroupColors, setShowGroupColors] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
+  const savePlanRef = useRef<(source: "manual" | "auto") => Promise<void>>(async () => {});
   const pendingAutosaveRef = useRef(false);
   const shouldAutosaveGuestsRef = useRef(false);
   const isTableDraggingRef = useRef(false);
@@ -794,20 +795,26 @@ export default function SeatingPlanEditorPage() {
           throw new Error(errorData?.error ?? "Failed to save seating plan");
         }
         const payload = (await response.json()) as { plan?: ApiPlan };
-        if (payload.plan) {
-          setPlan(normalizePlan(payload.plan));
+        const didPlanChangeDuringSave = planRef.current !== nextPlan;
+        if (payload.plan && !didPlanChangeDuringSave) {
+          setPlan(normalizePlan(payload.plan), { preserveSelection: true });
         }
-        await Promise.all([loadGuests(), loadRelationships()]);
-        shouldAutosaveGuestsRef.current = false;
-        markSaved();
-        setSaveState("saved");
-        setLastSavedAt(new Date());
-        toast({
-          title: t("toasts.success"),
-          description: source === "auto" ? t("editor.autosaved") : t("editor.savedOk"),
-          variant: "success",
-        });
-        setTimeout(() => setSaveState("idle"), 1200);
+        if (!didPlanChangeDuringSave) {
+          await Promise.all([loadGuests(), loadRelationships()]);
+          shouldAutosaveGuestsRef.current = false;
+          markSaved();
+          setSaveState("saved");
+          setLastSavedAt(new Date());
+          toast({
+            title: t("toasts.success"),
+            description: source === "auto" ? t("editor.autosaved") : t("editor.savedOk"),
+            variant: "success",
+          });
+          setTimeout(() => setSaveState("idle"), 1200);
+        } else {
+          // User kept editing while the request was in-flight; don't clobber local state.
+          setSaveState("idle");
+        }
       } catch {
         setSaveState("error");
         toast({
@@ -828,6 +835,10 @@ export default function SeatingPlanEditorPage() {
         }
       }
     };
+  useEffect(() => {
+    savePlanRef.current = savePlan;
+  }, [savePlan]);
+
   const scheduleAutosave = useCallback(() => {
     if (isTableDraggingRef.current) {
       pendingAutosaveRef.current = true;
@@ -837,17 +848,17 @@ export default function SeatingPlanEditorPage() {
       clearTimeout(autosaveTimerRef.current);
     }
     autosaveTimerRef.current = setTimeout(() => {
-      void savePlan("auto");
+      void savePlanRef.current("auto");
     }, 1000);
-  }, [savePlan]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = null;
     }
-    await savePlan("manual");
-  }, [savePlan]);
+    await savePlanRef.current("manual");
+  }, []);
 
   const handleCreateGuest = useCallback(async (name: string) => {
     try {
@@ -1231,8 +1242,9 @@ export default function SeatingPlanEditorPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!isDirty) return;
+    // Debounce should follow the latest edit, not the first dirty transition.
     scheduleAutosave();
-  }, [isDirty, isLoading, scheduleAutosave]);
+  }, [isDirty, isLoading, plan, scheduleAutosave]);
 
   useEffect(() => {
     if (isTableDragging) {
@@ -1254,10 +1266,10 @@ export default function SeatingPlanEditorPage() {
         clearTimeout(autosaveTimerRef.current);
       }
       if (isDirtyRef.current || shouldAutosaveGuestsRef.current) {
-        void savePlan("auto");
+        void savePlanRef.current("auto");
       }
     };
-  }, [savePlan]);
+  }, []);
 
   if (isLoading) {
     return (

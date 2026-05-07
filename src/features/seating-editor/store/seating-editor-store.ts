@@ -16,7 +16,10 @@ type SeatingEditorState = {
     | { type: "seat"; tableId: string; seatNumber: number }
     | null;
   isDirty: boolean;
-  setPlan: (plan: SeatingPlan) => void;
+  setPlan: (
+    plan: SeatingPlan,
+    options?: { preserveSelection?: boolean },
+  ) => void;
   markSaved: () => void;
   updatePlanName: (name: string) => void;
   addTable: () => void;
@@ -88,10 +91,32 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
     ? { type: "table", tableId: DEFAULT_PLAN.tables[0].id }
     : null,
   isDirty: false,
-  setPlan: (plan) => {
+  setPlan: (plan, options) => {
+    const currentSelection = get().selection;
+    let nextSelection: SeatingEditorState["selection"] = null;
+
+    if (options?.preserveSelection && currentSelection) {
+      if (currentSelection.type === "table") {
+        const tableExists = plan.tables.some(
+          (table) => table.id === currentSelection.tableId,
+        );
+        nextSelection = tableExists ? currentSelection : null;
+      } else if (currentSelection.type === "seat") {
+        const selectedTable = plan.tables.find(
+          (table) => table.id === currentSelection.tableId,
+        );
+        nextSelection =
+          selectedTable && currentSelection.seatNumber <= selectedTable.seatCount
+            ? currentSelection
+            : null;
+      } else {
+        nextSelection = currentSelection;
+      }
+    }
+
     set({
       plan,
-      selection: null,
+      selection: nextSelection,
       isDirty: false,
     });
   },

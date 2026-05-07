@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 91 - Canvas utility group-color mode + legend swatches (completed)
+Phase 95 - Non-blocking save while typing/actions continue (completed)
 
 ## Completed Phases
 
@@ -98,9 +98,33 @@ Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 - Phase 89 - Plan-scoped guest groups data model + API foundation
 - Phase 90 - Group management + guest tagging UX
 - Phase 91 - Canvas utility group-color mode + legend swatches
+- Phase 92 - Inspector table-field autosave debounce stabilization
+- Phase 93 - Preserve inspector selection across save rehydrate
+- Phase 94 - Autosave debounce keyed to latest plan edits
+- Phase 95 - Non-blocking save while typing/actions continue
 
 
 ## Completed Work
+
+- Implemented Phase 95 non-blocking save behavior for ongoing edits:
+  - save success path now detects whether plan changed while request was in-flight
+  - if user kept editing during save, response rehydrate/finalization is skipped to avoid clobbering current input and interrupting actions
+  - autosave queue then flushes latest local state on the next save cycle, preserving uninterrupted typing/editing flow
+
+- Implemented Phase 94 autosave debounce keyed to latest plan edits:
+  - changed autosave scheduling effect dependency from dirty-toggle-only to include `plan` changes
+  - debounce timer now resets on each edit while dirty, so save fires 1s after the last keystroke (not first keystroke)
+  - preserved existing drag gating and save lifecycle behavior
+
+- Implemented Phase 93 preserve-inspector-selection save rehydrate fix:
+  - extended editor store `setPlan` to accept `preserveSelection` option
+  - when preserving selection, table/seat selections are kept only if still valid in returned plan data
+  - updated save rehydrate path to call `setPlan(..., { preserveSelection: true })` so inspector no longer closes after autosave/manual save
+
+- Implemented Phase 92 inspector table-field autosave debounce stabilization:
+  - fixed autosave lifecycle so debounce/unmount-save paths call `savePlan` via a ref-backed stable callback target
+  - removed render-to-render cleanup-triggered save churn caused by unstable `savePlan` closure dependencies
+  - kept existing autosave behavior (`1000ms`, drag gating, pending autosave queue) while restoring normal typing/editing flow in table inspector fields
 
 - Implemented Phase 91 canvas utility group-color mode + legend swatches:
   - added `showGroupColors` utility toggle in desktop canvas controls and wired mobile utilities toggle in `More` sheet
@@ -792,6 +816,19 @@ Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 
 ## Files Changed
 
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/store/seating-editor-store.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
 - `prisma/schema.prisma`
 - `prisma/migrations/20260507134721_add_guest_groups/migration.sql`
 - `src/features/seating-editor/lib/guest-groups.ts`
@@ -960,6 +997,18 @@ Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 95 non-blocking in-flight save handling)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 94 plan-change keyed debounce)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 93 selection preservation across save)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 92 autosave debounce stabilization)
+- `corepack pnpm lint` (initial fail during intermediate memoization attempt, then pass with existing warnings)
 
 - `corepack pnpm prisma:validate` (pass)
 - `corepack pnpm prisma migrate dev --name add_guest_groups --create-only` (pass)
@@ -1144,22 +1193,28 @@ Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
-3. In the guest panel, create at least two groups and verify each gets an auto-assigned color.
-4. Rename and recolor a group; verify updates persist in the group list and guest selectors.
-5. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
-6. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
-7. Add at least two guests and assign them to seats.
-8. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
-9. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
-10. Open legend and verify active seated group swatches are listed.
-11. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
-12. Verify adjacent move-table toggle and zoom/reset controls still render and work.
-13. Use keyboard:
+3. Select a table so inspector is open.
+4. Start typing in `Nazwa stołu`, wait for autosave to begin, and continue typing before request completes.
+5. Confirm typing remains smooth (no text rollback/focus jump/inspector close) while save response and toast occur.
+6. Stop typing and confirm latest value is eventually autosaved.
+7. Edit `Liczba miejsc` several times quickly and confirm save occurs for final value without blocking further actions.
+8. Confirm inspector remains open and same table remains selected through autosave/manual save.
+9. In the guest panel, create at least two groups and verify each gets an auto-assigned color.
+10. Rename and recolor a group; verify updates persist in the group list and guest selectors.
+11. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
+12. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
+13. Add at least two guests and assign them to seats.
+14. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
+15. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
+16. Open legend and verify active seated group swatches are listed.
+17. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
+18. Verify adjacent move-table toggle and zoom/reset controls still render and work.
+19. Use keyboard:
   - `]` to select next guest
   - `[` to select previous guest
   - `U` to unassign selected guest
-14. Export guests to CSV and verify exported group names match selected groups.
-15. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
+20. Export guests to CSV and verify exported group names match selected groups.
+21. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
 
 ## Known Issues
 
@@ -1175,6 +1230,9 @@ Phase 91 - Canvas utility group-color mode + legend swatches (completed)
 
 Next recommended follow-up:
 
+- Add focused UI regression coverage for in-flight save continuity (typing/actions remain uninterrupted while response/toast lands).
+- Add focused UI regression coverage for autosave debounce behavior (save after last edit, not first) and inspector selection persistence.
+- Refactor `savePlan` into a lint-clean stable callback shape that satisfies both React Compiler and exhaustive-deps without warnings.
 - Add backend tests for group endpoint conflict and ownership validation.
 - Replace prompt-based group rename with inline editing UI for smoother UX.
 - Add unit tests for seat color-priority logic when group mode is enabled.
