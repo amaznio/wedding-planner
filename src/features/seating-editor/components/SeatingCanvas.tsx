@@ -3,6 +3,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +104,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     family: t("guestPanel.relationshipType.family"),
     group: t("guestPanel.relationshipType.group"),
     custom: t("guestPanel.relationshipType.custom"),
+    plus_one: t("guestPanel.relationshipType.plus_one"),
   };
   const preferredSeatingLabel: Record<SeatingRelationship["preferredSeating"], string> = {
     none: t("guestPanel.preferredSeating.none"),
@@ -144,6 +146,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const [seatMenuGuestFilter, setSeatMenuGuestFilter] = useState<"all" | "unseated" | "assigned">(
     "unseated",
   );
+  const [seatMenuQuery, setSeatMenuQuery] = useState("");
   const [conflictSeat, setConflictSeat] = useState<{
     tableId: string;
     seatNumber: number;
@@ -470,6 +473,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     setSeatMenuError(null);
     setConflictSeat(null);
     setSeatMenuGuestFilter(guests.some((guest) => guest.assignment === null) ? "unseated" : "all");
+    setSeatMenuQuery("");
     setSeatMenu({ tableId, seatNumber, x, y });
     onSelectSeat?.(tableId, seatNumber);
   };
@@ -478,10 +482,17 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
     : null;
   const seatMenuGuests = useMemo(() => {
+    const query = seatMenuQuery.trim().toLowerCase();
     const filtered = guests.filter((guest) => {
-      if (seatMenuGuestFilter === "assigned") return guest.assignment !== null;
-      if (seatMenuGuestFilter === "unseated") return guest.assignment === null;
-      return true;
+      const matchesFilter =
+        seatMenuGuestFilter === "assigned"
+          ? guest.assignment !== null
+          : seatMenuGuestFilter === "unseated"
+            ? guest.assignment === null
+            : true;
+      const matchesQuery =
+        query.length === 0 || guest.name.toLowerCase().includes(query);
+      return matchesFilter && matchesQuery;
     });
 
     const byName = (a: string, b: string) =>
@@ -499,7 +510,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     }
 
     return filtered.sort((a, b) => byName(a.name, b.name));
-  }, [guests, seatMenuGuestFilter]);
+  }, [guests, seatMenuGuestFilter, seatMenuQuery]);
   const closeSeatMenu = () => setSeatMenu(null);
   const handleSeatMenuAssign = async (guestId: string | null) => {
     if (!seatMenu) return;
@@ -590,7 +601,16 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           {t("guestPanel.filterAll")}
         </Button>
       </div>
-      <div className="mb-2 max-h-64 overflow-auto rounded-lg border border-zinc-200 bg-white/60">
+      <Input
+        value={seatMenuQuery}
+        onChange={(event) => setSeatMenuQuery(event.target.value)}
+        placeholder={t("guestPanel.searchPlaceholder")}
+        className="mb-2 h-8 text-xs"
+      />
+      <div
+        className="mb-2 max-h-64 overflow-auto overscroll-contain rounded-lg border border-zinc-200 bg-white/60"
+        onWheelCapture={(event) => event.stopPropagation()}
+      >
         {seatMenuGuests.map((guest) => {
           const isCurrent = menuSeatAssignment?.guestId === guest.id;
           const assignmentLabel = guest.assignment
@@ -1006,6 +1026,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             style={{ left: seatMenu.x, top: seatMenu.y }}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
+            onWheelCapture={(event) => event.stopPropagation()}
           >
             {seatMenuContent}
           </div>

@@ -1,4 +1,4 @@
-export type RelationshipType = "couple" | "family" | "group" | "custom";
+export type RelationshipType = "couple" | "family" | "group" | "custom" | "plus_one";
 
 export type PreferredSeating = "adjacent" | "nearby" | "same-table" | "none";
 

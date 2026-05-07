@@ -5,6 +5,7 @@ export const relationshipTypeSchema = z.enum([
   "family",
   "group",
   "custom",
+  "plus_one",
 ]);
 
 export const preferredSeatingSchema = z.enum([

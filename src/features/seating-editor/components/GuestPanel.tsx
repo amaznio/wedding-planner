@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEventHandler } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEventHandler } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
-import { Link2 } from "lucide-react";
+import { parseGuestCsvForImport } from "../lib/guest-import";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import type {
   PreferredSeating,
@@ -27,11 +27,28 @@ type Guest = {
   name: string;
   group: string | null;
   notes: string | null;
+  isPlaceholderPlusOne: boolean;
+  plusOneHostGuestId: string | null;
   assignment: {
     id: string;
     seatNumber: number;
     tableId: string;
   } | null;
+};
+
+type GuestImportRow = {
+  lineNumber: number;
+  name: string;
+  include: boolean;
+};
+
+type GuestImportSummary = {
+  created: number;
+  createdPlusOnes: number;
+  skippedDuplicates: number;
+  skippedInvalidMarkers: number;
+  skippedRelationshipConflicts: number;
+  warnings: string[];
 };
 
 type RelationshipForm = {
@@ -45,43 +62,23 @@ type RelationshipForm = {
 type GuestPanelProps = {
   guests: Guest[];
   relationships: SeatingRelationship[];
-  selectedGuest: Guest | null;
-  guestForm: { name: string; group: string; notes: string };
   tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
   isLoading: boolean;
   error: string | null;
   onSelectGuest: (guestId: string | null) => void;
   onCreateGuest: (name: string) => Promise<void>;
-  onBulkCreateGuests: (
-    guests: Array<{ name: string; group?: string; notes?: string }>,
-  ) => Promise<void>;
-  onUpdateGuest: (
-    guestId: string,
-    payload: { name: string; group: string; notes: string },
-  ) => Promise<void>;
-  onDeleteGuest: (guestId: string) => Promise<void>;
-  onUnassignGuest: (assignmentId: string, guestId: string) => Promise<void>;
-  onGuestFormChange: (next: { name: string; group: string; notes: string }) => void;
+  onBulkImportGuests: (rows: GuestImportRow[]) => Promise<GuestImportSummary>;
   onCreateRelationship: (
     payload: RelationshipForm & { guestIds: string[] },
   ) => Promise<void>;
-  onUpdateRelationship: (
-    relationshipId: string,
-    payload: Partial<{
-      type: RelationshipType;
-      name: string | null;
-      preferredSeating: PreferredSeating;
-      moveTogetherDefault: boolean;
-      strict: boolean;
-    }>,
-  ) => Promise<void>;
-  onDeleteRelationship: (relationshipId: string) => Promise<void>;
   variant?: "desktop" | "sheet";
-  onGuestSelected?: () => void;
+  onGuestSelected?: (guestId: string | null) => void;
   enableGuestDnD?: boolean;
   onGuestDragStart?: (guestId: string) => void;
   onGuestDragEnd?: () => void;
+  linkingSourceGuestId?: string | null;
+  onLinkingSourceApplied?: () => void;
 };
 
 function getInitials(name: string): string {
@@ -92,33 +89,40 @@ function getInitials(name: string): string {
 export function GuestPanel({
   guests,
   relationships,
-  selectedGuest,
-  guestForm,
   tableLabelById,
   selectedGuestId,
   isLoading,
   error,
   onSelectGuest,
   onCreateGuest,
-  onBulkCreateGuests,
-  onUpdateGuest,
-  onDeleteGuest,
-  onUnassignGuest,
-  onGuestFormChange,
+  onBulkImportGuests,
   onCreateRelationship,
-  onUpdateRelationship,
-  onDeleteRelationship,
   variant = "desktop",
   onGuestSelected,
   enableGuestDnD = false,
   onGuestDragStart,
   onGuestDragEnd,
+  linkingSourceGuestId = null,
+  onLinkingSourceApplied,
 }: GuestPanelProps) {
   const { t } = useI18n();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImportSubmitting, setIsImportSubmitting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importPreviewRows, setImportPreviewRows] = useState<
+    Array<{
+      lineNumber: number;
+      name: string;
+      include: boolean;
+      isDuplicate: boolean;
+      isMarker: boolean;
+    }>
+  >([]);
+  const [importSummary, setImportSummary] = useState<GuestImportSummary | null>(null);
   const [selectedRelationshipGuestIds, setSelectedRelationshipGuestIds] = useState<
     string[]
   >([]);
@@ -131,10 +135,6 @@ export function GuestPanel({
   const [newRelationshipMoveTogetherDefault, setNewRelationshipMoveTogetherDefault] =
     useState(false);
   const [newRelationshipStrict, setNewRelationshipStrict] = useState(false);
-  const [editingRelationshipId, setEditingRelationshipId] = useState<string | null>(
-    null,
-  );
-  const [editingRelationshipName, setEditingRelationshipName] = useState("");
 
   const visibleGuests = useMemo(() => {
     const queryLower = query.trim().toLowerCase();
@@ -214,50 +214,79 @@ export function GuestPanel({
     if (!file) return;
 
     const text = await file.text();
-    const normalized = text.replace(/\r?\n/g, ",");
-    const values = normalized
-      .split(",")
-      .map((part) => part.trim().replace(/^"|"$/g, "").replaceAll("\"\"", "\""))
-      .filter(Boolean);
-
-    if (values.length === 0) {
-      event.target.value = "";
-      return;
-    }
-
-    const seen = new Set<string>(
-      guests
-        .map((guest) => guest.name.trim().toLowerCase())
-        .filter((name) => name.length > 0),
+    const parseResult = parseGuestCsvForImport(
+      text,
+      guests.map((guest) => guest.name),
     );
-    const parsed = values
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0)
-      .filter((name) => {
-        const key = name.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .map((name) => ({ name }));
 
-    if (parsed.length > 0) {
-      await onBulkCreateGuests(parsed);
-    }
-
+    setImportSummary(null);
+    setImportError(null);
+    setImportPreviewRows(
+      parseResult.rows.map((row) => ({
+        lineNumber: row.lineNumber,
+        name: row.name,
+        isDuplicate: row.isDuplicate,
+        isMarker: row.isMarker,
+        include: row.isMarker ? true : !row.isDuplicate,
+      })),
+    );
     event.target.value = "";
   };
 
-  const toggleRelationshipGuest = (guestId: string) => {
+  const toggleImportDuplicateRow = (lineNumber: number) => {
+    setImportPreviewRows((current) =>
+      current.map((row) =>
+        row.lineNumber === lineNumber && row.isDuplicate
+          ? { ...row, include: !row.include }
+          : row,
+      ),
+    );
+  };
+
+  const clearImportPreview = () => {
+    setImportPreviewRows([]);
+  };
+
+  const handleConfirmImport = async () => {
+    if (importPreviewRows.length === 0) return;
+
+    setIsImportSubmitting(true);
+    try {
+      setImportError(null);
+      const summary = await onBulkImportGuests(
+        importPreviewRows.map((row) => ({
+          lineNumber: row.lineNumber,
+          name: row.name,
+          include: row.include,
+        })),
+      );
+      setImportSummary(summary);
+      clearImportPreview();
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : t("guestPanel.importFailed"));
+    } finally {
+      setIsImportSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!linkingSourceGuestId) return;
     onSelectGuest(null);
+    const timer = window.setTimeout(() => {
+      setSelectedRelationshipGuestIds([linkingSourceGuestId]);
+      onLinkingSourceApplied?.();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [linkingSourceGuestId, onLinkingSourceApplied, onSelectGuest]);
+
+  const selectGuestForRelationship = (guestId: string) => {
     setSelectedRelationshipGuestIds((current) => {
-      if (current.includes(guestId)) {
-        return current.filter((id) => id !== guestId);
-      }
-      if (current.length >= 2) {
-        return [current[1], guestId];
-      }
-      return [...current, guestId];
+      if (current.length === 0) return [guestId];
+      const sourceGuestId = current[0];
+      if (guestId === sourceGuestId) return current;
+      if (current.length === 1) return [sourceGuestId, guestId];
+      if (current[1] === guestId) return current;
+      return [sourceGuestId, guestId];
     });
   };
 
@@ -289,17 +318,9 @@ export function GuestPanel({
     family: t("guestPanel.relationshipType.family"),
     group: t("guestPanel.relationshipType.group"),
     custom: t("guestPanel.relationshipType.custom"),
-  };
-  const preferredSeatingLabel: Record<PreferredSeating, string> = {
-    none: t("guestPanel.preferredSeating.none"),
-    adjacent: t("guestPanel.preferredSeating.adjacent"),
-    nearby: t("guestPanel.preferredSeating.nearby"),
-    "same-table": t("guestPanel.preferredSeating.same-table"),
+    plus_one: t("guestPanel.relationshipType.plus_one"),
   };
 
-  const selectedGuestRelationships = selectedGuestId
-    ? relationshipsByGuestId[selectedGuestId] ?? []
-    : [];
   const isLinkingMode = selectedRelationshipGuestIds.length > 0;
   const selectedLinkGuests = selectedRelationshipGuestIds
     .map((guestId) => guests.find((guest) => guest.id === guestId))
@@ -322,21 +343,141 @@ export function GuestPanel({
           </Button>
         </div>
         <div className="mt-2 flex gap-2">
-          <label className="cursor-pointer">
-            <Button size="sm" variant="outline" type="button">
-              {t("guestPanel.import")}
-            </Button>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={handleImportCsv}
-            />
-          </label>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={handleImportCsv}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+          >
+            {t("guestPanel.import")}
+          </Button>
           <Button type="button" size="sm" variant="outline" onClick={handleExportCsv}>
             {t("guestPanel.export")}
           </Button>
         </div>
+        {importPreviewRows.length > 0 ? (
+          <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
+            <p className="text-xs font-semibold text-zinc-900">
+              {t("guestPanel.importReviewTitle")}
+            </p>
+            <p className="mt-1 text-xs text-zinc-600">
+              {t("guestPanel.importReviewSummary", {
+                total: importPreviewRows.length,
+                duplicates: importPreviewRows.filter((row) => row.isDuplicate).length,
+              })}
+            </p>
+            {importPreviewRows.some((row) => row.isDuplicate === true) ? (
+              <div className="mt-2 max-h-32 space-y-1 overflow-auto rounded border border-zinc-200 p-2">
+                {importPreviewRows
+                  .filter((row) => row.isDuplicate)
+                  .map((row) => (
+                    <label
+                      key={row.lineNumber}
+                      htmlFor={`import-duplicate-${row.lineNumber}`}
+                      className="flex items-center gap-2 text-xs text-zinc-700"
+                    >
+                      <Checkbox
+                        id={`import-duplicate-${row.lineNumber}`}
+                        checked={row.include}
+                        disabled={isImportSubmitting}
+                        onCheckedChange={() => toggleImportDuplicateRow(row.lineNumber)}
+                      />
+                      <span className="truncate">
+                        {t("guestPanel.importDuplicateRow", {
+                          line: row.lineNumber,
+                          name: row.name,
+                        })}
+                      </span>
+                    </label>
+                  ))}
+              </div>
+            ) : null}
+            <div className="mt-2 flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={isImportSubmitting}
+                aria-busy={isImportSubmitting}
+                onClick={() => void handleConfirmImport()}
+              >
+                {isImportSubmitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <svg
+                      className="h-3.5 w-3.5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        className="opacity-25"
+                      />
+                      <path
+                        d="M21 12a9 9 0 0 0-9-9"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="opacity-90"
+                      />
+                    </svg>
+                    {t("guestPanel.importing")}
+                  </span>
+                ) : (
+                  t("guestPanel.importConfirm")
+                )}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isImportSubmitting}
+                onClick={clearImportPreview}
+              >
+                {t("common.cancel")}
+              </Button>
+            </div>
+            {isImportSubmitting ? (
+              <p className="mt-2 text-xs text-zinc-600">
+                {t("guestPanel.importInProgress", { count: importPreviewRows.length })}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {importError ? (
+          <p className="mt-2 text-xs text-red-700">{importError}</p>
+        ) : null}
+        {importSummary ? (
+          <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3 text-xs text-zinc-700">
+            <p className="font-semibold text-zinc-900">{t("guestPanel.importResultTitle")}</p>
+            <p>
+              {t("guestPanel.importResultCounts", {
+                created: importSummary.created,
+                plusOnes: importSummary.createdPlusOnes,
+                skippedDuplicates: importSummary.skippedDuplicates,
+                skippedInvalidMarkers: importSummary.skippedInvalidMarkers,
+                skippedConflicts: importSummary.skippedRelationshipConflicts,
+              })}
+            </p>
+            {importSummary.warnings.length > 0 ? (
+              <ul className="mt-1 list-disc pl-4">
+                {importSummary.warnings.slice(0, 5).map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <Separator />
       <div className="space-y-3 px-4 py-4">
@@ -384,10 +525,11 @@ export function GuestPanel({
               const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
               const isSelectedForRelationship =
                 selectedRelationshipGuestIds.includes(guest.id);
+              const isSelectedGuestRow = selectedGuestId === guest.id;
 
               return (
                 <li key={guest.id}>
-                  <div className="mb-1 flex items-center gap-1">
+                  <div className="mb-1 flex min-w-0 items-center gap-1">
                     <button
                       type="button"
                       draggable={variant === "desktop" && enableGuestDnD}
@@ -407,14 +549,18 @@ export function GuestPanel({
                         onGuestDragEnd?.();
                       }}
                       onClick={() => {
-                        if (selectedRelationshipGuestIds.length > 0) {
-                          setSelectedRelationshipGuestIds([]);
+                        if (isLinkingMode) {
+                          selectGuestForRelationship(guest.id);
+                          return;
                         }
-                        onSelectGuest(selectedGuestId === guest.id ? null : guest.id);
-                        onGuestSelected?.();
+                        const nextGuestId = selectedGuestId === guest.id ? null : guest.id;
+                        onSelectGuest(nextGuestId);
+                        onGuestSelected?.(nextGuestId);
                       }}
-                      className={`flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left ${
-                        selectedGuestId === guest.id
+                      className={`flex min-w-0 flex-1 items-center gap-3 rounded-md border px-3 py-2 text-left ${
+                        isSelectedForRelationship
+                          ? "border-blue-300 bg-blue-50/70"
+                          : isSelectedGuestRow
                           ? "border-zinc-400 bg-zinc-100"
                           : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
                       }`}
@@ -448,16 +594,6 @@ export function GuestPanel({
                         ) : null}
                       </div>
                     </button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={isSelectedForRelationship ? "default" : "outline"}
-                      className="h-8 gap-1.5 px-2 text-[11px]"
-                      onClick={() => toggleRelationshipGuest(guest.id)}
-                    >
-                      <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      {isSelectedForRelationship ? t("common.cancel") : t("guestPanel.link")}
-                    </Button>
                   </div>
                 </li>
               );
@@ -582,220 +718,6 @@ export function GuestPanel({
             >
               {t("guestPanel.clear")}
             </Button>
-          </div>
-        </div>
-      ) : null}
-      {!isLinkingMode && selectedGuestId ? (
-        <div
-          className="border-t border-zinc-200 px-4 py-3"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <p className="text-xs font-semibold text-zinc-800">
-            {t("guestPanel.relationshipsForSelected")}
-          </p>
-          {selectedGuestRelationships.length === 0 ? (
-            <p className="mt-2 text-xs text-zinc-500">{t("guestPanel.noRelationships")}</p>
-          ) : (
-            <div className="mt-2 space-y-2">
-              {selectedGuestRelationships.map((relationship) => (
-                <div
-                  key={relationship.id}
-                  className="rounded-md border border-zinc-200 bg-white p-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs font-medium text-zinc-900">
-                      {relationship.name?.trim().length
-                        ? relationship.name
-                        : relationshipTypeLabel[relationship.type]}
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setEditingRelationshipId(relationship.id);
-                        setEditingRelationshipName(relationship.name ?? "");
-                      }}
-                    >
-                      {t("guestPanel.rename")}
-                    </Button>
-                  </div>
-                  <p className="text-[11px] text-zinc-600">
-                    {relationshipTypeLabel[relationship.type]} •{" "}
-                    {preferredSeatingLabel[relationship.preferredSeating]} •{" "}
-                    {t("guestPanel.guestsCount", { count: relationship.guestIds.length })}
-                  </p>
-                  <div className="mt-2 flex gap-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void onUpdateRelationship(relationship.id, {
-                          moveTogetherDefault: !relationship.moveTogetherDefault,
-                        });
-                        if (selectedGuestId) {
-                          onSelectGuest(selectedGuestId);
-                        }
-                      }}
-                    >
-                      {t("guestPanel.moveTogether", {
-                        value: relationship.moveTogetherDefault
-                          ? t("guestPanel.on")
-                          : t("guestPanel.off"),
-                      })}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void onUpdateRelationship(relationship.id, {
-                          strict: !relationship.strict,
-                        });
-                        if (selectedGuestId) {
-                          onSelectGuest(selectedGuestId);
-                        }
-                      }}
-                    >
-                      {t("guestPanel.strictLabel", {
-                        value: relationship.strict ? t("guestPanel.on") : t("guestPanel.off"),
-                      })}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void onDeleteRelationship(relationship.id);
-                      }}
-                    >
-                      {t("common.delete")}
-                    </Button>
-                  </div>
-                  {editingRelationshipId === relationship.id ? (
-                    <div className="mt-2 flex gap-2">
-                      <Input
-                        className="h-7 text-xs"
-                        value={editingRelationshipName}
-                        onChange={(event) =>
-                          setEditingRelationshipName(event.target.value)
-                        }
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void onUpdateRelationship(relationship.id, {
-                            name: editingRelationshipName.trim() || null,
-                          }).then(() => setEditingRelationshipId(null));
-                          if (selectedGuestId) {
-                            onSelectGuest(selectedGuestId);
-                          }
-                        }}
-                      >
-                        {t("common.save")}
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
-      {!isLinkingMode && selectedGuest ? (
-        <div
-          className="border-t border-zinc-200 px-4 py-3"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <p className="text-xs font-semibold text-zinc-800">{t("guestPanel.guestDetails")}</p>
-          <div className="mt-2 space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
-              {selectedGuest.assignment ? (
-                <Badge variant="secondary" className="mt-1">
-                  {tableLabelById[selectedGuest.assignment.tableId] ?? t("guestPanel.tableFallback")} •{" "}
-                  {t("guestPanel.seat", { seat: selectedGuest.assignment.seatNumber })}
-                </Badge>
-              ) : (
-                <Badge className="mt-1">{t("guestPanel.unseated")}</Badge>
-              )}
-            </div>
-            <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">{t("guestPanel.name")}</span>
-              <Input
-                value={guestForm.name}
-                onChange={(event) =>
-                  onGuestFormChange({ ...guestForm, name: event.target.value })
-                }
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">{t("guestPanel.group")}</span>
-              <Input
-                value={guestForm.group}
-                onChange={(event) =>
-                  onGuestFormChange({ ...guestForm, group: event.target.value })
-                }
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">{t("guestPanel.notes")}</span>
-              <textarea
-                value={guestForm.notes}
-                onChange={(event) =>
-                  onGuestFormChange({ ...guestForm, notes: event.target.value })
-                }
-                rows={3}
-                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-              />
-            </label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  void onUpdateGuest(selectedGuest.id, {
-                    name: guestForm.name,
-                    group: guestForm.group,
-                    notes: guestForm.notes,
-                  })
-                }
-              >
-                {t("guestPanel.saveGuest")}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => void onDeleteGuest(selectedGuest.id)}
-              >
-                {t("common.delete")}
-              </Button>
-            </div>
-            {selectedGuest.assignment ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  void onUnassignGuest(selectedGuest.assignment!.id, selectedGuest.id)
-                }
-              >
-                {t("guestPanel.unassign")}
-              </Button>
-            ) : null}
           </div>
         </div>
       ) : null}

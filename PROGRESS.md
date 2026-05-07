@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 67 - Canvas drag performance optimization (completed)
+Phase 77 - Link action UX cleanup + guest details relocation + large-list stability (completed)
 
 ## Completed Phases
 
@@ -74,9 +74,95 @@ Phase 67 - Canvas drag performance optimization (completed)
 - Phase 65 - Switch relationship option checkboxes to shadcn Checkbox
 - Phase 66 - Checkbox tooltip delay + label-only trigger
 - Phase 67 - Canvas drag performance optimization
+- Phase 68 - Import trigger hotfix
+- Phase 69 - Plus-one domain foundation
+- Phase 70 - Bulk CSV import + duplicate review + auto-link
+- Phase 71 - Guest-level plus-one controls
+- Phase 72 - Bulk import transaction timeout fix
+- Phase 73 - Import loading-state UX polish
+- Phase 74 - Import review checkboxes switched to shadcn
+- Phase 75 - Overflow + seat popover interaction fixes
+- Phase 76 - Guest details relocation to inspector/dedicated mobile drawer
+- Phase 77 - Link action UX cleanup
 
 
 ## Completed Work
+
+- Implemented Phase 75 UX stabilization fixes for large guest volumes:
+  - fixed left panel row width pressure by switching the guest row main action to `flex-1 min-w-0` in a `min-w-0` row container
+  - isolated seat popover scrolling from canvas wheel zoom/pan by stopping wheel propagation on popover/list containers
+  - added `overscroll-contain` to seat popover list to reduce scroll chaining
+  - added local seat popover guest search input (name-only, case-insensitive) combined with assigned/unseated/all filters
+
+- Implemented Phase 76 guest-details relocation:
+  - removed inline guest details and selected-guest relationship sections from left `GuestPanel` so guest list remains tall and usable
+  - expanded right `InspectorPanel` guest mode into the primary editing surface for:
+    - guest fields (`name/group/notes`)
+    - guest save/delete/unassign
+    - plus-one add/remove
+    - selected guest relationship management (rename/toggles/delete)
+  - desktop now reuses right inspector shell for guest selection (`guest` + `table` modes)
+  - mobile guest details now open in a dedicated inspector drawer flow from the guest list; guest mode uses a full-height drawer variant
+
+- Implemented Phase 77 link-action cleanup:
+  - removed persistent per-row `Link/Połącz` button from guest rows
+  - added `Start linking` action in guest details inspector
+  - link source guest is now set from details action, then guest list is used to pick the second guest
+  - kept existing relationship create form/controls and single-relationship replacement behavior
+
+- Switched duplicate-row checkboxes in CSV import review to shadcn `Checkbox`:
+  - replaced native `<input type="checkbox">` controls with `Checkbox` in the import preview list
+  - preserved existing include/exclude behavior and disabled state during import submit
+
+- Improved CSV import loading-state feedback in Guest panel:
+  - import submit button now shows spinner + localized `Importing...` label while request is in-flight
+  - duplicate include checkboxes are disabled during active import to prevent mid-request state churn
+  - added localized progress hint under actions: `Processing {{count}} rows. Please wait.`
+  - preserved existing summary and error surfaces
+
+- Fixed bulk guest import failures on larger CSV files (`~200+ rows`) caused by Prisma interactive transaction expiry (`5000ms` default):
+  - increased import transaction limits in `POST /api/seating-plans/:planId/guests/import`:
+    - `timeout: 30000`
+    - `maxWait: 10000`
+  - shortened time spent inside the interactive transaction by returning created IDs + summary from the transaction and moving response hydration (`findMany` for guests/relationships) outside transaction scope
+  - preserved import semantics and structured summary payload
+
+- Implemented Phase 68 import trigger hotfix:
+  - replaced nested `label > Button > input` CSV import trigger with a reliable hidden file input + `ref` + explicit button click flow
+  - resolved intermittent file-picker opening failures in Guest panel (desktop and sheet variants)
+
+- Implemented Phase 69 plus-one domain foundation:
+  - added explicit plus-one guest metadata to Prisma `Guest` model:
+    - `isPlaceholderPlusOne` (default `false`)
+    - `plusOneHostGuestId` self-reference (`onDelete: SetNull`)
+  - added Prisma migration `20260507131500_add_plus_one_guest_metadata`
+  - extended relationship type union/schema/API to include `plus_one`
+  - localized plus-one labels and actions in EN/PL dictionaries
+
+- Implemented Phase 70 bulk CSV import with duplicate review and plus-one auto-linking:
+  - added shared marker constants and CSV parser helpers:
+    - hardcoded marker support for `Osoba Tow.`
+    - ordered line parsing, duplicate detection, marker detection
+  - added Guest panel import review UI:
+    - duplicate rows are unchecked by default
+    - user can selectively include duplicate rows before import
+  - added bulk import API endpoint:
+    - `POST /api/seating-plans/:planId/guests/import`
+    - processes rows in order, skips invalid marker placement with warnings
+    - auto-creates placeholder plus-one guest + `plus_one` relationship when marker follows a newly created host row
+    - skips plus-one creation if host already has a relationship, returns warnings/summary
+  - returns structured summary:
+    - `created`, `createdPlusOnes`, `skippedDuplicates`, `skippedInvalidMarkers`, `skippedRelationshipConflicts`, `warnings`
+
+- Implemented Phase 71 guest-level plus-one controls:
+  - added contextual Guest details action:
+    - `Add Plus One` for eligible guests without a plus-one link
+    - `Remove Plus One` when a linked placeholder plus one exists
+  - added dedicated endpoints:
+    - `POST /api/seating-plans/:planId/guests/:guestId/plus-one`
+    - `DELETE /api/seating-plans/:planId/guests/:guestId/plus-one`
+  - remove flow now deletes only system placeholder plus-one guests and never deletes non-placeholder guests
+  - wired new routes into editor state updates (`guests` + `relationships`)
 
 - Optimized canvas drag/pan render performance for large table/seat counts:
   - memoized `RectTable` with a focused prop comparator so pan/zoom view updates do not re-render every table subtree
@@ -562,6 +648,33 @@ Phase 67 - Canvas drag performance optimization (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+- `src/features/seating-editor/constants/plus-one.ts`
+- `src/features/seating-editor/lib/guest-import.ts`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+- `src/features/seating-editor/schemas/relationship.schema.ts`
+- `src/features/seating-editor/types/relationship.types.ts`
+- `src/app/api/seating-plans/[planId]/guests/import/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/[guestId]/plus-one/route.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `prisma/schema.prisma`
+- `prisma/migrations/20260507131500_add_plus_one_guest_metadata/migration.sql`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
 - `src/components/ui/checkbox.tsx`
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `pnpm-lock.yaml`
@@ -639,6 +752,26 @@ Phase 67 - Canvas drag performance optimization (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; phase 75 seat popover + overflow changes)
+- `corepack pnpm lint` (initial fail: missing `Input` import in `SeatingCanvas`; fixed, then pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+- `corepack pnpm typecheck` (pass; phases 76/77 guest-details relocation + link action refactor)
+- `corepack pnpm lint` (initial fail: `react-hooks/set-state-in-effect` in `GuestPanel`; fixed, then pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `pnpm typecheck` (pass; shadcn checkbox swap in import review)
+- `pnpm i18n:audit` (pass; shadcn checkbox swap in import review)
+- `pnpm typecheck` (pass; import loading-state polish)
+- `pnpm i18n:audit` (pass; import loading-state polish)
+- `pnpm prisma:validate` (pass)
+- `pnpm typecheck` (initial fail due stale Prisma client; pass after `prisma generate`)
+- `pnpm prisma generate` (pass)
+- `pnpm prisma migrate dev --name add-plus-one-guest-metadata` (pass; applied pending relationship + plus-one metadata migrations)
+- `pnpm typecheck` (pass)
+- `pnpm i18n:audit` (initial fail on hardcoded-text audit in new GuestPanel import row rendering; pass after localization-safe refactor)
+- `pnpm i18n:audit` (pass)
+- `pnpm lint` (pass with existing warnings)
+- `pnpm typecheck` (pass; after bulk import transaction timeout fix)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing warnings)
 - `corepack pnpm typecheck` (pass)
@@ -743,34 +876,43 @@ Phase 67 - Canvas drag performance optimization (completed)
 
 ## Check Results
 
-- Lint: pass with existing warnings.
+- Prisma schema validation: pass.
 - TypeScript: pass.
-- Build: pass.
+- i18n audit: pass.
+- Lint: pass with existing warnings.
+- Build: not run in this phase set.
 
 ## How To Test
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
-3. Add at least two guests and assign them to seats.
-4. Use keyboard:
+3. In the guest panel, click `Import` and verify the file picker opens immediately (desktop and mobile sheet).
+4. Import a CSV with normal names plus `Osoba Tow.` marker rows; verify duplicate rows are unchecked by default in the review panel.
+5. Confirm import and verify summary counts/warnings are shown.
+6. Verify a marker directly after a newly created host row creates a placeholder plus one and a `plus_one` relationship.
+7. Select a guest without a link and verify `Add Plus One` appears in guest details.
+8. Click `Add Plus One` and verify placeholder guest + relationship are created.
+9. Click `Remove Plus One` for that host and verify linked placeholder guest is deleted.
+10. Add at least two guests and assign them to seats.
+11. Use keyboard:
   - `]` to select next guest
   - `[` to select previous guest
   - `U` to unassign selected guest
-5. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
-6. Export guests to CSV and import the CSV back.
-7. Save and refresh; verify assignments still persist.
-8. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
-9. Click a table and verify inspector opens with table controls.
-10. Verify seat assignment actions happen via seat popover only.
-11. Click empty canvas and verify selection clears and inspector closes.
-12. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
-13. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
-14. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
-15. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
-16. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
-17. Save and refresh; verify `Seat layout` persists per table.
-18. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
-19. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
+12. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
+13. Export guests to CSV and import the CSV back.
+14. Save and refresh; verify assignments still persist.
+15. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
+16. Click a table and verify inspector opens with table controls.
+17. Verify seat assignment actions happen via seat popover only.
+18. Click empty canvas and verify selection clears and inspector closes.
+19. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
+20. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
+21. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
+22. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
+23. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
+24. Save and refresh; verify `Seat layout` persists per table.
+25. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
+26. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
 
 ## Known Issues
 
@@ -778,6 +920,7 @@ Phase 67 - Canvas drag performance optimization (completed)
   - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
   - `SeatingCanvas` `useEffect` dependency warning (still present)
   - unused `totalSeatCount` / `unseatedGuestCount` warnings in `page.tsx` (pre-existing)
+- CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 
 ## Next Recommended Step
@@ -785,5 +928,5 @@ Phase 67 - Canvas drag performance optimization (completed)
 Next recommended follow-up:
 
 - Remove or repurpose currently unused seat summary counters in `page.tsx` to clear lint noise.
-- Add grouped-move preview panel in seat popover (full seat-by-seat plan before commit).
-- Add dedicated relationship member editing UX wired to members `PUT` route.
+- Add backend+UI unit tests for CSV parser edge cases and plus-one add/remove endpoint behavior.
+- Consider promoting marker list from hardcoded constant to plan-level configuration once import flow stabilizes.

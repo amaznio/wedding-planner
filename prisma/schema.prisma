@@ -48,6 +48,10 @@ model Guest {
   name      String
   group     String?
   notes     String?
+  isPlaceholderPlusOne Boolean @default(false)
+  plusOneHostGuestId String?
+  plusOneHostGuest Guest? @relation("PlusOneHost", fields: [plusOneHostGuestId], references: [id], onDelete: SetNull)
+  plusOneGuests Guest[] @relation("PlusOneHost")
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -55,6 +59,7 @@ model Guest {
   relationshipMembers SeatingRelationshipMember[]
 
   @@index([planId])
+  @@index([plusOneHostGuestId])
 }
 
 model SeatingRelationship {

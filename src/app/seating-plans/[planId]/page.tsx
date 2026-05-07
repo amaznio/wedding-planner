@@ -47,11 +47,28 @@ type ApiGuest = {
   name: string;
   group: string | null;
   notes: string | null;
+  isPlaceholderPlusOne: boolean;
+  plusOneHostGuestId: string | null;
   assignment: {
     id: string;
     seatNumber: number;
     tableId: string;
   } | null;
+};
+
+type GuestImportRow = {
+  lineNumber: number;
+  name: string;
+  include: boolean;
+};
+
+type GuestImportSummary = {
+  created: number;
+  createdPlusOnes: number;
+  skippedDuplicates: number;
+  skippedInvalidMarkers: number;
+  skippedRelationshipConflicts: number;
+  warnings: string[];
 };
 
 type SeatAssignmentPayload = {
@@ -134,6 +151,7 @@ export default function SeatingPlanEditorPage() {
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
   const [isDraggingGuest, setIsDraggingGuest] = useState(false);
+  const [linkingSourceGuestId, setLinkingSourceGuestId] = useState<string | null>(null);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [relationships, setRelationships] = useState<ApiRelationship[]>([]);
   const [isGuestsLoading, setIsGuestsLoading] = useState(true);
@@ -185,7 +203,10 @@ export default function SeatingPlanEditorPage() {
             guest.assignment?.seatNumber === selectedSeat.seatNumber,
         ) ?? null)
       : null;
-  const desktopInspectorSelection = selection?.type === "table" ? selection : null;
+  const desktopInspectorSelection =
+    selection && (selection.type === "table" || selection.type === "guest")
+      ? selection
+      : null;
   const canvasHighlightedTableId =
     selectedTableId ??
     (selectedSeat ? selectedSeat.tableId : null) ??
@@ -798,36 +819,39 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId, scheduleAutosave]);
 
-  const handleBulkCreateGuests = useCallback(async (
-    csvGuests: Array<{ name: string; group?: string; notes?: string }>,
-  ) => {
-    try {
-      setGuestsError(null);
-      const createdGuests: ApiGuest[] = [];
-      for (const guest of csvGuests) {
-        const response = await fetch(`/api/seating-plans/${planId}/guests`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: guest.name,
-            group: guest.group || null,
-            notes: guest.notes || null,
-          }),
-        });
-        if (!response.ok) {
-          const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(errorData?.error ?? "Failed to import guests");
-        }
-        const data = (await response.json()) as { guest: ApiGuest };
-        createdGuests.push(data.guest);
+  const handleBulkImportGuests = useCallback(
+    async (rows: GuestImportRow[]): Promise<GuestImportSummary> => {
+      const response = await fetch(`/api/seating-plans/${planId}/guests/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to import guests");
       }
-      setGuests((current) => [...current, ...createdGuests]);
+
+      const data = (await response.json()) as {
+        guests: ApiGuest[];
+        relationships: ApiRelationship[];
+        summary: GuestImportSummary;
+      };
+
+      if (data.guests.length > 0) {
+        setGuests((current) => [...current, ...data.guests]);
+      }
+      if (data.relationships.length > 0) {
+        setRelationships((current) => [...current, ...data.relationships]);
+      }
       shouldAutosaveGuestsRef.current = true;
       scheduleAutosave();
-    } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : "Failed to import guests");
-    }
-  }, [planId, scheduleAutosave]);
+      return data.summary;
+    },
+    [planId, scheduleAutosave],
+  );
 
   const handleUpdateGuest = useCallback(async (
     guestId: string,
@@ -879,6 +903,84 @@ export default function SeatingPlanEditorPage() {
       setGuestsError(error instanceof Error ? error.message : "Failed to delete guest");
     }
   }, [clearSelection, planId, scheduleAutosave, selectedGuestId]);
+
+  const handleAddPlusOne = useCallback(
+    async (guestId: string, placeholderName: string) => {
+      try {
+        setGuestsError(null);
+        setRelationshipsError(null);
+        const response = await fetch(
+          `/api/seating-plans/${planId}/guests/${guestId}/plus-one`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ placeholderName }),
+          },
+        );
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to add plus one");
+        }
+        const data = (await response.json()) as {
+          plusOneGuest: ApiGuest;
+          relationship: ApiRelationship;
+        };
+        setGuests((current) => [...current, data.plusOneGuest]);
+        setRelationships((current) => [...current, data.relationship]);
+        shouldAutosaveGuestsRef.current = true;
+        scheduleAutosave();
+      } catch (error) {
+        setGuestsError(error instanceof Error ? error.message : "Failed to add plus one");
+      }
+    },
+    [planId, scheduleAutosave],
+  );
+
+  const handleRemovePlusOne = useCallback(
+    async (guestId: string) => {
+      try {
+        setGuestsError(null);
+        setRelationshipsError(null);
+        const response = await fetch(
+          `/api/seating-plans/${planId}/guests/${guestId}/plus-one`,
+          {
+            method: "DELETE",
+          },
+        );
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null;
+          throw new Error(errorData?.error ?? "Failed to remove plus one");
+        }
+        const data = (await response.json()) as {
+          success: boolean;
+          relationshipId: string;
+          deletedPlaceholderGuestId: string | null;
+        };
+        setRelationships((current) =>
+          current.filter((relationship) => relationship.id !== data.relationshipId),
+        );
+        if (data.deletedPlaceholderGuestId) {
+          setGuests((current) =>
+            current.filter((guest) => guest.id !== data.deletedPlaceholderGuestId),
+          );
+          if (selectedGuestId === data.deletedPlaceholderGuestId) {
+            clearSelection();
+          }
+        }
+        shouldAutosaveGuestsRef.current = true;
+        scheduleAutosave();
+      } catch (error) {
+        setGuestsError(
+          error instanceof Error ? error.message : "Failed to remove plus one",
+        );
+      }
+    },
+    [clearSelection, planId, scheduleAutosave, selectedGuestId],
+  );
 
   const handleCreateRelationship = useCallback(
     async (payload: {
@@ -1127,22 +1229,21 @@ export default function SeatingPlanEditorPage() {
               variant="sheet"
               guests={guests}
               relationships={relationships}
-              selectedGuest={selectedGuest}
-              guestForm={guestForm}
               tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               isLoading={isGuestsLoading}
               error={guestsError ?? relationshipsError}
               onSelectGuest={handleSelectGuest}
               onCreateGuest={handleCreateGuest}
-              onBulkCreateGuests={handleBulkCreateGuests}
-              onUpdateGuest={handleUpdateGuest}
-              onDeleteGuest={handleDeleteGuest}
-              onUnassignGuest={handleUnassignGuest}
-              onGuestFormChange={setGuestForm}
+              onBulkImportGuests={handleBulkImportGuests}
               onCreateRelationship={handleCreateRelationship}
-              onUpdateRelationship={handleUpdateRelationship}
-              onDeleteRelationship={handleDeleteRelationship}
+              linkingSourceGuestId={linkingSourceGuestId}
+              onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
+              onGuestSelected={(guestId) => {
+                if (!guestId) return;
+                setMobileGuestsOpen(false);
+                setMobileInspectorOpen(true);
+              }}
             />
           </DrawerContent>
         </Drawer>
@@ -1296,11 +1397,27 @@ export default function SeatingPlanEditorPage() {
           selection={selection}
           isOpen={mobileInspectorOpen}
           selectedGuest={selectedGuest}
+          guests={guests}
+          relationships={relationships}
+          guestForm={guestForm}
           selectedTable={selectedTable}
           selectedSeatGuest={selectedSeatGuest}
           tableLabelById={tableLabelById}
           onClose={() => setMobileInspectorOpen(false)}
           onSelectTable={(tableId) => selectTable(tableId)}
+          onGuestFormChange={setGuestForm}
+          onUpdateGuest={handleUpdateGuest}
+          onDeleteGuest={handleDeleteGuest}
+          onUnassignGuest={handleUnassignGuest}
+          onUpdateRelationship={handleUpdateRelationship}
+          onDeleteRelationship={handleDeleteRelationship}
+          onAddPlusOne={handleAddPlusOne}
+          onRemovePlusOne={handleRemovePlusOne}
+          onStartLinking={(guestId) => {
+            setLinkingSourceGuestId(guestId);
+            setMobileInspectorOpen(false);
+            setMobileGuestsOpen(true);
+          }}
           onTableLabelChange={updateSelectedTableLabel}
           onTableSeatCountChange={updateSelectedTableSeatCount}
           onTableSeatLayoutChange={updateSelectedTableSeatLayout}
@@ -1326,22 +1443,16 @@ export default function SeatingPlanEditorPage() {
           <GuestPanel
             guests={guests}
             relationships={relationships}
-            selectedGuest={selectedGuest}
-            guestForm={guestForm}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             isLoading={isGuestsLoading}
             error={guestsError ?? relationshipsError}
             onSelectGuest={handleSelectGuest}
             onCreateGuest={handleCreateGuest}
-            onBulkCreateGuests={handleBulkCreateGuests}
-            onUpdateGuest={handleUpdateGuest}
-            onDeleteGuest={handleDeleteGuest}
-            onUnassignGuest={handleUnassignGuest}
-            onGuestFormChange={setGuestForm}
+            onBulkImportGuests={handleBulkImportGuests}
             onCreateRelationship={handleCreateRelationship}
-            onUpdateRelationship={handleUpdateRelationship}
-            onDeleteRelationship={handleDeleteRelationship}
+            linkingSourceGuestId={linkingSourceGuestId}
+            onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
             enableGuestDnD
             onGuestDragStart={startGuestDrag}
             onGuestDragEnd={endGuestDrag}
@@ -1380,11 +1491,25 @@ export default function SeatingPlanEditorPage() {
               selection={desktopInspectorSelection}
               isOpen={desktopInspectorSelection !== null}
               selectedGuest={selectedGuest}
+              guests={guests}
+              relationships={relationships}
+              guestForm={guestForm}
               selectedTable={selectedTable}
               selectedSeatGuest={selectedSeatGuest}
               tableLabelById={tableLabelById}
               onClose={clearSelection}
               onSelectTable={(tableId) => selectTable(tableId)}
+              onGuestFormChange={setGuestForm}
+              onUpdateGuest={handleUpdateGuest}
+              onDeleteGuest={handleDeleteGuest}
+              onUnassignGuest={handleUnassignGuest}
+              onUpdateRelationship={handleUpdateRelationship}
+              onDeleteRelationship={handleDeleteRelationship}
+              onAddPlusOne={handleAddPlusOne}
+              onRemovePlusOne={handleRemovePlusOne}
+              onStartLinking={(guestId) => {
+                setLinkingSourceGuestId(guestId);
+              }}
               onTableLabelChange={updateSelectedTableLabel}
               onTableSeatCountChange={updateSelectedTableSeatCount}
               onTableSeatLayoutChange={updateSelectedTableSeatLayout}

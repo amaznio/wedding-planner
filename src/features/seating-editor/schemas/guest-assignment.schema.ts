@@ -12,6 +12,23 @@ export const updateGuestSchema = z.object({
   notes: z.string().max(500).nullable().optional(),
 });
 
+export const importGuestRowsSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        lineNumber: z.int().min(1),
+        name: z.string().trim().min(1).max(120),
+        include: z.boolean(),
+      }),
+    )
+    .min(1)
+    .max(2000),
+});
+
+export const createPlusOneSchema = z.object({
+  placeholderName: z.string().trim().min(1).max(120),
+});
+
 export const assignSeatSchema = z.object({
   guestId: z.string().min(1),
   tableId: z.string().min(1),
@@ -40,6 +57,8 @@ export const batchMoveAssignmentsSchema = z.object({
 
 export type CreateGuestInput = z.infer<typeof createGuestSchema>;
 export type UpdateGuestInput = z.infer<typeof updateGuestSchema>;
+export type ImportGuestRowsInput = z.infer<typeof importGuestRowsSchema>;
+export type CreatePlusOneInput = z.infer<typeof createPlusOneSchema>;
 export type AssignSeatInput = z.infer<typeof assignSeatSchema>;
 export type BatchMoveAssignmentsInput = z.infer<
   typeof batchMoveAssignmentsSchema
