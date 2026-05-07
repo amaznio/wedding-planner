@@ -3,9 +3,16 @@ import { useMemo, useState, type ChangeEventHandler } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { Link2 } from "lucide-react";
 import { createGuestDragPreview } from "../lib/drag-preview";
@@ -521,31 +528,37 @@ export function GuestPanel({
             onChange={(event) => setNewRelationshipName(event.target.value)}
           />
           <div className="mt-2 flex items-center gap-3 text-xs text-zinc-700">
-            <label
-              className="inline-flex items-center gap-1.5"
-              title={t("guestPanel.moveTogetherHelp")}
-            >
-              <input
-                type="checkbox"
-                className="h-5 w-5 cursor-pointer rounded border-zinc-300"
+            <label className="inline-flex items-center gap-1.5">
+              <Checkbox
                 checked={newRelationshipMoveTogetherDefault}
-                onChange={(event) =>
-                  setNewRelationshipMoveTogetherDefault(event.target.checked)
+                onCheckedChange={(checked) =>
+                  setNewRelationshipMoveTogetherDefault(checked === true)
                 }
               />
-              {t("guestPanel.moveTogetherDefault")}
+              <TooltipProvider delayDuration={1000}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{t("guestPanel.moveTogetherDefault")}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("guestPanel.moveTogetherHelp")}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </label>
-            <label
-              className="inline-flex items-center gap-1.5"
-              title={t("guestPanel.strictHelp")}
-            >
-              <input
-                type="checkbox"
-                className="h-5 w-5 cursor-pointer rounded border-zinc-300"
+            <label className="inline-flex items-center gap-1.5">
+              <Checkbox
                 checked={newRelationshipStrict}
-                onChange={(event) => setNewRelationshipStrict(event.target.checked)}
+                onCheckedChange={(checked) =>
+                  setNewRelationshipStrict(checked === true)
+                }
               />
-              {t("guestPanel.strict")}
+              <TooltipProvider delayDuration={1000}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{t("guestPanel.strict")}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("guestPanel.strictHelp")}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </label>
           </div>
           <div className="mt-2 flex gap-2">

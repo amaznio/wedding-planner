@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 
 type SeatingToolbarProps = {
@@ -58,22 +59,28 @@ export function SeatingToolbar({
             style={{ width: `${titleWidthCh}ch` }}
             aria-label={t("toolbar.planName")}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-9 px-3 text-xs"
-            onClick={onSave}
-            disabled={saveState === "saving"}
-            aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
-            title={saveState === "saving" ? t("common.saving") : t("common.save")}
-          >
-            <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-              <path d="M17 21v-8H7v8" />
-              <path d="M7 3v5h8" />
-            </svg>
-            {t("common.save")}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 px-3 text-xs"
+                onClick={onSave}
+                disabled={saveState === "saving"}
+                aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
+              >
+                <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                  <path d="M17 21v-8H7v8" />
+                  <path d="M7 3v5h8" />
+                </svg>
+                {t("common.save")}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {saveState === "saving" ? t("common.saving") : t("common.save")}
+            </TooltipContent>
+          </Tooltip>
           <Badge variant="secondary" className="h-6 px-2 text-[11px]">
             {statusText}
           </Badge>

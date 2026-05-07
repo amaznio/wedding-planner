@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 63 - Larger link options checkboxes + explanatory tooltips (completed)
+Phase 66 - Checkbox tooltip delay + label-only trigger (completed)
 
 ## Completed Phases
 
@@ -70,9 +70,35 @@ Phase 63 - Larger link options checkboxes + explanatory tooltips (completed)
 - Phase 61 - Guest click exits link mode and opens guest details
 - Phase 62 - Single relationship per guest + pair-link UX enforcement
 - Phase 63 - Larger link options checkboxes + explanatory tooltips
+- Phase 64 - Standardize tooltips to shadcn/Radix Tooltip
+- Phase 65 - Switch relationship option checkboxes to shadcn Checkbox
+- Phase 66 - Checkbox tooltip delay + label-only trigger
 
 
 ## Completed Work
+
+- Refined relationship option tooltip behavior:
+  - tooltip now opens only when hovering the text label, not the checkbox control
+  - added delayed tooltip appearance (`delayDuration={450}`) for both option tooltips
+  - preserved shadcn checkbox usage and existing tooltip content
+
+- Switched relationship option controls from native checkbox inputs to shadcn checkbox:
+  - added reusable `Checkbox` primitive at `src/components/ui/checkbox.tsx`
+  - replaced `Domyślnie przenoś razem` and `Ścisłe` inputs in `GuestPanel` with shadcn `Checkbox`
+  - kept existing tooltip behavior and larger visual sizing
+
+- Standardized tooltip implementation to shadcn/Radix tooltip primitives:
+  - added reusable tooltip UI primitive: `src/components/ui/tooltip.tsx`
+  - added global `TooltipProvider` in app providers
+  - replaced all native `title` tooltips in `src/` with shadcn tooltips
+
+- Converted current tooltip surfaces:
+  - seat hover text in `Seat` component now uses `Tooltip`
+  - desktop save button hover text in `SeatingToolbar` now uses `Tooltip`
+  - relationship option explanations in `GuestPanel` now use `Tooltip` instead of native title
+
+- Added dependency:
+  - `@radix-ui/react-tooltip`
 
 - Improved link-options clarity in relationship form:
   - confirmed link options were native checkboxes (not shadcn checkbox component)
@@ -529,6 +555,15 @@ Phase 63 - Larger link options checkboxes + explanatory tooltips (completed)
 
 ## Files Changed
 
+- `src/components/ui/checkbox.tsx`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `pnpm-lock.yaml`
+- `src/components/ui/tooltip.tsx`
+- `src/components/providers/AppProviders.tsx`
+- `src/features/seating-editor/components/SeatingToolbar.tsx`
+- `src/features/seating-editor/components/Seat.tsx`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `pnpm-lock.yaml`
 - `components.json`
 - `src/lib/utils.ts`
 - `src/components/ui/button.tsx`
@@ -597,6 +632,14 @@ Phase 63 - Larger link options checkboxes + explanatory tooltips (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm add @radix-ui/react-checkbox` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm add @radix-ui/react-tooltip` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm i18n:audit` (pass)
 - `corepack pnpm prisma:validate` (pass)
