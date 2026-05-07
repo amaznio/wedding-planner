@@ -1072,16 +1072,19 @@ export default function SeatingPlanEditorPage() {
               variant="sheet"
               guests={guests}
               relationships={relationships}
+              selectedGuest={selectedGuest}
+              guestForm={guestForm}
               tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               isLoading={isGuestsLoading}
               error={guestsError ?? relationshipsError}
               onSelectGuest={handleSelectGuest}
-              onGuestSelected={() => setMobileGuestsOpen(false)}
               onCreateGuest={handleCreateGuest}
               onBulkCreateGuests={handleBulkCreateGuests}
               onUpdateGuest={handleUpdateGuest}
               onDeleteGuest={handleDeleteGuest}
+              onUnassignGuest={handleUnassignGuest}
+              onGuestFormChange={setGuestForm}
               onCreateRelationship={handleCreateRelationship}
               onUpdateRelationship={handleUpdateRelationship}
               onDeleteRelationship={handleDeleteRelationship}
@@ -1243,16 +1246,6 @@ export default function SeatingPlanEditorPage() {
           tableLabelById={tableLabelById}
           onClose={() => setMobileInspectorOpen(false)}
           onSelectTable={(tableId) => selectTable(tableId)}
-          onUnassignGuest={async (assignmentId) => {
-            if (!selectedGuestId) return;
-            await handleUnassignGuest(assignmentId, selectedGuestId);
-          }}
-          guestForm={guestForm}
-          onGuestFormChange={setGuestForm}
-          onSaveGuest={async (guestId) => {
-            await handleUpdateGuest(guestId, guestForm);
-          }}
-          onDeleteGuest={handleDeleteGuest}
           onTableLabelChange={updateSelectedTableLabel}
           onTableSeatCountChange={updateSelectedTableSeatCount}
           onTableSeatLayoutChange={updateSelectedTableSeatLayout}
@@ -1278,6 +1271,8 @@ export default function SeatingPlanEditorPage() {
           <GuestPanel
             guests={guests}
             relationships={relationships}
+            selectedGuest={selectedGuest}
+            guestForm={guestForm}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             isLoading={isGuestsLoading}
@@ -1287,6 +1282,8 @@ export default function SeatingPlanEditorPage() {
             onBulkCreateGuests={handleBulkCreateGuests}
             onUpdateGuest={handleUpdateGuest}
             onDeleteGuest={handleDeleteGuest}
+            onUnassignGuest={handleUnassignGuest}
+            onGuestFormChange={setGuestForm}
             onCreateRelationship={handleCreateRelationship}
             onUpdateRelationship={handleUpdateRelationship}
             onDeleteRelationship={handleDeleteRelationship}
@@ -1333,16 +1330,6 @@ export default function SeatingPlanEditorPage() {
               tableLabelById={tableLabelById}
               onClose={clearSelection}
               onSelectTable={(tableId) => selectTable(tableId)}
-              onUnassignGuest={async (assignmentId) => {
-                if (!selectedGuestId) return;
-                await handleUnassignGuest(assignmentId, selectedGuestId);
-              }}
-              guestForm={guestForm}
-              onGuestFormChange={setGuestForm}
-              onSaveGuest={async (guestId) => {
-                await handleUpdateGuest(guestId, guestForm);
-              }}
-              onDeleteGuest={handleDeleteGuest}
               onTableLabelChange={updateSelectedTableLabel}
               onTableSeatCountChange={updateSelectedTableSeatCount}
               onTableSeatLayoutChange={updateSelectedTableSeatLayout}

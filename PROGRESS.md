@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 36 - Linked guest move-together (completed)
+Phase 37 - Guest editing moved from Inspector to guest panel/drawer (completed)
 
 ## Completed Phases
 
@@ -43,8 +43,23 @@ Phase 36 - Linked guest move-together (completed)
 - Phase 34 - Desktop seat-to-seat drag-and-drop
 - Phase 35 - Optional guest seating relationships
 - Phase 36 - Linked guest move-together
+- Phase 37 - Guest editing moved from Inspector to guest panel/drawer
 
 ## Completed Work
+
+- Refactored guest editing UX to use a single surface in guest list:
+  - guest edit form/actions (`name`, `group`, `notes`, save/delete/unassign) moved into `GuestPanel`
+  - works for desktop sidebar and mobile guest drawer
+  - guest selection on mobile now keeps guest drawer open for inline editing
+
+- Simplified inspector role:
+  - guest section is now read-only summary only
+  - table/seat inspector behavior remains unchanged
+  - removed guest mutation controls from inspector to avoid split editing surfaces
+
+- Updated editor wiring:
+  - `GuestPanel` now receives selected guest + guest form state + guest mutation handlers
+  - inspector call sites no longer pass guest edit handlers/form props
 
 - Added linked guest move-together orchestration (advisory relationships now drive grouped movement when enabled by relationship defaults):
   - auto-detects move-together mode from initiator relationships with `moveTogetherDefault=true`
@@ -347,6 +362,7 @@ Phase 36 - Linked guest move-together (completed)
 - `src/features/seating-editor/lib/group-move.ts`
 - `src/app/api/seating-plans/[planId]/assignments/batch-move/route.ts`
 - `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
 
@@ -355,6 +371,9 @@ Phase 36 - Linked guest move-together (completed)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass)
 - `corepack pnpm typecheck` (pass)
+- `corepack pnpm build` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with warnings)
 - `corepack pnpm build` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing `savePlan` hook dependency warnings)

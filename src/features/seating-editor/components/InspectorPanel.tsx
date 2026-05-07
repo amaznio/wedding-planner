@@ -33,11 +33,6 @@ type InspectorPanelProps = {
   tableLabelById?: Record<string, string>;
   onClose: () => void;
   onSelectTable: (tableId: string) => void;
-  onUnassignGuest: (assignmentId: string) => Promise<void>;
-  guestForm: { name: string; group: string; notes: string };
-  onGuestFormChange: (next: { name: string; group: string; notes: string }) => void;
-  onSaveGuest: (guestId: string) => Promise<void>;
-  onDeleteGuest: (guestId: string) => Promise<void>;
   onTableLabelChange: (label: string) => void;
   onTableSeatCountChange: (seatCount: number) => void;
   onTableSeatLayoutChange: (seatLayout: "balanced" | "top-only" | "bottom-only") => void;
@@ -56,11 +51,6 @@ export function InspectorPanel({
   tableLabelById = {},
   onClose,
   onSelectTable,
-  onUnassignGuest,
-  guestForm,
-  onGuestFormChange,
-  onSaveGuest,
-  onDeleteGuest,
   onTableLabelChange,
   onTableSeatCountChange,
   onTableSeatLayoutChange,
@@ -104,56 +94,9 @@ export function InspectorPanel({
                   <Badge className="mt-1">Unseated</Badge>
                 )}
               </div>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Name</span>
-                <Input
-                  value={guestForm.name}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, name: event.target.value })
-                  }
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Group</span>
-                <Input
-                  value={guestForm.group}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, group: event.target.value })
-                  }
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Notes</span>
-                <textarea
-                  value={guestForm.notes}
-                  onChange={(event) =>
-                    onGuestFormChange({ ...guestForm, notes: event.target.value })
-                  }
-                  rows={4}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-                />
-              </label>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => void onSaveGuest(selectedGuest.id)}>
-                  Save Guest
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => void onDeleteGuest(selectedGuest.id)}
-                >
-                  Delete
-                </Button>
-              </div>
-              {selectedGuest.assignment ? (
-                <Button
-                  variant="outline"
-                  onClick={() => void onUnassignGuest(selectedGuest.assignment!.id)}
-                >
-                  Unassign
-                </Button>
-              ) : (
-                <p className="text-xs text-zinc-600">Select a seat to assign this guest.</p>
-              )}
+              <p className="text-xs text-zinc-600">
+                Guest details are edited in the Guests panel/drawer.
+              </p>
             </div>
           ) : null}
 

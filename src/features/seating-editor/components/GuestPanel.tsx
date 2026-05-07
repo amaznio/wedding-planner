@@ -36,6 +36,8 @@ type RelationshipForm = {
 type GuestPanelProps = {
   guests: Guest[];
   relationships: SeatingRelationship[];
+  selectedGuest: Guest | null;
+  guestForm: { name: string; group: string; notes: string };
   tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
   isLoading: boolean;
@@ -50,6 +52,8 @@ type GuestPanelProps = {
     payload: { name: string; group: string; notes: string },
   ) => Promise<void>;
   onDeleteGuest: (guestId: string) => Promise<void>;
+  onUnassignGuest: (assignmentId: string, guestId: string) => Promise<void>;
+  onGuestFormChange: (next: { name: string; group: string; notes: string }) => void;
   onCreateRelationship: (
     payload: RelationshipForm & { guestIds: string[] },
   ) => Promise<void>;
@@ -93,6 +97,8 @@ function getRelationshipDisplayName(relationship: SeatingRelationship): string {
 export function GuestPanel({
   guests,
   relationships,
+  selectedGuest,
+  guestForm,
   tableLabelById,
   selectedGuestId,
   isLoading,
@@ -100,6 +106,10 @@ export function GuestPanel({
   onSelectGuest,
   onCreateGuest,
   onBulkCreateGuests,
+  onUpdateGuest,
+  onDeleteGuest,
+  onUnassignGuest,
+  onGuestFormChange,
   onCreateRelationship,
   onUpdateRelationship,
   onDeleteRelationship,
@@ -516,126 +526,212 @@ export function GuestPanel({
           </div>
         </div>
       ) : null}
-      <div
-        className="border-t border-zinc-200 px-4 py-3"
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p className="text-xs font-semibold text-zinc-800">
-          Relationships for selected guest
-        </p>
-        {selectedGuestRelationships.length === 0 ? (
-          <p className="mt-2 text-xs text-zinc-500">No relationships.</p>
-        ) : (
-          <div className="mt-2 space-y-2">
-            {selectedGuestRelationships.map((relationship) => (
-              <div
-                key={relationship.id}
-                className="rounded-md border border-zinc-200 bg-white p-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-xs font-medium text-zinc-900">
-                    {getRelationshipDisplayName(relationship)}
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[11px]"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEditingRelationshipId(relationship.id);
-                      setEditingRelationshipName(relationship.name ?? "");
-                    }}
-                  >
-                    Rename
-                  </Button>
-                </div>
-                <p className="text-[11px] text-zinc-600">
-                  {RELATIONSHIP_TYPE_LABEL[relationship.type]} •{" "}
-                  {relationship.preferredSeating} • {relationship.guestIds.length}{" "}
-                  guests
-                </p>
-                <div className="mt-2 flex gap-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-6 px-2 text-[11px]"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void onUpdateRelationship(relationship.id, {
-                        moveTogetherDefault: !relationship.moveTogetherDefault,
-                      });
-                      if (selectedGuestId) {
-                        onSelectGuest(selectedGuestId);
-                      }
-                    }}
-                  >
-                    MoveTogether: {relationship.moveTogetherDefault ? "On" : "Off"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-6 px-2 text-[11px]"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void onUpdateRelationship(relationship.id, {
-                        strict: !relationship.strict,
-                      });
-                      if (selectedGuestId) {
-                        onSelectGuest(selectedGuestId);
-                      }
-                    }}
-                  >
-                    Strict: {relationship.strict ? "On" : "Off"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    className="h-6 px-2 text-[11px]"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void onDeleteRelationship(relationship.id);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-                {editingRelationshipId === relationship.id ? (
-                  <div className="mt-2 flex gap-2">
-                    <Input
-                      className="h-7 text-xs"
-                      value={editingRelationshipName}
-                      onChange={(event) =>
-                        setEditingRelationshipName(event.target.value)
-                      }
-                    />
+      {selectedGuestId ? (
+        <div
+          className="border-t border-zinc-200 px-4 py-3"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className="text-xs font-semibold text-zinc-800">
+            Relationships for selected guest
+          </p>
+          {selectedGuestRelationships.length === 0 ? (
+            <p className="mt-2 text-xs text-zinc-500">No relationships.</p>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {selectedGuestRelationships.map((relationship) => (
+                <div
+                  key={relationship.id}
+                  className="rounded-md border border-zinc-200 bg-white p-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs font-medium text-zinc-900">
+                      {getRelationshipDisplayName(relationship)}
+                    </p>
                     <Button
                       type="button"
                       size="sm"
-                      className="h-7 text-xs"
+                      variant="ghost"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditingRelationshipId(relationship.id);
+                        setEditingRelationshipName(relationship.name ?? "");
+                      }}
+                    >
+                      Rename
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-zinc-600">
+                    {RELATIONSHIP_TYPE_LABEL[relationship.type]} •{" "}
+                    {relationship.preferredSeating} • {relationship.guestIds.length}{" "}
+                    guests
+                  </p>
+                  <div className="mt-2 flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[11px]"
                       onClick={(event) => {
                         event.stopPropagation();
                         void onUpdateRelationship(relationship.id, {
-                          name: editingRelationshipName.trim() || null,
-                        }).then(() => setEditingRelationshipId(null));
+                          moveTogetherDefault: !relationship.moveTogetherDefault,
+                        });
                         if (selectedGuestId) {
                           onSelectGuest(selectedGuestId);
                         }
                       }}
                     >
-                      Save
+                      MoveTogether: {relationship.moveTogetherDefault ? "On" : "Off"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void onUpdateRelationship(relationship.id, {
+                          strict: !relationship.strict,
+                        });
+                        if (selectedGuestId) {
+                          onSelectGuest(selectedGuestId);
+                        }
+                      }}
+                    >
+                      Strict: {relationship.strict ? "On" : "Off"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void onDeleteRelationship(relationship.id);
+                      }}
+                    >
+                      Delete
                     </Button>
                   </div>
-                ) : null}
-              </div>
-            ))}
+                  {editingRelationshipId === relationship.id ? (
+                    <div className="mt-2 flex gap-2">
+                      <Input
+                        className="h-7 text-xs"
+                        value={editingRelationshipName}
+                        onChange={(event) =>
+                          setEditingRelationshipName(event.target.value)
+                        }
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void onUpdateRelationship(relationship.id, {
+                            name: editingRelationshipName.trim() || null,
+                          }).then(() => setEditingRelationshipId(null));
+                          if (selectedGuestId) {
+                            onSelectGuest(selectedGuestId);
+                          }
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+      {selectedGuest ? (
+        <div
+          className="border-t border-zinc-200 px-4 py-3"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className="text-xs font-semibold text-zinc-800">Guest details</p>
+          <div className="mt-2 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
+              {selectedGuest.assignment ? (
+                <Badge variant="secondary" className="mt-1">
+                  {tableLabelById[selectedGuest.assignment.tableId] ?? "Table"} • Seat{" "}
+                  {selectedGuest.assignment.seatNumber}
+                </Badge>
+              ) : (
+                <Badge className="mt-1">Unseated</Badge>
+              )}
+            </div>
+            <label className="block space-y-1">
+              <span className="text-xs text-zinc-600">Name</span>
+              <Input
+                value={guestForm.name}
+                onChange={(event) =>
+                  onGuestFormChange({ ...guestForm, name: event.target.value })
+                }
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs text-zinc-600">Group</span>
+              <Input
+                value={guestForm.group}
+                onChange={(event) =>
+                  onGuestFormChange({ ...guestForm, group: event.target.value })
+                }
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs text-zinc-600">Notes</span>
+              <textarea
+                value={guestForm.notes}
+                onChange={(event) =>
+                  onGuestFormChange({ ...guestForm, notes: event.target.value })
+                }
+                rows={3}
+                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+              />
+            </label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void onUpdateGuest(selectedGuest.id, {
+                    name: guestForm.name,
+                    group: guestForm.group,
+                    notes: guestForm.notes,
+                  })
+                }
+              >
+                Save Guest
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => void onDeleteGuest(selectedGuest.id)}
+              >
+                Delete
+              </Button>
+            </div>
+            {selectedGuest.assignment ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void onUnassignGuest(selectedGuest.assignment!.id, selectedGuest.id)
+                }
+              >
+                Unassign
+              </Button>
+            ) : null}
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
