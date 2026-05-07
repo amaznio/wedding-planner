@@ -860,17 +860,39 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             <Button
               type="button"
               variant={enableTableDrag ? "default" : "outline"}
-              className={`h-8 rounded-full px-2.5 text-xs ${
+              className={`h-8 rounded-full px-2 text-xs ${
                 enableTableDrag
                   ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
                   : "bg-white text-zinc-700"
               }`}
               onClick={onToggleTableDrag}
               aria-pressed={enableTableDrag}
-            >
-              {t("canvas.moveTables", {
+              aria-label={t("canvas.moveTables", {
                 value: enableTableDrag ? t("guestPanel.on") : t("guestPanel.off"),
               })}
+              title={t("canvas.moveTables", {
+                value: enableTableDrag ? t("guestPanel.on") : t("guestPanel.off"),
+              })}
+            >
+              {enableTableDrag ? (
+                <svg viewBox="0 0 24 24" className="mr-1 h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v18" />
+                  <path d="M3 12h18" />
+                  <path d="m8.5 6.5 3.5-3.5 3.5 3.5" />
+                  <path d="m8.5 17.5 3.5 3.5 3.5-3.5" />
+                  <path d="m6.5 8.5-3.5 3.5 3.5 3.5" />
+                  <path d="m17.5 8.5 3.5 3.5-3.5 3.5" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="mr-1 h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v18" />
+                  <path d="M3 12h18" />
+                  <path d="M4 4 20 20" />
+                </svg>
+              )}
+              <span className="text-[11px] font-semibold">
+                {enableTableDrag ? t("guestPanel.on") : t("guestPanel.off")}
+              </span>
             </Button>
           </div>
         ) : null}

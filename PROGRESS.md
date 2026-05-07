@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 87 - Mobile back clears guest selection (completed)
+Phase 88 - Mobile move-tables toggle compact icon state (completed)
 
 ## Completed Phases
 
@@ -94,9 +94,18 @@ Phase 87 - Mobile back clears guest selection (completed)
 - Phase 85 - Inspector header action-row cleanup
 - Phase 86 - Mobile back button style refinement
 - Phase 87 - Mobile back clears guest selection
+- Phase 88 - Mobile move-tables toggle compact icon state
 
 
 ## Completed Work
+
+- Implemented Phase 88 mobile move-tables toggle compact icon state:
+  - updated the mobile canvas drag toggle from full sentence text to compact icon + short state label (`Wł.` / `Wył.`)
+  - preserved existing color indicators:
+    - enabled: emerald filled button
+    - disabled: neutral outline/white button
+  - added explicit `aria-label` and `title` with full localized text (`Przesuwanie stołów: ...`) for accessibility
+  - desktop canvas controls remain unchanged
 
 - Implemented Phase 87 mobile back selection reset:
   - updated mobile inspector back action callback to clear guest selection (`handleSelectGuest(null)`)
@@ -735,6 +744,9 @@ Phase 87 - Mobile back clears guest selection (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/SeatingCanvas.tsx`
+- `PROGRESS.md`
+
 - `src/app/seating-plans/[planId]/page.tsx`
 - `PROGRESS.md`
 
@@ -879,6 +891,9 @@ Phase 87 - Mobile back clears guest selection (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 88 compact mobile move-tables toggle)
+- `corepack pnpm lint` (pass with existing warnings)
 
 - `corepack pnpm typecheck` (pass; phase 87 mobile back now clears selected guest)
 - `corepack pnpm lint` (pass with existing warnings)
@@ -1044,7 +1059,7 @@ Phase 87 - Mobile back clears guest selection (completed)
 
 - Prisma schema validation: pass.
 - TypeScript: pass.
-- i18n audit: pass.
+- i18n audit: not run in this phase.
 - Lint: pass with existing warnings.
 - Build: not run in this phase set.
 
@@ -1052,33 +1067,36 @@ Phase 87 - Mobile back clears guest selection (completed)
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
-3. In the guest panel, click `Import` and verify the file picker opens immediately (desktop and mobile sheet).
-4. Import a CSV with normal names plus `Osoba Tow.` marker rows; verify duplicate rows are unchecked by default in the review panel.
-5. Confirm import and verify summary counts/warnings are shown.
-6. Verify a marker directly after a newly created host row creates a placeholder plus one and a `plus_one` relationship.
-7. Select a guest without a link and verify `Add Plus One` appears in guest details.
-8. Click `Add Plus One` and verify placeholder guest + relationship are created.
-9. Click `Remove Plus One` for that host and verify linked placeholder guest is deleted.
-10. Add at least two guests and assign them to seats.
-11. Use keyboard:
+3. Switch to a mobile viewport and verify the top-right `Przesuwanie stołów` control is compact (icon + short `Wł.`/`Wył.` state).
+4. Tap the compact toggle and verify state changes still update both color and icon style (`enabled` emerald, `disabled` neutral).
+5. Verify the adjacent zoom/reset button still renders and works as before.
+6. In the guest panel, click `Import` and verify the file picker opens immediately (desktop and mobile sheet).
+7. Import a CSV with normal names plus `Osoba Tow.` marker rows; verify duplicate rows are unchecked by default in the review panel.
+8. Confirm import and verify summary counts/warnings are shown.
+9. Verify a marker directly after a newly created host row creates a placeholder plus one and a `plus_one` relationship.
+10. Select a guest without a link and verify `Add Plus One` appears in guest details.
+11. Click `Add Plus One` and verify placeholder guest + relationship are created.
+12. Click `Remove Plus One` for that host and verify linked placeholder guest is deleted.
+13. Add at least two guests and assign them to seats.
+14. Use keyboard:
   - `]` to select next guest
   - `[` to select previous guest
   - `U` to unassign selected guest
-12. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
-13. Export guests to CSV and import the CSV back.
-14. Save and refresh; verify assignments still persist.
-15. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
-16. Click a table and verify inspector opens with table controls.
-17. Verify seat assignment actions happen via seat popover only.
-18. Click empty canvas and verify selection clears and inspector closes.
-19. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
-20. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
-21. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
-22. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
-23. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
-24. Save and refresh; verify `Seat layout` persists per table.
-25. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
-26. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
+15. Verify toolbar shows occupancy (`occupied/total`) and unseated guest count.
+16. Export guests to CSV and import the CSV back.
+17. Save and refresh; verify assignments still persist.
+18. On desktop viewport, click a guest in the left panel and verify the right inspector does not open.
+19. Click a table and verify inspector opens with table controls.
+20. Verify seat assignment actions happen via seat popover only.
+21. Click empty canvas and verify selection clears and inspector closes.
+22. Verify `Add Object` creates rectangular tables and shows disabled coming-soon options.
+23. With inspector open on seat selection, verify the seat popover remains visible and clickable above the canvas (no blocking overlay).
+24. Select a table and change `Seat layout` between `balanced`, `top-only`, and `bottom-only`.
+25. For a 2-seat table, verify both seats render on the same side in `top-only` and `bottom-only`.
+26. Assign guests to seats, switch layout mode, and verify assignments persist and follow seat numbers.
+27. Save and refresh; verify `Seat layout` persists per table.
+28. On mobile viewport, tap a seat; verify no inspector drawer opens from seat click.
+29. On desktop viewport, click a seat; verify seat popover opens but right inspector does not open.
 
 ## Known Issues
 
