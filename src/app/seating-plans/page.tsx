@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/i18n/provider";
 
 type PlanListItem = {
   id: string;
@@ -15,6 +16,7 @@ type PlanListItem = {
 
 export default function SeatingPlansListPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [plans, setPlans] = useState<PlanListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -40,7 +42,7 @@ export default function SeatingPlansListPage() {
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Failed to load seating plans",
+            : t("plans.loadError"),
         );
       } finally {
         setIsLoading(false);
@@ -61,7 +63,7 @@ export default function SeatingPlansListPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `New Plan ${new Date().toLocaleDateString()}`,
+          name: `${t("plans.newPlanPrefix")} ${new Date().toLocaleDateString()}`,
           width: 1600,
           height: 1000,
         }),
@@ -77,7 +79,7 @@ export default function SeatingPlansListPage() {
       setError(
         createError instanceof Error
           ? createError.message
-          : "Failed to create seating plan",
+            : t("plans.createError"),
       );
     } finally {
       setIsCreating(false);
@@ -88,8 +90,8 @@ export default function SeatingPlansListPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 bg-zinc-50 p-6">
       <header className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Seating Plans</h1>
-          <p className="text-sm text-zinc-600">Create a plan or open an existing one.</p>
+          <h1 className="text-2xl font-semibold text-zinc-900">{t("plans.title")}</h1>
+          <p className="text-sm text-zinc-600">{t("plans.subtitle")}</p>
         </div>
 
         <button
@@ -98,7 +100,7 @@ export default function SeatingPlansListPage() {
           disabled={isCreating}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isCreating ? "Creating..." : "Create New Plan"}
+          {isCreating ? t("plans.creating") : t("plans.create")}
         </button>
       </header>
 
@@ -110,9 +112,9 @@ export default function SeatingPlansListPage() {
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4">
         {isLoading ? (
-          <p className="text-sm text-zinc-600">Loading plans...</p>
+          <p className="text-sm text-zinc-600">{t("plans.loading")}</p>
         ) : plans.length === 0 ? (
-          <p className="text-sm text-zinc-600">No seating plans yet.</p>
+          <p className="text-sm text-zinc-600">{t("plans.empty")}</p>
         ) : (
           <ul className="space-y-2">
             {plans.map((plan) => (

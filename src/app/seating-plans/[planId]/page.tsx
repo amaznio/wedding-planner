@@ -21,6 +21,7 @@ import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.t
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useI18n } from "@/i18n/provider";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -95,6 +96,7 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
 }
 
 export default function SeatingPlanEditorPage() {
+  const { t } = useI18n();
   const params = useParams<{ planId: string }>();
   const planId = params.planId;
 
@@ -290,7 +292,7 @@ export default function SeatingPlanEditorPage() {
       setGuests(guestsData.guests ?? []);
       setGuestsError(null);
     } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : "Failed to load guests");
+      setGuestsError(error instanceof Error ? error.message : t("editor.loadGuestsError"));
     } finally {
       setIsGuestsLoading(false);
     }
@@ -309,7 +311,7 @@ export default function SeatingPlanEditorPage() {
       setRelationshipsError(null);
     } catch (error) {
       setRelationshipsError(
-        error instanceof Error ? error.message : "Failed to load relationships",
+        error instanceof Error ? error.message : t("editor.loadRelationshipsError"),
       );
     }
   }, [planId]);
@@ -330,7 +332,7 @@ export default function SeatingPlanEditorPage() {
         setPlan(normalizePlan(planData.plan));
         await Promise.all([loadGuests(), loadRelationships()]);
       } catch (error) {
-        setLoadError(error instanceof Error ? error.message : "Failed to load seating plan");
+        setLoadError(error instanceof Error ? error.message : t("editor.loadError"));
       } finally {
         setIsLoading(false);
       }
@@ -408,7 +410,7 @@ export default function SeatingPlanEditorPage() {
         current.map((guest) => (guest.id === guestId ? { ...guest, assignment: null } : guest)),
       );
     } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : "Failed to remove assignment");
+      setGuestsError(error instanceof Error ? error.message : t("canvas.failedUnassign"));
     }
   }, [deleteAssignment]);
 
@@ -419,7 +421,7 @@ export default function SeatingPlanEditorPage() {
       (guest) => guest.assignment?.tableId === tableId && guest.assignment?.seatNumber === seatNumber,
     );
     if (!guestId) {
-      if (!clickedGuest?.assignment) return { level: "info" as const, message: "Seat is already unassigned" };
+      if (!clickedGuest?.assignment) return { level: "info" as const, message: t("inspector.unassigned") };
       setGuests((current) =>
         current.map((guest) => (guest.id === clickedGuest.id ? { ...guest, assignment: null } : guest)),
       );
@@ -429,7 +431,7 @@ export default function SeatingPlanEditorPage() {
         setGuests(previousGuests);
         throw error;
       }
-      return { level: "success" as const, message: "Seat unassigned" };
+      return { level: "success" as const, message: t("canvas.unassignSeat") };
     }
 
     const targetGuest = guests.find((guest) => guest.id === guestId);
@@ -522,7 +524,7 @@ export default function SeatingPlanEditorPage() {
 
       return {
         level: "success" as const,
-        message: `Linked group moved (${planResult.assignments.length} guests).`,
+        message: t("canvas.groupMove", { count: planResult.assignments.length }),
       };
     }
 
@@ -532,7 +534,7 @@ export default function SeatingPlanEditorPage() {
       targetGuestAssignment?.tableId === tableId &&
       targetGuestAssignment?.seatNumber === seatNumber
     ) {
-      return { level: "info" as const, message: "Guest is already in this seat" };
+      return { level: "info" as const, message: t("canvas.selectedSeat") };
     }
 
     const optimisticTargetAssignment: ApiGuest["assignment"] = {
@@ -581,8 +583,8 @@ export default function SeatingPlanEditorPage() {
       throw error;
     }
 
-    if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: "Guests swapped" };
-    return { level: "success" as const, message: "Seat assigned" };
+    if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: t("editor.occupied") };
+    return { level: "success" as const, message: t("editor.seatAssigned") };
   }, [createAssignment, deleteAssignment, executeBatchMoveAssignments, guests, plan.tables, relationshipsByGuestId]);
   const dropGuestOnSeat = useCallback(
     async (tableId: string, seatNumber: number, guestId: string) => {
@@ -593,13 +595,13 @@ export default function SeatingPlanEditorPage() {
         if (result?.message) {
           toast({
             variant: result.level === "info" ? "info" : "success",
-            title: result.level === "info" ? "Info" : "Success",
+            title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
             description: result.message,
           });
         }
         handleSelectGuest(guestId);
       } catch (error) {
-        setGuestsError(error instanceof Error ? error.message : "Failed to assign seat");
+        setGuestsError(error instanceof Error ? error.message : t("canvas.failedAssign"));
       } finally {
         endGuestDrag();
       }
@@ -638,7 +640,7 @@ export default function SeatingPlanEditorPage() {
               ),
             );
           } catch (error) {
-            setGuestsError(error instanceof Error ? error.message : "Failed to remove assignment");
+            setGuestsError(error instanceof Error ? error.message : t("canvas.failedUnassign"));
           }
         })();
       }
@@ -731,16 +733,16 @@ export default function SeatingPlanEditorPage() {
         setSaveState("saved");
         setLastSavedAt(new Date());
         toast({
-          title: "Saved",
-          description: source === "auto" ? "Changes autosaved." : "Seating plan saved.",
+          title: t("toasts.success"),
+          description: source === "auto" ? t("editor.autosaved") : t("editor.savedOk"),
           variant: "success",
         });
         setTimeout(() => setSaveState("idle"), 1200);
       } catch {
         setSaveState("error");
         toast({
-          title: "Save failed",
-          description: "Could not save your latest changes.",
+          title: t("editor.saveTitleError"),
+          description: t("editor.saveError"),
           variant: "destructive",
         });
       } finally {
@@ -1017,7 +1019,7 @@ export default function SeatingPlanEditorPage() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-50 p-6">
-        <p className="text-sm text-zinc-600">Loading seating plan...</p>
+        <p className="text-sm text-zinc-600">{t("editor.loadingPlan")}</p>
       </main>
     );
   }
@@ -1073,7 +1075,7 @@ export default function SeatingPlanEditorPage() {
           <Button
             type="button"
             className="absolute bottom-4 right-4 z-30 h-12 w-12 rounded-full p-0 text-lg font-semibold shadow-md"
-            aria-label="Add object"
+            aria-label={t("editor.addRectTable")}
             onClick={() => setMobileTablesOpen(true)}
           >
             +
@@ -1098,7 +1100,7 @@ export default function SeatingPlanEditorPage() {
                 <path d="M20 8v6" />
                 <path d="M23 11h-6" />
               </svg>
-              Guests
+              {t("editor.guests")}
             </Button>
             <Button
               size="sm"
@@ -1115,14 +1117,14 @@ export default function SeatingPlanEditorPage() {
                 <circle cx="12" cy="12" r="1.6" />
                 <circle cx="18" cy="12" r="1.6" />
               </svg>
-              More
+              {t("editor.more")}
             </Button>
           </div>
         </div>
 
         <Drawer open={mobileGuestsOpen} onOpenChange={setMobileGuestsOpen}>
           <DrawerContent className="h-[82dvh] p-0">
-            <DrawerTitle className="sr-only">Guests</DrawerTitle>
+            <DrawerTitle className="sr-only">{t("editor.guests")}</DrawerTitle>
             <GuestPanel
               variant="sheet"
               guests={guests}
@@ -1149,8 +1151,8 @@ export default function SeatingPlanEditorPage() {
 
         <Drawer open={mobileTablesOpen} onOpenChange={setMobileTablesOpen}>
           <DrawerContent className="p-4">
-            <DrawerTitle className="sr-only">Tables and objects</DrawerTitle>
-            <h3 className="mb-3 text-sm font-semibold text-zinc-900">Tables & Objects</h3>
+            <DrawerTitle className="sr-only">{t("editor.tablesObjects")}</DrawerTitle>
+            <h3 className="mb-3 text-sm font-semibold text-zinc-900">{t("editor.tablesObjects")}</h3>
             <div className="space-y-2">
               <Button
                 className="w-full justify-start"
@@ -1159,19 +1161,19 @@ export default function SeatingPlanEditorPage() {
                   setMobileTablesOpen(false);
                 }}
               >
-                Add rectangular table
+                {t("editor.addRectTable")}
               </Button>
               <Button className="w-full justify-start" variant="outline" disabled>
-                Round table (coming soon)
+                {t("editor.roundComing")}
               </Button>
               <Button className="w-full justify-start" variant="outline" disabled>
-                Buffet (coming soon)
+                {t("editor.buffetComing")}
               </Button>
               <Button className="w-full justify-start" variant="outline" disabled>
-                Dance floor (coming soon)
+                {t("editor.danceComing")}
               </Button>
               <Button className="w-full justify-start" variant="outline" disabled>
-                Custom object (coming soon)
+                {t("editor.customComing")}
               </Button>
             </div>
           </DrawerContent>
@@ -1187,12 +1189,12 @@ export default function SeatingPlanEditorPage() {
         >
           <DrawerContent className="p-0">
             <DrawerTitle className="sr-only">
-              {mobileMoreView === "menu" ? "More" : "Seat legend"}
+              {mobileMoreView === "menu" ? t("editor.more") : t("canvas.legendTitle")}
             </DrawerTitle>
             {mobileMoreView === "menu" ? (
               <>
                 <div className="px-4 py-4">
-                  <h3 className="text-sm font-semibold text-zinc-900">More</h3>
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("editor.more")}</h3>
                 </div>
                 <div className="border-t border-zinc-200 px-2 py-2">
                   <Button
@@ -1203,13 +1205,13 @@ export default function SeatingPlanEditorPage() {
                       setMobileGuestsOpen(true);
                     }}
                   >
-                    <span>Import / Export</span>
+                    <span>{t("editor.importExport")}</span>
                     <span className="text-zinc-400">›</span>
                   </Button>
                   <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
-                    <span>Settings</span>
+                    <span>{t("editor.settings")}</span>
                     <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">
-                      Coming soon
+                      {t("editor.customComing")}
                     </span>
                   </Button>
                   <Button
@@ -1217,19 +1219,19 @@ export default function SeatingPlanEditorPage() {
                     className="h-11 w-full justify-between px-3 text-sm"
                     onClick={() => setMobileMoreView("legend")}
                   >
-                    <span>Legend</span>
+                    <span>{t("editor.legend")}</span>
                     <span className="text-zinc-400">›</span>
                   </Button>
                   <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
-                    <span>Share</span>
+                    <span>{t("editor.share")}</span>
                     <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">
-                      Coming soon
+                      {t("editor.customComing")}
                     </span>
                   </Button>
                   <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
-                    <span>Help & Feedback</span>
+                    <span>{t("editor.help")}</span>
                     <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">
-                      Coming soon
+                      {t("editor.customComing")}
                     </span>
                   </Button>
                 </div>
@@ -1239,42 +1241,42 @@ export default function SeatingPlanEditorPage() {
                     className="h-10 w-full"
                     onClick={() => setMobileMoreOpen(false)}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </>
             ) : (
               <>
                 <div className="px-4 py-4">
-                  <h3 className="text-sm font-semibold text-zinc-900">Seat Legend</h3>
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("canvas.legendTitle")}</h3>
                 </div>
                 <div className="space-y-4 border-t border-zinc-200 px-4 py-4">
                   <div className="flex items-start gap-3">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500 bg-emerald-100 text-xs font-semibold text-emerald-900">AM</span>
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">Selected guest</p>
-                      <p className="text-xs text-zinc-500">Currently selected in the plan</p>
+                      <p className="text-sm font-medium text-zinc-900">{t("editor.selectedGuest")}</p>
+                      <p className="text-xs text-zinc-500">{t("editor.selectedInPlan")}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="inline-block h-8 w-8 rounded-full border border-blue-500 bg-blue-200" />
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">Occupied</p>
-                      <p className="text-xs text-zinc-500">Seat is assigned</p>
+                      <p className="text-sm font-medium text-zinc-900">{t("editor.occupied")}</p>
+                      <p className="text-xs text-zinc-500">{t("editor.seatAssigned")}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="inline-block h-8 w-8 rounded-full border border-zinc-300 bg-white" />
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">Empty</p>
-                      <p className="text-xs text-zinc-500">Seat is available</p>
+                      <p className="text-sm font-medium text-zinc-900">{t("editor.empty")}</p>
+                      <p className="text-xs text-zinc-500">{t("editor.seatAvailable")}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="inline-block h-8 w-8 rounded-full border border-red-400 bg-red-100" />
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">Conflict</p>
-                      <p className="text-xs text-zinc-500">Duplicate or invalid assignment</p>
+                      <p className="text-sm font-medium text-zinc-900">{t("editor.conflict")}</p>
+                      <p className="text-xs text-zinc-500">{t("editor.duplicateInvalid")}</p>
                     </div>
                   </div>
                 </div>
@@ -1284,7 +1286,7 @@ export default function SeatingPlanEditorPage() {
                     className="h-10 w-full"
                     onClick={() => setMobileMoreView("menu")}
                   >
-                    Close
+                    {t("common.close")}
                   </Button>
                 </div>
               </>

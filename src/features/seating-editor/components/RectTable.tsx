@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
 import type { SeatingTable } from "../types/seating-plan.types";
+import { useI18n } from "@/i18n/provider";
 import { Seat } from "./Seat";
 
 type RectTableProps = {
@@ -52,6 +53,7 @@ export function RectTable({
   onSeatGuestDragEnd,
   onDragStateChange,
 }: RectTableProps) {
+  const { t } = useI18n();
   const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
   const seatPositions = getSeatPositions(
     table.seatCount,
@@ -159,7 +161,7 @@ export function RectTable({
           <div className="flex h-full flex-col items-center justify-center gap-1 text-zinc-700">
             <span className="text-sm font-semibold">{table.label}</span>
             <span className="text-xs text-zinc-500">
-              {occupiedSeatCount}/{table.seatCount} occupied
+              {t("table.occupied", { occupied: occupiedSeatCount, total: table.seatCount })}
             </span>
           </div>
         </div>

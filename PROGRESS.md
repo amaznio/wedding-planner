@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 39 - Optimistic guest seat assignment updates (completed)
+Phase 40 - Polish localization foundation + UI coverage audit (completed)
 
 ## Completed Phases
 
@@ -45,9 +45,37 @@ Phase 39 - Optimistic guest seat assignment updates (completed)
 - Phase 36 - Linked guest move-together
 - Phase 37 - Guest editing moved from Inspector to guest panel/drawer
 - Phase 38 - Linked guest drag landing indicators
+- Phase 39 - Optimistic guest seat assignment updates
 
 
 ## Completed Work
+
+- Added app-wide client localization foundation for English and Polish:
+  - new locale contract (`en`/`pl`) with `localStorage` persistence
+  - new `I18nProvider` + `useI18n()` (`locale`, `setLocale`, `t`)
+  - JSON dictionaries under `src/i18n/messages/en.json` and `src/i18n/messages/pl.json`
+  - root app now wrapped in i18n provider
+
+- Added language pickers with requested placement:
+  - desktop: top-right toolbar language selector (shadcn `Select`)
+  - mobile: language selector inside left-side navigation sheet
+
+- Updated desktop toolbar layout:
+  - save button moved to the left cluster near plan title
+  - right side reserved for language picker
+
+- Localized user-facing UI copy across requested surfaces:
+  - home page
+  - seating plans list page
+  - seating plan editor page + toasts/loading/empty/error text
+  - `SeatingToolbar`, `GuestPanel`, `SeatingCanvas`, `InspectorPanel`, `RectTable`, `Seat`
+  - API/internal backend error payload strings kept unchanged
+
+- Added shadcn/UI support and audit tooling:
+  - installed shadcn `Select` component
+  - added `i18n:audit` script to enforce:
+    - key parity between `en.json` and `pl.json`
+    - hardcoded user-facing text detection in targeted UI files (with allowlist)
 
 - Added optimistic client-side seat assignment updates to remove drag/drop latency:
   - seat changes now render immediately for unassign, assign, swap, and linked group move flows
@@ -334,6 +362,14 @@ Phase 39 - Optimistic guest seat assignment updates (completed)
 - `src/components/ui/dropdown-menu.tsx`
 - `src/components/ui/sheet.tsx`
 - `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/components/ui/select.tsx`
+- `src/i18n/config.ts`
+- `src/i18n/messages.ts`
+- `src/i18n/provider.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `src/components/providers/AppProviders.tsx`
+- `scripts/i18n-audit.mjs`
 - `prisma/schema.prisma`
 - `prisma/migrations/20260506200056_add_seat_layout/migration.sql`
 - `src/features/seating-editor/types/seating-plan.types.ts`
@@ -390,6 +426,11 @@ Phase 39 - Optimistic guest seat assignment updates (completed)
 - `corepack pnpm build` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with existing warnings)
+- `pnpm dlx shadcn@latest add @shadcn/select` (pass)
+- `corepack pnpm add lucide-react` (pass)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with warnings)
+- `corepack pnpm i18n:audit` (pass)
 - `corepack pnpm typecheck` (pass)
 - `corepack pnpm lint` (pass with warnings)
 - `corepack pnpm build` (pass)

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useI18n } from "@/i18n/provider";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import type {
   PreferredSeating,
@@ -75,23 +76,9 @@ type GuestPanelProps = {
   onGuestDragEnd?: () => void;
 };
 
-const RELATIONSHIP_TYPE_LABEL: Record<RelationshipType, string> = {
-  couple: "Couple",
-  family: "Family",
-  group: "Group",
-  custom: "Custom",
-};
-
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).slice(0, 2);
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
-}
-
-function getRelationshipDisplayName(relationship: SeatingRelationship): string {
-  if (relationship.name && relationship.name.trim().length > 0) {
-    return relationship.name;
-  }
-  return RELATIONSHIP_TYPE_LABEL[relationship.type];
 }
 
 export function GuestPanel({
@@ -119,6 +106,7 @@ export function GuestPanel({
   onGuestDragStart,
   onGuestDragEnd,
 }: GuestPanelProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
@@ -284,6 +272,13 @@ export function GuestPanel({
     }
   };
 
+  const relationshipTypeLabel: Record<RelationshipType, string> = {
+    couple: t("guestPanel.relationshipType.couple"),
+    family: t("guestPanel.relationshipType.family"),
+    group: t("guestPanel.relationshipType.group"),
+    custom: t("guestPanel.relationshipType.custom"),
+  };
+
   const selectedGuestRelationships = selectedGuestId
     ? relationshipsByGuestId[selectedGuestId] ?? []
     : [];
@@ -292,22 +287,22 @@ export function GuestPanel({
     <aside className={rootClassName}>
       <div className="px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-900">Guests</h2>
+          <h2 className="text-sm font-semibold text-zinc-900">{t("guestPanel.title")}</h2>
         </div>
         <div className="flex gap-2">
           <Input
             value={newGuestName}
             onChange={(event) => setNewGuestName(event.target.value)}
-            placeholder="Add guest"
+            placeholder={t("guestPanel.addGuestPlaceholder")}
           />
           <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
-            Add
+            {t("common.add")}
           </Button>
         </div>
         <div className="mt-2 flex gap-2">
           <label className="cursor-pointer">
             <Button size="sm" variant="outline" type="button">
-              Import
+              {t("guestPanel.import")}
             </Button>
             <input
               type="file"
@@ -317,24 +312,24 @@ export function GuestPanel({
             />
           </label>
           <Button type="button" size="sm" variant="outline" onClick={handleExportCsv}>
-            Export
+            {t("guestPanel.export")}
           </Button>
         </div>
       </div>
       <Separator />
       <div className="space-y-3 px-4 py-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-zinc-900">Guest list</p>
+          <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
           <div className="flex items-center gap-1.5">
             <Badge variant="secondary">
-              Guests seated {seatedGuests}/{totalGuests}
+              {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
             </Badge>
           </div>
         </div>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search guests"
+          placeholder={t("guestPanel.searchPlaceholder")}
         />
         <div className="flex gap-2">
           {(["all", "unseated", "assigned"] as const).map((next) => (
@@ -345,18 +340,22 @@ export function GuestPanel({
               variant={filter === next ? "default" : "outline"}
               onClick={() => setFilter(next)}
             >
-              {next[0].toUpperCase() + next.slice(1)}
+              {next === "all"
+                ? t("guestPanel.filterAll")
+                : next === "unseated"
+                  ? t("guestPanel.filterUnseated")
+                  : t("guestPanel.filterAssigned")}
             </Button>
           ))}
         </div>
-        <p className="text-xs text-zinc-500">Showing {visibleGuests.length}</p>
+        <p className="text-xs text-zinc-500">{t("guestPanel.showing", { count: visibleGuests.length })}</p>
       </div>
       {error ? <div className="px-4 pb-3 text-xs text-red-700">{error}</div> : null}
       <ScrollArea className="flex-1 border-t border-zinc-200">
         {isLoading ? (
-          <p className="p-4 text-sm text-zinc-600">Loading guests...</p>
+          <p className="p-4 text-sm text-zinc-600">{t("guestPanel.loading")}</p>
         ) : visibleGuests.length === 0 ? (
-          <p className="p-4 text-sm text-zinc-600">No guests match this filter.</p>
+          <p className="p-4 text-sm text-zinc-600">{t("guestPanel.empty")}</p>
         ) : (
           <ul className="p-2">
             {visibleGuests.map((guest) => {
@@ -404,8 +403,8 @@ export function GuestPanel({
                         </p>
                         <p className="truncate text-xs text-zinc-500">
                           {guest.assignment
-                            ? `${tableLabelById[guest.assignment.tableId] ?? "Table"} • Seat ${guest.assignment.seatNumber}`
-                            : "Unseated"}
+                            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
+                            : t("guestPanel.unseated")}
                         </p>
                         {guestRelationships.length > 0 ? (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -415,16 +414,18 @@ export function GuestPanel({
                                 variant="secondary"
                                 className="text-[10px]"
                               >
-                                {getRelationshipDisplayName(relationship)}
+                                {relationship.name?.trim().length
+                                  ? relationship.name
+                                  : relationshipTypeLabel[relationship.type]}
                               </Badge>
                             ))}
                           </div>
                         ) : null}
                       </div>
                       {guest.assignment ? (
-                        <Badge variant="secondary">Assigned</Badge>
+                        <Badge variant="secondary">{t("guestPanel.assigned")}</Badge>
                       ) : (
-                        <Badge>Unseated</Badge>
+                        <Badge>{t("guestPanel.unseated")}</Badge>
                       )}
                     </button>
                     <Button
@@ -434,7 +435,7 @@ export function GuestPanel({
                       className="h-8 px-2 text-[11px]"
                       onClick={() => toggleRelationshipGuest(guest.id)}
                     >
-                      Link
+                      {t("guestPanel.link")}
                     </Button>
                   </div>
                 </li>
@@ -446,7 +447,9 @@ export function GuestPanel({
       {selectedRelationshipGuestIds.length > 0 ? (
         <div className="border-t border-zinc-200 px-4 py-3">
           <p className="text-xs font-semibold text-zinc-800">
-            Create relationship ({selectedRelationshipGuestIds.length} selected)
+            {t("guestPanel.createRelationship", {
+              count: selectedRelationshipGuestIds.length,
+            })}
           </p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <select
@@ -456,10 +459,10 @@ export function GuestPanel({
               }
               className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
             >
-              <option value="couple">Couple</option>
-              <option value="family">Family</option>
-              <option value="group">Group</option>
-              <option value="custom">Custom</option>
+              <option value="couple">{t("guestPanel.relationshipType.couple")}</option>
+              <option value="family">{t("guestPanel.relationshipType.family")}</option>
+              <option value="group">{t("guestPanel.relationshipType.group")}</option>
+              <option value="custom">{t("guestPanel.relationshipType.custom")}</option>
             </select>
             <select
               value={newRelationshipPreferredSeating}
@@ -470,15 +473,15 @@ export function GuestPanel({
               }
               className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
             >
-              <option value="none">No preference</option>
-              <option value="adjacent">Adjacent</option>
-              <option value="nearby">Nearby</option>
-              <option value="same-table">Same table</option>
+              <option value="none">{t("guestPanel.preferredSeating.none")}</option>
+              <option value="adjacent">{t("guestPanel.preferredSeating.adjacent")}</option>
+              <option value="nearby">{t("guestPanel.preferredSeating.nearby")}</option>
+              <option value="same-table">{t("guestPanel.preferredSeating.same-table")}</option>
             </select>
           </div>
           <Input
             className="mt-2 h-9 text-xs"
-            placeholder="Optional relationship name"
+            placeholder={t("guestPanel.relationshipNamePlaceholder")}
             value={newRelationshipName}
             onChange={(event) => setNewRelationshipName(event.target.value)}
           />
@@ -491,7 +494,7 @@ export function GuestPanel({
                   setNewRelationshipMoveTogetherDefault(event.target.checked)
                 }
               />
-              Move together default
+              {t("guestPanel.moveTogetherDefault")}
             </label>
             <label className="inline-flex items-center gap-1">
               <input
@@ -499,7 +502,7 @@ export function GuestPanel({
                 checked={newRelationshipStrict}
                 onChange={(event) => setNewRelationshipStrict(event.target.checked)}
               />
-              Strict
+              {t("guestPanel.strict")}
             </label>
           </div>
           <div className="mt-2 flex gap-2">
@@ -512,7 +515,7 @@ export function GuestPanel({
               }
               onClick={() => void handleCreateRelationship()}
             >
-              Create relationship
+              {t("guestPanel.createRelationshipAction")}
             </Button>
             <Button
               type="button"
@@ -521,7 +524,7 @@ export function GuestPanel({
               className="h-8 text-xs"
               onClick={() => setSelectedRelationshipGuestIds([])}
             >
-              Clear
+              {t("guestPanel.clear")}
             </Button>
           </div>
         </div>
@@ -533,10 +536,10 @@ export function GuestPanel({
           onClick={(event) => event.stopPropagation()}
         >
           <p className="text-xs font-semibold text-zinc-800">
-            Relationships for selected guest
+            {t("guestPanel.relationshipsForSelected")}
           </p>
           {selectedGuestRelationships.length === 0 ? (
-            <p className="mt-2 text-xs text-zinc-500">No relationships.</p>
+            <p className="mt-2 text-xs text-zinc-500">{t("guestPanel.noRelationships")}</p>
           ) : (
             <div className="mt-2 space-y-2">
               {selectedGuestRelationships.map((relationship) => (
@@ -546,7 +549,9 @@ export function GuestPanel({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-xs font-medium text-zinc-900">
-                      {getRelationshipDisplayName(relationship)}
+                      {relationship.name?.trim().length
+                        ? relationship.name
+                        : relationshipTypeLabel[relationship.type]}
                     </p>
                     <Button
                       type="button"
@@ -559,13 +564,13 @@ export function GuestPanel({
                         setEditingRelationshipName(relationship.name ?? "");
                       }}
                     >
-                      Rename
+                      {t("guestPanel.rename")}
                     </Button>
                   </div>
                   <p className="text-[11px] text-zinc-600">
-                    {RELATIONSHIP_TYPE_LABEL[relationship.type]} •{" "}
-                    {relationship.preferredSeating} • {relationship.guestIds.length}{" "}
-                    guests
+                    {relationshipTypeLabel[relationship.type]} •{" "}
+                    {relationship.preferredSeating} •{" "}
+                    {t("guestPanel.guestsCount", { count: relationship.guestIds.length })}
                   </p>
                   <div className="mt-2 flex gap-1">
                     <Button
@@ -583,7 +588,11 @@ export function GuestPanel({
                         }
                       }}
                     >
-                      MoveTogether: {relationship.moveTogetherDefault ? "On" : "Off"}
+                      {t("guestPanel.moveTogether", {
+                        value: relationship.moveTogetherDefault
+                          ? t("guestPanel.on")
+                          : t("guestPanel.off"),
+                      })}
                     </Button>
                     <Button
                       type="button"
@@ -600,7 +609,9 @@ export function GuestPanel({
                         }
                       }}
                     >
-                      Strict: {relationship.strict ? "On" : "Off"}
+                      {t("guestPanel.strictLabel", {
+                        value: relationship.strict ? t("guestPanel.on") : t("guestPanel.off"),
+                      })}
                     </Button>
                     <Button
                       type="button"
@@ -612,7 +623,7 @@ export function GuestPanel({
                         void onDeleteRelationship(relationship.id);
                       }}
                     >
-                      Delete
+                      {t("common.delete")}
                     </Button>
                   </div>
                   {editingRelationshipId === relationship.id ? (
@@ -638,7 +649,7 @@ export function GuestPanel({
                           }
                         }}
                       >
-                        Save
+                        {t("common.save")}
                       </Button>
                     </div>
                   ) : null}
@@ -654,21 +665,21 @@ export function GuestPanel({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <p className="text-xs font-semibold text-zinc-800">Guest details</p>
+          <p className="text-xs font-semibold text-zinc-800">{t("guestPanel.guestDetails")}</p>
           <div className="mt-2 space-y-3">
             <div>
               <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
               {selectedGuest.assignment ? (
                 <Badge variant="secondary" className="mt-1">
-                  {tableLabelById[selectedGuest.assignment.tableId] ?? "Table"} • Seat{" "}
-                  {selectedGuest.assignment.seatNumber}
+                  {tableLabelById[selectedGuest.assignment.tableId] ?? t("guestPanel.tableFallback")} •{" "}
+                  {t("guestPanel.seat", { seat: selectedGuest.assignment.seatNumber })}
                 </Badge>
               ) : (
-                <Badge className="mt-1">Unseated</Badge>
+                <Badge className="mt-1">{t("guestPanel.unseated")}</Badge>
               )}
             </div>
             <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">Name</span>
+              <span className="text-xs text-zinc-600">{t("guestPanel.name")}</span>
               <Input
                 value={guestForm.name}
                 onChange={(event) =>
@@ -677,7 +688,7 @@ export function GuestPanel({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">Group</span>
+              <span className="text-xs text-zinc-600">{t("guestPanel.group")}</span>
               <Input
                 value={guestForm.group}
                 onChange={(event) =>
@@ -686,7 +697,7 @@ export function GuestPanel({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs text-zinc-600">Notes</span>
+              <span className="text-xs text-zinc-600">{t("guestPanel.notes")}</span>
               <textarea
                 value={guestForm.notes}
                 onChange={(event) =>
@@ -708,14 +719,14 @@ export function GuestPanel({
                   })
                 }
               >
-                Save Guest
+                {t("guestPanel.saveGuest")}
               </Button>
               <Button
                 type="button"
                 variant="destructive"
                 onClick={() => void onDeleteGuest(selectedGuest.id)}
               >
-                Delete
+                {t("common.delete")}
               </Button>
             </div>
             {selectedGuest.assignment ? (
@@ -726,7 +737,7 @@ export function GuestPanel({
                   void onUnassignGuest(selectedGuest.assignment!.id, selectedGuest.id)
                 }
               >
-                Unassign
+                {t("guestPanel.unassign")}
               </Button>
             ) : null}
           </div>

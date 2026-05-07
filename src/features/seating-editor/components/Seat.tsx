@@ -1,4 +1,5 @@
 import { createGuestDragPreview } from "../lib/drag-preview";
+import { useI18n } from "@/i18n/provider";
 
 type SeatProps = {
   seatNumber: number;
@@ -46,6 +47,7 @@ export function Seat({
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
 }: SeatProps) {
+  const { t } = useI18n();
   const initials = occupantName ? getInitials(occupantName) : null;
   const isSeatDraggable = Boolean(enableSeatDrag && occupantGuestId);
 
@@ -53,7 +55,11 @@ export function Seat({
     <button
       type="button"
       draggable={isSeatDraggable}
-      title={occupantName ? `${seatNumber}: ${occupantName}` : `Seat ${seatNumber}`}
+      title={
+        occupantName
+          ? t("seat.seatWithName", { seat: seatNumber, name: occupantName })
+          : t("seat.seatLabel", { seat: seatNumber })
+      }
       onDragStart={(event) => {
         if (!isSeatDraggable || !occupantGuestId || !occupantName) return;
         event.dataTransfer.effectAllowed = "move";

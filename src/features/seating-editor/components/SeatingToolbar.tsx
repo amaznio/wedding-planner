@@ -4,7 +4,15 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useI18n } from "@/i18n/provider";
 
 type SeatingToolbarProps = {
   planName: string;
@@ -24,19 +32,20 @@ export function SeatingToolbar({
   onSave,
 }: SeatingToolbarProps) {
   const router = useRouter();
+  const { locale, setLocale, t } = useI18n();
   const [isMobileEditingTitle, setIsMobileEditingTitle] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
     saveState === "saving"
-      ? "Saving..."
+      ? t("common.saving")
       : saveState === "error"
-        ? "Save failed"
+        ? t("toolbar.statusFailed")
         : isDirty
-          ? "Unsaved changes"
+          ? t("toolbar.statusUnsaved")
           : lastSavedLabel
-            ? `Saved ${lastSavedLabel}`
-            : "Saved";
+            ? t("toolbar.statusSavedAt", { time: lastSavedLabel })
+            : t("toolbar.statusSaved");
 
   return (
     <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
@@ -47,29 +56,39 @@ export function SeatingToolbar({
             onChange={(event) => onPlanNameChange(event.target.value)}
             className="h-9 border-transparent bg-zinc-50 text-base font-semibold"
             style={{ width: `${titleWidthCh}ch` }}
-            aria-label="Plan name"
+            aria-label={t("toolbar.planName")}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 px-3 text-xs"
+            onClick={onSave}
+            disabled={saveState === "saving"}
+            aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
+            title={saveState === "saving" ? t("common.saving") : t("common.save")}
+          >
+            <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+              <path d="M17 21v-8H7v8" />
+              <path d="M7 3v5h8" />
+            </svg>
+            {t("common.save")}
+          </Button>
           <Badge variant="secondary" className="h-6 px-2 text-[11px]">
             {statusText}
           </Badge>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-9 w-9 p-0"
-            onClick={onSave}
-            disabled={saveState === "saving"}
-            aria-label={saveState === "saving" ? "Saving" : "Save"}
-            title={saveState === "saving" ? "Saving..." : "Save"}
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-              <path d="M17 21v-8H7v8" />
-              <path d="M7 3v5h8" />
-            </svg>
-          </Button>
+          <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
+            <SelectTrigger className="h-9 w-[150px]" aria-label={t("common.language")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">{t("common.english")}</SelectItem>
+              <SelectItem value="pl">{t("common.polish")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -79,7 +98,7 @@ export function SeatingToolbar({
             type="button"
             variant="ghost"
             className="h-8 w-8 p-0"
-            aria-label="Menu"
+            aria-label={t("toolbar.menu")}
             onClick={() => setIsMobileNavOpen(true)}
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -94,7 +113,7 @@ export function SeatingToolbar({
                 value={planName}
                 onChange={(event) => onPlanNameChange(event.target.value)}
                 className="h-8 w-[170px] max-w-[48vw] border-transparent bg-zinc-50 text-sm font-semibold"
-                aria-label="Plan name"
+                aria-label={t("toolbar.planName")}
               />
             ) : (
               <p className="truncate text-sm font-semibold text-zinc-900">
@@ -105,7 +124,9 @@ export function SeatingToolbar({
               type="button"
               variant="ghost"
               className="h-7 w-7 p-0"
-              aria-label={isMobileEditingTitle ? "Done editing title" : "Edit title"}
+              aria-label={
+                isMobileEditingTitle ? t("toolbar.doneEditingTitle") : t("toolbar.editTitle")
+              }
               onClick={() => setIsMobileEditingTitle((current) => !current)}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -121,7 +142,7 @@ export function SeatingToolbar({
               className="h-8 w-8 p-0"
               onClick={onSave}
               disabled={saveState === "saving"}
-              aria-label={saveState === "saving" ? "Saving" : "Save"}
+              aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
@@ -134,7 +155,7 @@ export function SeatingToolbar({
         <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
           <SheetContent side="left" showOverlay className="w-[280px] p-4 sm:max-w-[280px]">
             <SheetTitle className="text-left text-sm font-semibold text-zinc-900">
-              Navigation
+              {t("toolbar.navigation")}
             </SheetTitle>
             <div className="mt-3 space-y-2">
               <Button
@@ -145,7 +166,7 @@ export function SeatingToolbar({
                   router.push("/");
                 }}
               >
-                Home
+                {t("common.home")}
               </Button>
               <Button
                 variant="outline"
@@ -155,11 +176,23 @@ export function SeatingToolbar({
                   router.push("/seating-plans");
                 }}
               >
-                Seating plans
+                {t("toolbar.seatingPlans")}
               </Button>
               <Button variant="outline" className="w-full justify-start" disabled>
-                Current plan
+                {t("toolbar.currentPlan")}
               </Button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-zinc-600">{t("common.language")}</p>
+              <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
+                <SelectTrigger className="w-full" aria-label={t("common.language")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">{t("common.english")}</SelectItem>
+                  <SelectItem value="pl">{t("common.polish")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </SheetContent>
         </Sheet>

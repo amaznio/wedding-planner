@@ -11,6 +11,7 @@ import {
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
+import { useI18n } from "@/i18n/provider";
 import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
@@ -95,6 +96,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onGuestDropToSeat,
   relationshipsByGuestId = {},
 }, ref) {
+  const { t } = useI18n();
   const [draggedSeatGuestId, setDraggedSeatGuestId] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
@@ -513,21 +515,21 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   plan.tables.length === 0 ? "ring-2 ring-zinc-200 ring-offset-2 ring-offset-zinc-100/40" : ""
                 }`}
               >
-                + Add
+                {t("canvas.add")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onAddTable}>Rectangular table</DropdownMenuItem>
-              <DropdownMenuItem disabled>Round table (coming soon)</DropdownMenuItem>
-              <DropdownMenuItem disabled>Buffet (coming soon)</DropdownMenuItem>
-              <DropdownMenuItem disabled>Dance floor (coming soon)</DropdownMenuItem>
+              <DropdownMenuItem onClick={onAddTable}>{t("canvas.rectangularTable")}</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("canvas.roundComing")}</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("canvas.buffetComing")}</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("canvas.danceComing")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         {!mobileMode ? (
           <div className="absolute left-1/2 top-3 z-20 hidden -translate-x-1/2 lg:block">
             <span className="inline-flex h-8 items-center rounded-full border border-zinc-200/90 bg-white/95 px-3 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur">
-              Seats {filledSeats}/{totalSeats}
+              {t("canvas.seatsSummary", { filled: filledSeats, total: totalSeats })}
             </span>
           </div>
         ) : null}
@@ -570,32 +572,32 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               className="h-8 rounded-lg px-3 text-xs font-medium"
               onClick={resetView}
             >
-              Reset
+              {t("canvas.reset")}
             </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-medium">
-                  Legend
+                  {t("editor.legend")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-48 p-3">
-                <p className="mb-2 text-xs font-semibold text-zinc-800">Seat legend</p>
+                <p className="mb-2 text-xs font-semibold text-zinc-800">{t("canvas.legendTitle")}</p>
                 <div className="space-y-1 text-xs text-zinc-600">
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
-                    <span>Selected guest</span>
+                    <span>{t("editor.selectedGuest")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
-                    <span>Selected seat</span>
+                    <span>{t("canvas.selectedSeat")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
-                    <span>Occupied</span>
+                    <span>{t("editor.occupied")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
-                    <span>Empty</span>
+                    <span>{t("editor.empty")}</span>
                   </div>
                 </div>
               </PopoverContent>
@@ -630,30 +632,32 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               onClick={onToggleTableDrag}
               aria-pressed={enableTableDrag}
             >
-              Move tables: {enableTableDrag ? "On" : "Off"}
+              {t("canvas.moveTables", {
+                value: enableTableDrag ? t("guestPanel.on") : t("guestPanel.off"),
+              })}
             </Button>
           </div>
         ) : null}
         <Drawer open={mobileLegendOpen} onOpenChange={setMobileLegendOpen}>
           <DrawerContent className="p-4">
-            <DrawerTitle className="sr-only">Seat legend</DrawerTitle>
-            <p className="mb-2 text-sm font-semibold text-zinc-800">Seat legend</p>
+            <DrawerTitle className="sr-only">{t("canvas.legendTitle")}</DrawerTitle>
+            <p className="mb-2 text-sm font-semibold text-zinc-800">{t("canvas.legendTitle")}</p>
             <div className="space-y-2 text-sm text-zinc-600">
               <div className="flex items-center gap-2">
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-emerald-500 bg-emerald-100" />
-                <span>Selected guest</span>
+                <span>{t("editor.selectedGuest")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-amber-500 bg-amber-100" />
-                <span>Selected seat</span>
+                <span>{t("canvas.selectedSeat")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-blue-300 bg-blue-50" />
-                <span>Occupied</span>
+                <span>{t("editor.occupied")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300 bg-white" />
-                <span>Empty</span>
+                <span>{t("editor.empty")}</span>
               </div>
             </div>
           </DrawerContent>
@@ -781,8 +785,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
         {plan.tables.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <div className="rounded-md border border-dashed border-zinc-300 bg-white/80 px-4 py-3 text-sm text-zinc-600">
-              No tables yet. Use <span className="font-medium">Add Table</span>{" "}
-              to start.
+              {t("canvas.noTables")}
             </div>
           </div>
         ) : null}
@@ -794,18 +797,20 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           >
             <div className="mb-2 flex items-center justify-between">
               <h4 className="text-sm font-semibold text-zinc-900">
-                Seat {seatMenu.seatNumber}
+                {t("guestPanel.seat", { seat: seatMenu.seatNumber })}
               </h4>
               <button
                 type="button"
                 onClick={() => setSeatMenu(null)}
                 className="rounded border border-zinc-300 px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-100"
               >
-                Close
+                {t("common.close")}
               </button>
             </div>
             <p className="mb-2 text-xs text-zinc-600">
-              Current: {menuSeatAssignment?.guestName ?? "Unassigned"}
+              {t("canvas.current", {
+                name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
+              })}
             </p>
             {seatMenuError ? (
               <div className="mb-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
@@ -816,8 +821,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               {guests.map((guest) => {
                 const isCurrent = menuSeatAssignment?.guestId === guest.id;
                 const assignmentLabel = guest.assignment
-                  ? `${tableLabelById[guest.assignment.tableId] ?? "Table"} • Seat ${guest.assignment.seatNumber}`
-                  : "Unseated";
+                  ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
+                  : t("guestPanel.unseated");
                 const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
                 const moveTogetherGuestIds = new Set(
                   guestRelationships
@@ -844,7 +849,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                           toast({
                             variant:
                               result.level === "info" ? "info" : "success",
-                            title: result.level === "info" ? "Info" : "Success",
+                            title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
                             description: result.message,
                           });
                         }
@@ -853,7 +858,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                         const message =
                           error instanceof Error
                             ? error.message
-                            : "Failed to assign seat";
+                            : t("canvas.failedAssign");
                         setSeatMenuError(message);
                         setConflictSeat({
                           tableId: seatMenu.tableId,
@@ -887,7 +892,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                         {moveTogetherPreviewCount > 0 ? (
                           <>
                             {" • "}
-                            group move: {moveTogetherPreviewCount}
+                            {t("canvas.groupMove", { count: moveTogetherPreviewCount })}
                           </>
                         ) : null}
                       </span>
@@ -913,7 +918,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   if (result?.message) {
                     toast({
                       variant: result.level === "info" ? "info" : "success",
-                      title: result.level === "info" ? "Info" : "Success",
+                      title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
                       description: result.message,
                     });
                   }
@@ -922,7 +927,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   const message =
                     error instanceof Error
                       ? error.message
-                      : "Failed to unassign seat";
+                      : t("canvas.failedUnassign");
                   setSeatMenuError(message);
                   setConflictSeat({
                     tableId: seatMenu.tableId,
@@ -934,7 +939,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }}
               className="w-full rounded-md border border-red-300 px-2 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
             >
-              Unassign Seat
+              {t("canvas.unassignSeat")}
             </button>
           </div>
         ) : null}

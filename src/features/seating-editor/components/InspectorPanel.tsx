@@ -4,6 +4,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useI18n } from "@/i18n/provider";
 import type { SeatingTable } from "../types/seating-plan.types";
 
 type Guest = {
@@ -59,6 +60,7 @@ export function InspectorPanel({
   side = "right",
   showOverlay = false,
 }: InspectorPanelProps) {
+  const { t } = useI18n();
   const isMobileDrawer = side === "bottom";
   const contentAreaClassName = isMobileDrawer
     ? "max-h-[56dvh] overflow-auto p-4"
@@ -68,9 +70,9 @@ export function InspectorPanel({
       {!isMobileDrawer ? (
         <>
           <div className="flex items-center justify-between px-4 py-3">
-            <h3 className="text-sm font-semibold text-zinc-900">Inspector</h3>
+            <h3 className="text-sm font-semibold text-zinc-900">{t("inspector.title")}</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              Close
+              {t("common.close")}
             </Button>
           </div>
           <Separator />
@@ -78,7 +80,7 @@ export function InspectorPanel({
       ) : null}
       <div className={contentAreaClassName}>
           {!selection ? (
-            <p className="text-sm text-zinc-600">Select a guest, table, or seat.</p>
+            <p className="text-sm text-zinc-600">{t("inspector.selectPrompt")}</p>
           ) : null}
 
           {selection?.type === "guest" && selectedGuest ? (
@@ -87,31 +89,31 @@ export function InspectorPanel({
                 <p className="text-sm font-semibold text-zinc-900">{selectedGuest.name}</p>
                 {selectedGuest.assignment ? (
                   <Badge variant="secondary" className="mt-1">
-                    {tableLabelById[selectedGuest.assignment.tableId] ?? "Table"} • Seat{" "}
-                    {selectedGuest.assignment.seatNumber}
+                    {tableLabelById[selectedGuest.assignment.tableId] ?? t("guestPanel.tableFallback")} •{" "}
+                    {t("guestPanel.seat", { seat: selectedGuest.assignment.seatNumber })}
                   </Badge>
                 ) : (
-                  <Badge className="mt-1">Unseated</Badge>
+                  <Badge className="mt-1">{t("inspector.unassigned")}</Badge>
                 )}
               </div>
               <p className="text-xs text-zinc-600">
-                Guest details are edited in the Guests panel/drawer.
+                {t("inspector.guestEditedElsewhere")}
               </p>
             </div>
           ) : null}
 
           {selection?.type === "table" && selectedTable ? (
             <div className="space-y-3">
-              <p className="text-sm font-semibold text-zinc-900">Table Settings</p>
+              <p className="text-sm font-semibold text-zinc-900">{t("inspector.tableSettings")}</p>
               <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Table Name</span>
+                <span className="text-xs text-zinc-600">{t("inspector.tableName")}</span>
                 <Input
                   value={selectedTable.label}
                   onChange={(event) => onTableLabelChange(event.target.value)}
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Seat Count</span>
+                <span className="text-xs text-zinc-600">{t("inspector.seatCount")}</span>
                 <Input
                   type="number"
                   min={1}
@@ -123,7 +125,7 @@ export function InspectorPanel({
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">Seat layout</span>
+                <span className="text-xs text-zinc-600">{t("inspector.seatLayout")}</span>
                 <select
                   value={selectedTable.seatLayout}
                   onChange={(event) =>
@@ -133,17 +135,17 @@ export function InspectorPanel({
                   }
                   className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
                 >
-                  <option value="balanced">Balanced (top + bottom)</option>
-                  <option value="top-only">Top side only</option>
-                  <option value="bottom-only">Bottom side only</option>
+                  <option value="balanced">{t("inspector.layoutBalanced")}</option>
+                  <option value="top-only">{t("inspector.layoutTopOnly")}</option>
+                  <option value="bottom-only">{t("inspector.layoutBottomOnly")}</option>
                 </select>
               </label>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={onRotateTable}>
-                  Rotate 90°
+                  {t("inspector.rotate")}
                 </Button>
                 <Button variant="destructive" onClick={onDeleteTable}>
-                  Delete
+                  {t("common.delete")}
                 </Button>
               </div>
             </div>
@@ -152,21 +154,23 @@ export function InspectorPanel({
           {selection?.type === "seat" ? (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-zinc-900">
-                Seat {selection.seatNumber}
+                {t("guestPanel.seat", { seat: selection.seatNumber })}
               </p>
               <p className="text-xs text-zinc-600">
-                {tableLabelById[selection.tableId] ?? "Table"}
+                {tableLabelById[selection.tableId] ?? t("guestPanel.tableFallback")}
               </p>
               {selectedSeatGuest ? (
-                <Badge variant="secondary">Assigned: {selectedSeatGuest.name}</Badge>
+                <Badge variant="secondary">
+                  {t("inspector.seatAssigned", { name: selectedSeatGuest.name })}
+                </Badge>
               ) : (
-                <Badge>Unassigned</Badge>
+                <Badge>{t("inspector.unassigned")}</Badge>
               )}
               <p className="text-xs text-zinc-600">
-                Assignment actions stay in the seat popover in this phase.
+                {t("inspector.assignmentActionsInfo")}
               </p>
               <Button variant="outline" onClick={() => onSelectTable(selection.tableId)}>
-                Go to table
+                {t("inspector.goToTable")}
               </Button>
             </div>
           ) : null}
@@ -178,7 +182,7 @@ export function InspectorPanel({
     return (
       <Drawer open={isOpen} onOpenChange={(open) => (!open ? onClose() : undefined)}>
         <DrawerContent className="h-auto max-h-[56dvh] p-0">
-          <DrawerTitle className="sr-only">Inspector</DrawerTitle>
+          <DrawerTitle className="sr-only">{t("inspector.title")}</DrawerTitle>
           {inspectorBody}
         </DrawerContent>
       </Drawer>
@@ -202,7 +206,7 @@ export function InspectorPanel({
           event.preventDefault();
         }}
       >
-        <SheetTitle className="sr-only">Inspector</SheetTitle>
+        <SheetTitle className="sr-only">{t("inspector.title")}</SheetTitle>
         {inspectorBody}
       </SheetContent>
     </Sheet>
