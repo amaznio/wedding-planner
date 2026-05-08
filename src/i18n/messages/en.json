@@ -87,6 +87,17 @@
     "addGroupPlaceholder": "Add group",
     "groupsEmpty": "No groups yet.",
     "groupColor": "Group color",
+    "groupName": "Group name",
+    "backToGroups": "Back to groups",
+    "groupMembersTitle": "Guests in this group",
+    "groupMembersEmpty": "This group has no guests yet.",
+    "groupAddGuestsTitle": "Add guests to this group",
+    "groupAddGuestsEmpty": "No guests available to add.",
+    "groupGuestSearchPlaceholder": "Search guests to add",
+    "groupGuestSearchNoResults": "No guests match this search.",
+    "sortFirstName": "Sort: first name",
+    "sortLastName": "Sort: last name",
+    "removeFromGroup": "Remove",
     "groupRenamePrompt": "Rename group",
     "groupDeleteConfirm": "Delete group {{name}}? Guests will remain and become ungrouped.",
     "groupCreateFailed": "Failed to create group",
@@ -226,3 +237,4 @@
     "info": "Info"
   }
 }
+

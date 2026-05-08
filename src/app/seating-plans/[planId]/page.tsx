@@ -1075,6 +1075,26 @@ export default function SeatingPlanEditorPage() {
     scheduleAutosave();
   }, [planId, scheduleAutosave]);
 
+  const handleUpdateGuestGroup = useCallback(
+    async (guestId: string, groupId: string | null) => {
+      const guest = guests.find((item) => item.id === guestId);
+      if (!guest) {
+        throw new Error("Guest not found");
+      }
+
+      await handleUpdateGuest(guestId, {
+        name: guest.name,
+        groupId,
+        notes: guest.notes ?? "",
+      });
+
+      if (selectedGuestId === guestId) {
+        setGuestForm((current) => ({ ...current, groupId }));
+      }
+    },
+    [guests, handleUpdateGuest, selectedGuestId],
+  );
+
   const handleDeleteGuest = useCallback(async (guestId: string) => {
     try {
       setGuestsError(null);
@@ -1562,6 +1582,7 @@ export default function SeatingPlanEditorPage() {
                     onCreateGroup={handleCreateGroup}
                     onUpdateGroup={handleUpdateGroup}
                     onDeleteGroup={handleDeleteGroup}
+                    onUpdateGuestGroup={handleUpdateGuestGroup}
                   />
                 </div>
               </div>
@@ -1904,27 +1925,28 @@ export default function SeatingPlanEditorPage() {
           </div>
         </div>
         <Sheet open={desktopGroupsManagerOpen} onOpenChange={setDesktopGroupsManagerOpen}>
-          <SheetContent side="right" className="w-[420px] p-0 sm:max-w-[420px]">
+          <SheetContent side="right" className="flex w-[420px] flex-col p-0 sm:max-w-[420px]">
             <SheetTitle className="px-4 py-4 text-left text-sm font-semibold text-zinc-900">
               {t("guestPanel.groupsTitle")}
             </SheetTitle>
-            <div className="max-h-[80dvh] overflow-auto px-4 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto border-t border-zinc-200 px-4 py-4">
               <GroupsManager
                 guests={guests}
                 groups={groups}
                 onCreateGroup={handleCreateGroup}
                 onUpdateGroup={handleUpdateGroup}
                 onDeleteGroup={handleDeleteGroup}
+                onUpdateGuestGroup={handleUpdateGuestGroup}
               />
             </div>
           </SheetContent>
         </Sheet>
         <Sheet open={desktopDataToolsOpen} onOpenChange={setDesktopDataToolsOpen}>
-          <SheetContent side="right" className="w-[420px] p-0 sm:max-w-[420px]">
+          <SheetContent side="right" className="flex w-[420px] flex-col p-0 sm:max-w-[420px]">
             <SheetTitle className="px-4 py-4 text-left text-sm font-semibold text-zinc-900">
               {t("editor.importExport")}
             </SheetTitle>
-            <div className="max-h-[80dvh] overflow-auto border-t border-zinc-200 px-4 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto border-t border-zinc-200 px-4 py-4">
               <GuestDataTools guests={guests} onBulkImportGuests={handleBulkImportGuests} />
             </div>
           </SheetContent>
@@ -1934,3 +1956,4 @@ export default function SeatingPlanEditorPage() {
     </main>
   );
 }
+

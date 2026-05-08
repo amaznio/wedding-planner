@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 103 - Mobile compact counter switched to visible results (completed)
+Phase 111 - Add-members list restricted to ungrouped guests only (completed)
 
 ## Completed Phases
 
@@ -110,9 +110,70 @@ Phase 103 - Mobile compact counter switched to visible results (completed)
 - Phase 101 - Mobile Guests drawer hierarchy reorder
 - Phase 102 - Mobile guest-list controls condensed
 - Phase 103 - Mobile compact counter switched to visible results
+- Phase 104 - Group detail manager view with guest membership controls
+- Phase 105 - Group row hover polish + pointer cursor normalization
+- Phase 106 - Groups detail back-button polish and create-row visibility
+- Phase 107 - Desktop sheet full-height scroll fix
+- Phase 108 - Group details switched from card wrappers to divider sections
+- Phase 109 - Group add-members search + first/last name sorting
+- Phase 110 - Collapsible group member/add-member accordion sections
+- Phase 111 - Add-members list restricted to ungrouped guests only
 
 
 ## Completed Work
+
+- Implemented Phase 111 single-group-membership UX enforcement in group details:
+  - changed `Dodaj gości do grupy` source list to include only guests with `groupId === null`
+  - removed reassignment surface for guests already in another group from this flow
+  - updated section count to reflect ungrouped guests only
+
+- Implemented Phase 110 collapsible sections for large group lists:
+  - converted `Goście w grupie` into an accordion-style section with expand/collapse toggle
+  - converted `Dodaj gości do grupy` into an accordion-style section with expand/collapse toggle
+  - preserved existing search/sort/add/remove behavior when expanded
+  - added section item counts in headers and chevron rotation state for expand/collapse feedback
+
+- Implemented Phase 109 add-members discovery controls in selected-group details:
+  - added guest search input for `Dodaj gości do grupy`
+  - added sorting toggles for:
+    - first name
+    - last name
+  - implemented locale-aware sorting with deterministic fallback (first/last/full name)
+  - applied filtering + sorting to the add-members list
+  - added specific empty state for search miss (`no guests match search`) separate from base empty list
+  - added EN/PL i18n keys for new controls and states
+
+- Implemented Phase 108 group-details section styling update:
+  - removed outer card-style wrappers in selected-group details view
+  - replaced card block separation with divider-based section layout (`divide-y`)
+  - preserved existing row-level controls and actions for guest add/remove
+
+- Implemented Phase 107 desktop sheet scrolling fix:
+  - removed `max-h-[80dvh]` constrained scroll wrappers in desktop right sheets
+  - converted both desktop sheet contents (`Groups` and `Import/Export`) into flex columns
+  - moved scrolling to full-height body region (`min-h-0 flex-1 overflow-y-auto`)
+  - eliminated dead space at the bottom of the sheet and restored natural full-height scrolling
+
+- Implemented Phase 106 groups-manager UX refinement:
+  - moved `Add group` input/actions to show only in the groups list view
+  - hidden add-group controls while viewing selected-group details
+  - added left-arrow icon to `Powrót do grup` button for stronger back-navigation affordance
+
+- Implemented Phase 105 group interactions polish:
+  - added visible hover treatment for top-level group list rows (`hover:bg-zinc-50`, smooth transition)
+  - improved danger-action affordance with red-tinted hover on row-level `Usuń` action
+  - updated shared shadcn `Button` primitive to use pointer cursor and keep `not-allowed` when disabled
+  - added global cursor fallback for interactive elements that were not guaranteed to show pointer:
+    - enabled `cursor: pointer` on enabled buttons, role buttons, links, summary, checkbox/radio/color inputs, and selects
+
+- Implemented Phase 104 group-detail manager flow:
+  - changed groups list into an entry view where selecting a group opens dedicated group details
+  - moved group rename and color editing from list rows into selected-group details view
+  - added selected-group membership management:
+    - list guests currently in the group with `Usuń z grupy` action
+    - list guests outside the group with `Dodaj` action (including reassignment from other groups)
+  - reused existing guest update API path for membership changes via page-level callback wiring
+  - added new i18n labels for group detail/member management in both EN and PL
 
 - Implemented Phase 103 mobile compact counter semantics fix:
   - changed compact right-side mobile counter in guest filter row from `seated/total` to `visible/total`
@@ -878,6 +939,37 @@ Phase 103 - Mobile compact counter switched to visible results (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `PROGRESS.md`
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `src/components/ui/button.tsx`
+- `src/app/globals.css`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `PROGRESS.md`
 
@@ -1089,6 +1181,34 @@ Phase 103 - Mobile compact counter switched to visible results (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; phase 111 ungrouped-only add-members list)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 110 accordion sections for large group lists)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 109 group add-members search + sort)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 108 divider-based group-details sections)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 107 desktop sheet full-height scroll fix)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 106 groups-manager add-row/back-icon tweak)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 105 hover + cursor polish)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
+
+- `corepack pnpm typecheck` (pass; phase 104 group details + membership controls)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm i18n:audit` (pass)
 
 - `corepack pnpm typecheck` (pass; phase 103 mobile compact counter semantics fix)
 - `corepack pnpm lint` (pass with existing warnings)
@@ -1316,22 +1436,35 @@ Phase 103 - Mobile compact counter switched to visible results (completed)
 6. Stop typing and confirm latest value is eventually autosaved.
 7. Edit `Liczba miejsc` several times quickly and confirm save occurs for final value without blocking further actions.
 8. Confirm inspector remains open and same table remains selected through autosave/manual save.
-9. In the guest panel, create at least two groups and verify each gets an auto-assigned color.
-10. Rename and recolor a group; verify updates persist in the group list and guest selectors.
-11. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
-12. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
-13. Add at least two guests and assign them to seats.
-14. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
-15. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
-16. Open legend and verify active seated group swatches are listed.
-17. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
-18. Verify adjacent move-table toggle and zoom/reset controls still render and work.
-19. Use keyboard:
+9. In the Groups manager, create at least two groups and verify each gets an auto-assigned color.
+10. Select one group to open group details, then rename and recolor it; verify updates persist in the group list and guest selectors.
+11. In selected-group details, add guests to the group and remove at least one guest from the group; verify guest group tags update immediately.
+12. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
+13. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
+14. Add at least two guests and assign them to seats.
+15. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
+16. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
+17. Open legend and verify active seated group swatches are listed.
+18. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
+19. Verify adjacent move-table toggle and zoom/reset controls still render and work.
+20. Use keyboard:
   - `]` to select next guest
   - `[` to select previous guest
   - `U` to unassign selected guest
-20. Export guests to CSV and verify exported group names match selected groups.
-21. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
+21. Export guests to CSV and verify exported group names match selected groups.
+22. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
+23. Open Groups list view and hover each group row; verify row background highlights on hover.
+24. Hover `Usuń` action in group rows; verify destructive hover tint appears.
+25. Confirm pointer cursor appears on shadcn buttons and other interactive controls (links/selects/checkboxes/radios/color picker).
+26. On desktop, open `Groups` sheet and enter a group with many guests; verify scrolling uses full sheet height with no dead bottom gap.
+27. On desktop, open `Import / Export` sheet and verify it also scrolls within full available sheet height.
+28. In selected-group details, verify sections are separated by dividers (not outer bordered cards) while guest rows/actions still work.
+29. In `Dodaj gości do grupy`, type a partial name and verify the list filters in real time.
+30. Switch sort to `first name` and `last name` and verify ordering changes accordingly.
+31. Use a search term with no matches and verify the dedicated no-results message appears.
+32. In selected-group details, collapse and expand `Goście w grupie` and `Dodaj gości do grupy` sections; verify chevrons and item counts update/display correctly.
+33. Confirm add/remove actions and add-members search/sort still work after expanding sections.
+34. Confirm `Dodaj gości do grupy` shows only ungrouped guests (no guests already assigned to other groups).
 
 ## Known Issues
 
@@ -1341,7 +1474,7 @@ Phase 103 - Mobile compact counter switched to visible results (completed)
   - unused `totalSeatCount` warning in `page.tsx` (pre-existing)
 - CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
-- Group rename currently uses prompt dialog UX (functional but basic).
+- Group manager detail lists do not yet have dedicated search/filter controls for very large guest lists.
 
 ## Next Recommended Step
 
@@ -1351,10 +1484,9 @@ Next recommended follow-up:
   - mobile Guests vs Groups vs More/Data split
   - add-guest drawer behavior
   - import/export placement and behavior
-- Replace prompt-based group rename with inline rename in `GroupsManager` for better mobile ergonomics.
+- Add search/filter controls inside group-detail membership lists for large plans.
 - Add focused UI regression coverage for in-flight save continuity (typing/actions remain uninterrupted while response/toast lands).
 - Add focused UI regression coverage for autosave debounce behavior (save after last edit, not first) and inspector selection persistence.
 - Refactor `savePlan` into a lint-clean stable callback shape that satisfies both React Compiler and exhaustive-deps without warnings.
 - Add backend tests for group endpoint conflict and ownership validation.
-- Replace prompt-based group rename with inline editing UI for smoother UX.
 - Add unit tests for seat color-priority logic when group mode is enabled.

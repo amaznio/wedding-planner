@@ -87,6 +87,17 @@
     "addGroupPlaceholder": "Dodaj grupę",
     "groupsEmpty": "Brak grup.",
     "groupColor": "Kolor grupy",
+    "groupName": "Nazwa grupy",
+    "backToGroups": "Powrót do grup",
+    "groupMembersTitle": "Goście w grupie",
+    "groupMembersEmpty": "Ta grupa nie ma jeszcze gości.",
+    "groupAddGuestsTitle": "Dodaj gości do grupy",
+    "groupAddGuestsEmpty": "Brak gości do dodania.",
+    "groupGuestSearchPlaceholder": "Szukaj gości do dodania",
+    "groupGuestSearchNoResults": "Brak gości pasujących do wyszukiwania.",
+    "sortFirstName": "Sortuj: imię",
+    "sortLastName": "Sortuj: nazwisko",
+    "removeFromGroup": "Usuń z grupy",
     "groupRenamePrompt": "Zmień nazwę grupy",
     "groupDeleteConfirm": "Usunąć grupę {{name}}? Goście pozostaną i stracą przypisanie grupy.",
     "groupCreateFailed": "Nie udało się utworzyć grupy",
@@ -226,3 +237,4 @@
     "info": "Informacja"
   }
 }
+
