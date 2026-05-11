@@ -13,12 +13,20 @@ export default function Home() {
           {t("home.title")}
         </h1>
         <div className="mt-6">
-          <Link
-            href="/seating-plans"
-            className="inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-          >
-            {t("home.openEditor")}
-          </Link>
+          <div className="flex items-center justify-center gap-2">
+            <Link
+              href="/weddings"
+              className="inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            >
+              Open weddings
+            </Link>
+            <Link
+              href="/seating-plans"
+              className="inline-flex rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+            >
+              {t("home.openEditor")}
+            </Link>
+          </div>
         </div>
       </div>
     </main>

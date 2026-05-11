@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 148 - Compact pair row overflow layout and group-accent update (completed)
+Phase 156 - Hardening pass for wedding expansion (completed)
 
 ## Completed Phases
 
@@ -149,16 +149,28 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
 - Phase 141 - Locale hydration mismatch fix (cookie-backed SSR locale)
 - Phase 142 - Relationship create endpoint diagnostic logging
 - Phase 143 - Relationship create timeout fix (non-interactive transaction)
-- Phase 144 - Compact linked guests into one row (inline expansion)
-- Phase 145 - Draggable compact pair row in guest list
-- Phase 146 - Confirm dialog click propagation fix
-- Phase 147 - Remove link icon from compact pair row
-- Phase 148 - Compact pair row overflow layout and group-accent update
-
+- Phase 144-1 - Compact linked guests into one row (inline expansion)
+- Phase 145-1 - Draggable compact pair row in guest list
+- Phase 146-1 - Confirm dialog click propagation fix
+- Phase 147-1 - Remove link icon from compact pair row
+- Phase 148-1 - Compact pair row overflow layout and group-accent update
+- Phase 144 - Wedding + event schema foundation
+- Phase 145 - Backfill weddings/events for existing plans
+- Phase 146 - Guest wedding scope field + backfill
+- Phase 147 - Event guest participation model + backfill
+- Phase 148 - Seating eligibility switched to event participation
+- Phase 149 - Seat assignment uniqueness changed to per-plan guest
+- Phase 150 - Household model + household membership APIs
+- Phase 151 - Wedding-scoped groups + group membership APIs
+- Phase 152 - Vendor tracking schema + APIs + UI
+- Phase 153 - Expense tracking schema + APIs + UI
+- Phase 154 - Wedding dashboard RSVP/budget summaries
+- Phase 155 - CSV import/export v2 (guests + expenses)
+- Phase 156 - Hardening pass for migrations/API contracts/build validation
 
 ## Completed Work
 
-- Implemented Phase 148 compact pair row overflow layout and group-accent update:
+- Implemented Phase 148-1 compact pair row overflow layout and group-accent update:
   - changed compact pair row name rendering from single-line truncate to two-line clamp to improve readability in narrow panel widths
   - removed relationship-type badge from compact pair row and kept only seat-status badge to reduce horizontal pressure
   - added pair-row group accent bar support with edge-case behavior:
@@ -170,7 +182,7 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
     - `src/features/seating-editor/components/GuestPanel.tsx`
     - `PROGRESS.md`
 
-- Implemented Phase 147 remove link icon from compact pair row:
+- Implemented Phase 147-1 remove link icon from compact pair row:
   - removed the left-side link icon from compact linked-guest rows in guest list
   - preserved row behaviors (expand/collapse, drag handling, selection state)
   - this frees horizontal space for long pair names/status chips
@@ -178,7 +190,7 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
     - `src/features/seating-editor/components/GuestPanel.tsx`
     - `PROGRESS.md`
 
-- Implemented Phase 146 confirm dialog click propagation fix:
+- Implemented Phase 146-1 confirm dialog click propagation fix:
   - fixed non-responsive `Cancel` / `Confirm` actions in seat unassign confirmation modal
   - root cause: dialog content click/pointer events were bubbling into parent canvas handlers
   - added event propagation guards on shared `ConfirmDialog` content:
@@ -189,7 +201,7 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
     - `src/components/ui/confirm-dialog.tsx`
     - `PROGRESS.md`
 
-- Implemented Phase 145 draggable compact pair row in guest list:
+- Implemented Phase 145-1 draggable compact pair row in guest list:
   - enabled drag-and-drop directly from the compact pair row card (desktop)
   - pair-row drag now reuses existing guest DnD payload pipeline by sending the first pair member guest id
   - pair-row drag preview now uses the combined pair label
@@ -199,7 +211,7 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
     - `src/features/seating-editor/components/GuestPanel.tsx`
     - `PROGRESS.md`
 
-- Implemented Phase 144 compact linked guests into one row (inline expansion):
+- Implemented Phase 144-1 compact linked guests into one row (inline expansion):
   - refactored guest-list rendering into row model (`single` / `pair`) derived from `guests + relationships`
   - collapsed all valid 2-member relationships (including `plus_one`) into compact pair rows while preserving malformed-data fallback to single rows
   - added pair-row UI with:
@@ -221,6 +233,68 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
     - `src/features/seating-editor/components/GuestPanel.tsx`
     - `src/i18n/messages/en.json`
     - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phases 145-156 Wedding Planner expansion:
+  - Phase 145:
+    - applied backfill migration to create one default `Wedding` + `WeddingEvent` for existing `SeatingPlan` rows with `eventId = NULL`
+    - linked `SeatingPlan.eventId` to generated event ids
+  - Phase 146:
+    - added nullable `Guest.weddingId` relation and backfilled from `Guest.planId -> SeatingPlan.eventId -> WeddingEvent.weddingId`
+  - Phase 147:
+    - added `EventGuest` with `invitationStatus`, `rsvpStatus`, `requiresSeat`, `notes`
+    - backfilled event participation rows for existing guests
+  - Phase 148:
+    - switched seating guest sourcing to event participation eligibility (`requiresSeat=true`, `rsvpStatus != declined`) for key seating endpoints
+    - added event-participation checks in assignment and batch-move APIs
+    - ensured new guests/plus-ones/imported guests are added to `EventGuest` for plan events
+  - Phase 149:
+    - changed seat uniqueness from global guest uniqueness to per-plan uniqueness via `@@unique([planId, guestId])`
+    - updated guest-assignment relation in Prisma (`Guest.assignments[]`) and normalized API responses back to existing `guest.assignment` shape for UI compatibility
+  - Phases 150-151:
+    - added `Household` / `HouseholdMember` models and CRUD/member APIs
+    - added wedding-scoped groups (`WeddingGuestGroup`, `WeddingGuestGroupMember`) and membership APIs
+  - Phases 152-153:
+    - added `Vendor`, `VendorEvent`, `Expense` models
+    - implemented vendor and expense CRUD APIs
+    - added initial wedding module pages (`/weddings`, wedding details, guests, vendors, expenses, event workspace)
+  - Phase 154:
+    - added dashboard API and UI (`/api/weddings/[weddingId]/dashboard`, `/weddings/[weddingId]/dashboard`) for RSVP and budget aggregates
+  - Phase 155:
+    - added CSV v2 endpoints for wedding guests and expenses import/export
+    - preserved old seating CSV flow endpoints for backward compatibility
+  - Phase 156:
+    - hardening pass across schema, migrations, API validation, and build verification
+    - added `Guest.dietaryRestrictions` field and migration
+    - updated home page entrypoint with wedding-flow navigation
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/*` (phases 145-156 migrations)
+    - `src/app/api/weddings/**`
+    - `src/app/weddings/**`
+    - `src/app/api/seating-plans/**` (event-eligibility integration)
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/lib/api-errors.ts`
+    - `src/app/page.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 144 wedding + event schema foundation:
+  - added `WeddingEventType` enum with values: `wedding`, `afterparty`, `bachelor`, `bachelorette`, `other`
+  - added new `Wedding` aggregate model:
+    - fields: `name`, optional `date/timezone/notes`, `currency` default `PLN`, timestamps
+  - added new `WeddingEvent` model:
+    - fields: `weddingId`, `name`, `type`, optional `startsAt/location/notes`, timestamps
+    - relation to `Wedding` with `onDelete: Cascade`
+  - added nullable event relation on `SeatingPlan` for incremental rollout:
+    - `eventId String?`
+    - `event WeddingEvent?` with `onDelete: SetNull`
+    - index `@@index([eventId])`
+  - created and applied migration:
+    - `20260511160130_add_wedding_and_event_foundation`
+  - no runtime/API behavior changes in this phase; schema foundation only
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260511160130_add_wedding_and_event_foundation/migration.sql`
     - `PROGRESS.md`
 
 - Implemented Phase 143 relationship create timeout fix (non-interactive transaction):
@@ -1755,19 +1829,36 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
 
 ## Commands Run
 
-- `corepack pnpm lint` (pass with existing warnings; Phase 148 compact pair row overflow layout and group-accent update)
+- `corepack pnpm lint` (pass with existing warnings; Phase 148-1 compact pair row overflow layout and group-accent update)
 
-- `corepack pnpm lint` (pass with existing warnings; Phase 147 remove link icon from compact pair row)
+- `corepack pnpm lint` (pass with existing warnings; Phase 147-1 remove link icon from compact pair row)
 
-- `corepack pnpm lint` (pass with existing warnings; Phase 146 confirm dialog click propagation fix)
+- `corepack pnpm lint` (pass with existing warnings; Phase 146-1 confirm dialog click propagation fix)
 - `corepack pnpm i18n:audit` (pass; Phase 146 confirm dialog click propagation fix)
 
-- `corepack pnpm lint` (pass with existing warnings; Phase 145 draggable compact pair row in guest list)
+- `corepack pnpm lint` (pass with existing warnings; Phase 145-1 draggable compact pair row in guest list)
 - `corepack pnpm i18n:audit` (pass; Phase 145 draggable compact pair row in guest list)
 
-- `corepack pnpm typecheck` (fail; pre-existing repo errors in `.next/types/validator.ts` unresolved `weddings/*` modules and existing Prisma `GuestInclude.assignment` typing errors; no new Phase 144 type errors in `GuestPanel`)
-- `corepack pnpm lint` (pass with existing warnings; Phase 144 compact linked guests into one row)
-- `corepack pnpm i18n:audit` (pass; Phase 144 compact linked guests into one row)
+- `corepack pnpm typecheck` (fail; pre-existing repo errors in `.next/types/validator.ts` unresolved `weddings/*` modules and existing Prisma `GuestInclude.assignment` typing errors; no new Phase 144-1 type errors in `GuestPanel`)
+- `corepack pnpm lint` (pass with existing warnings; Phase 144-1 compact linked guests into one row)
+- `corepack pnpm i18n:audit` (pass; Phase 144-1 compact linked guests into one row)
+
+- `corepack pnpm prisma migrate dev` (pass; applied manual/backfill migrations in this run)
+- `corepack pnpm prisma migrate deploy` (pass; applied `20260511170000_make_seat_assignment_unique_per_plan`)
+- `corepack pnpm prisma migrate dev --name add_guest_wedding_scope` (pass)
+- `corepack pnpm prisma migrate dev --name add_event_guest_participation` (pass)
+- `corepack pnpm prisma migrate dev --name add_households_wedding_groups_vendors_expenses` (pass)
+- `corepack pnpm prisma migrate dev --name add_guest_dietary_restrictions` (pass)
+- `corepack pnpm prisma generate` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm typecheck` (pass; final)
+- `corepack pnpm lint` (pass with existing warnings + new non-blocking warnings)
+- `corepack pnpm build` (pass; final)
+
+- `corepack pnpm prisma migrate dev --name add_wedding_and_event_foundation` (pass; created/applied migration `20260511160130_add_wedding_and_event_foundation`)
+- `corepack pnpm prisma generate` (pass; Phase 144 wedding + event schema foundation)
+- `corepack pnpm prisma:validate` (pass; Phase 144 wedding + event schema foundation)
+- `corepack pnpm typecheck` (pass; Phase 144 wedding + event schema foundation)
 
 - `corepack pnpm typecheck` (pass; Phase 143 relationship create timeout fix)
 - `corepack pnpm lint` (pass with existing warnings; Phase 143 relationship create timeout fix)
@@ -2119,32 +2210,13 @@ Phase 148 - Compact pair row overflow layout and group-accent update (completed)
 - TypeScript: fail (pre-existing repository issues in `.next/types/validator.ts` missing `weddings/*` files and existing Prisma `GuestInclude.assignment` typing errors in seating-plan API routes).
 - Lint: pass with existing warnings.
 - i18n audit: pass.
+- Prisma migrations: pass (Phases 145-156 migrations applied, including backfills and new domain tables).
+- Prisma client generation: pass.
+- TypeScript: pass.
+- Lint: pass with warnings only (existing historical warnings + new non-blocking `exhaustive-deps` warnings in wedding pages).
+- Build: pass.
 
 ## How To Test
-
-Phase 144 targeted checks:
-
-1. Run `corepack pnpm dev`.
-2. Open `/seating-plans/{id}` and create at least one 2-person relationship (including a `plus_one` pair).
-3. Verify linked pairs render as one compact row with link icon, two avatars, relationship chip, status chip, and chevron.
-4. Click the pair row and verify inline expansion reveals both member subrows.
-5. In expanded subrows, verify existing interactions still work:
-   - click selects guest and opens inspector
-   - desktop drag from subrow starts drag-and-drop
-   - assignment metadata still renders
-6. Verify status chip states:
-   - both unseated -> `Unseated`
-   - both seated at same table -> `Assigned`
-   - mixed or different tables -> `Split`
-7. Verify filters:
-   - `Assigned` includes split pair rows
-   - `Unseated` excludes split pair rows
-   - search/group/table filters include pair rows when either member matches
-8. Verify row counters:
-   - top header counts remain guest-based
-   - list showing count and mobile `x/y` counter use row counts.
-
-Regression checks:
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
@@ -2163,17 +2235,23 @@ Regression checks:
    - verify already seated guests are not moved
    - verify success/info toasts and soft warnings are shown as applicable
 10. Validate warning scenarios:
-   - imbalance between boy/girl
-   - unknown sex used
-   - not enough empty seats
+
+- imbalance between boy/girl
+- unknown sex used
+- not enough empty seats
+
 11. Save/reload plan and verify:
-   - `sex` persists
-   - `plannedTableId` persists
-   - assignments remain consistent
+
+- `sex` persists
+- `plannedTableId` persists
+- assignments remain consistent
+
 12. Re-run keyboard shortcuts and seat swap/unassign flows to confirm no regressions.
 13. Open Plan Settings:
-   - desktop: toolbar `Settings` button
-   - mobile: `More -> Settings`
+
+- desktop: toolbar `Settings` button
+- mobile: `More -> Settings`
+
 14. Change pair-side preference to `Boy left` / `Girl left`, then drag a linked mixed-sex adjacent pair and verify placement follows selected plan preference.
 15. Change preference to `Auto` and verify pair placement returns to default ordering behavior.
 16. On desktop guest panel, verify add-guest row is collapsed by default.
@@ -2221,17 +2299,14 @@ Regression checks:
 - CSV import/export remains backward-compatible and does not yet include `sex` / `plannedTableId` columns.
 - Pair-side preference currently uses seat-number side heuristic (`< target seat` as left, `> target seat` as right), which may not perfectly match visual left/right on all table rotations/layouts.
 - Existing historical i18n keys for the removed drag-time pair toggle remain in `canvas.*` and can be cleaned up in a later i18n tidy phase.
+- `Guest.planId` remains required for legacy compatibility; wedding-level guest creation currently attaches to the earliest seating plan in the wedding if present.
+- Legacy plan-scoped group APIs (`/api/seating-plans/[planId]/groups`) still exist alongside wedding-scoped groups (`/api/weddings/[weddingId]/groups`).
+- Some new wedding pages still report non-blocking `react-hooks/exhaustive-deps` lint warnings.
 
 ## Next Recommended Step
 
 - Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.
 - Add Playwright/manual QA pass for pair-row expansion UX on both desktop and mobile drawer variants.
-- Refine pair-side preference from seat-number heuristic to geometry-aware left/right using actual rendered seat coordinates (including table rotation).
-- Optionally add a second table filter mode for planned table (`plannedTableId`) if you want planning-stage filtering before assignment.
-- Add targeted API tests for:
-  - guest `sex/plannedTableId` validation and plan-ownership checks
-  - assignment-to-planned-table sync
-  - auto-seat endpoint warning cases and assignment behavior.
-- Add optional table-level planning controls (clear planned table / bulk plan selected guests) in desktop UI.
-- Add mobile-first table planning actions (tap-to-plan from guest sheet).
-- Decide if CSV import/export should include `sex` and planned table labels in a backward-compatible optional format.
+- Finalize full domain migration by removing legacy `Guest.planId` dependence and making wedding/event scoping primary everywhere.
+- Add integration/API tests for wedding endpoints (RSVP, household, groups, vendor-event linking, expenses).
+- Incrementally migrate seating UI to consume wedding-scoped group data only and deprecate plan-scoped group endpoints.

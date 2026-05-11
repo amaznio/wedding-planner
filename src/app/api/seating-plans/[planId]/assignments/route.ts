@@ -30,7 +30,15 @@ export async function POST(request: Request, context: RouteContext) {
     const body = await request.json();
     const payload = assignSeatSchema.parse(body);
 
-    const [table, guest] = await Promise.all([
+    const plan = await prisma.seatingPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, eventId: true },
+    });
+    if (!plan) {
+      return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
+    }
+
+    const [table, guest, eventGuest] = await Promise.all([
       prisma.seatingTable.findFirst({
         where: { id: payload.tableId, planId },
         select: { id: true, seatCount: true },
@@ -39,6 +47,21 @@ export async function POST(request: Request, context: RouteContext) {
         where: { id: payload.guestId, planId },
         select: { id: true },
       }),
+      plan.eventId
+        ? prisma.eventGuest.findUnique({
+            where: {
+              eventId_guestId: {
+                eventId: plan.eventId,
+                guestId: payload.guestId,
+              },
+            },
+            select: {
+              id: true,
+              requiresSeat: true,
+              rsvpStatus: true,
+            },
+          })
+        : Promise.resolve(null),
     ]);
 
     if (!table) {
@@ -47,6 +70,27 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (!guest) {
       return NextResponse.json({ error: "Guest not found for plan" }, { status: 404 });
+    }
+
+    if (plan.eventId) {
+      if (!eventGuest) {
+        return NextResponse.json(
+          { error: "Guest is not participating in this plan's event" },
+          { status: 400 },
+        );
+      }
+      if (!eventGuest.requiresSeat) {
+        return NextResponse.json(
+          { error: "Guest is marked as not requiring a seat for this event" },
+          { status: 400 },
+        );
+      }
+      if (eventGuest.rsvpStatus === "declined") {
+        return NextResponse.json(
+          { error: "Guest has declined this event and cannot be seated" },
+          { status: 400 },
+        );
+      }
     }
 
     if (payload.seatNumber > table.seatCount) {

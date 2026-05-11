@@ -56,6 +56,13 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const body = await request.json();
     const payload = createPlusOneSchema.parse(body);
+    const plan = await prisma.seatingPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, eventId: true, event: { select: { weddingId: true } } },
+    });
+    if (!plan) {
+      return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
+    }
 
     const hostGuest = await prisma.guest.findFirst({
       where: {
@@ -96,6 +103,7 @@ export async function POST(request: Request, context: RouteContext) {
       const plusOneGuest = await tx.guest.create({
         data: {
           planId,
+          weddingId: plan.event?.weddingId ?? null,
           name: payload.placeholderName.trim(),
           groupId: null,
           notes: null,
@@ -103,7 +111,11 @@ export async function POST(request: Request, context: RouteContext) {
           plusOneHostGuestId: guestId,
         },
         include: {
-          assignment: true,
+          assignments: {
+            where: { planId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
           group: {
             select: {
               id: true,
@@ -113,6 +125,25 @@ export async function POST(request: Request, context: RouteContext) {
           },
         },
       });
+
+      if (plan.eventId) {
+        await tx.eventGuest.upsert({
+          where: {
+            eventId_guestId: {
+              eventId: plan.eventId,
+              guestId: plusOneGuest.id,
+            },
+          },
+          create: {
+            eventId: plan.eventId,
+            guestId: plusOneGuest.id,
+            invitationStatus: "invited",
+            rsvpStatus: "confirmed",
+            requiresSeat: true,
+          },
+          update: {},
+        });
+      }
 
       const relationship = await tx.seatingRelationship.create({
         data: {
@@ -138,7 +169,10 @@ export async function POST(request: Request, context: RouteContext) {
       });
 
       return {
-        plusOneGuest,
+        plusOneGuest: {
+          ...plusOneGuest,
+          assignment: plusOneGuest.assignments[0] ?? null,
+        },
         relationship: toApiRelationship(relationship),
       };
     });

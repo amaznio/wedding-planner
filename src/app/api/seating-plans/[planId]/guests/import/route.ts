@@ -69,7 +69,13 @@ export async function POST(request: Request, context: RouteContext) {
 
     const existingPlan = await prisma.seatingPlan.findUnique({
       where: { id: planId },
-      select: { id: true },
+      select: {
+        id: true,
+        eventId: true,
+        event: {
+          select: { weddingId: true },
+        },
+      },
     });
 
     if (!existingPlan) {
@@ -125,6 +131,7 @@ export async function POST(request: Request, context: RouteContext) {
           const plusOneGuest = await tx.guest.create({
             data: {
               planId,
+              weddingId: existingPlan.event?.weddingId ?? null,
               name,
               groupId: null,
               notes: null,
@@ -134,6 +141,24 @@ export async function POST(request: Request, context: RouteContext) {
                 : {}),
             },
           });
+          if (existingPlan.eventId) {
+            await tx.eventGuest.upsert({
+              where: {
+                eventId_guestId: {
+                  eventId: existingPlan.eventId,
+                  guestId: plusOneGuest.id,
+                },
+              },
+              create: {
+                eventId: existingPlan.eventId,
+                guestId: plusOneGuest.id,
+                invitationStatus: "invited",
+                rsvpStatus: "confirmed",
+                requiresSeat: true,
+              },
+              update: {},
+            });
+          }
           createdGuestIds.push(plusOneGuest.id);
           createdPlusOnes += 1;
 
@@ -171,12 +196,31 @@ export async function POST(request: Request, context: RouteContext) {
         const createdGuest = await tx.guest.create({
           data: {
             planId,
+            weddingId: existingPlan.event?.weddingId ?? null,
             name,
             groupId: null,
             notes: null,
           },
           select: { id: true },
         });
+        if (existingPlan.eventId) {
+          await tx.eventGuest.upsert({
+            where: {
+              eventId_guestId: {
+                eventId: existingPlan.eventId,
+                guestId: createdGuest.id,
+              },
+            },
+            create: {
+              eventId: existingPlan.eventId,
+              guestId: createdGuest.id,
+              invitationStatus: "invited",
+              rsvpStatus: "confirmed",
+              requiresSeat: true,
+            },
+            update: {},
+          });
+        }
 
         createdGuestIds.push(createdGuest.id);
         lastCreatedHostGuestId = createdGuest.id;
@@ -201,7 +245,11 @@ export async function POST(request: Request, context: RouteContext) {
         ? prisma.guest.findMany({
             where: { id: { in: importResult.createdGuestIds } },
             include: {
-              assignment: true,
+              assignments: {
+                where: { planId },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+              },
               group: {
                 select: {
                   id: true,
@@ -229,7 +277,10 @@ export async function POST(request: Request, context: RouteContext) {
 
     return NextResponse.json(
       {
-        guests: createdGuests,
+        guests: createdGuests.map(({ assignments, ...guest }) => ({
+          ...guest,
+          assignment: assignments[0] ?? null,
+        })),
         relationships: createdRelationshipsRaw.map((relationship) =>
           toApiRelationship(relationship),
         ),

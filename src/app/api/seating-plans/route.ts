@@ -14,8 +14,12 @@ function validationErrorResponse(error: ZodError) {
   );
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const eventId = searchParams.get("eventId");
+
   const plans = await prisma.seatingPlan.findMany({
+    where: eventId ? { eventId } : undefined,
     include: {
       tables: {
         orderBy: { createdAt: "asc" },
@@ -32,8 +36,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const payload = createSeatingPlanSchema.parse(body);
 
+    if (payload.eventId) {
+      const event = await prisma.weddingEvent.findUnique({
+        where: { id: payload.eventId },
+        select: { id: true },
+      });
+      if (!event) {
+        return NextResponse.json({ error: "Wedding event not found" }, { status: 400 });
+      }
+    }
+
     const plan = await prisma.seatingPlan.create({
       data: {
+        eventId: payload.eventId,
         name: payload.name,
         width: payload.width,
         height: payload.height,

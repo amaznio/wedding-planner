@@ -21,20 +21,70 @@ function validationErrorResponse(error: ZodError) {
 export async function GET(_: Request, context: RouteContext) {
   const { planId } = await context.params;
 
-  const guests = await prisma.guest.findMany({
-    where: { planId },
-    include: {
-      assignment: true,
-      group: {
-        select: {
-          id: true,
-          name: true,
-          color: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" },
+  const plan = await prisma.seatingPlan.findUnique({
+    where: { id: planId },
+    select: { id: true, eventId: true },
   });
+
+  if (!plan) {
+    return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
+  }
+
+  const guestsRaw = plan.eventId
+    ? (
+        await prisma.eventGuest.findMany({
+          where: {
+            eventId: plan.eventId,
+            requiresSeat: true,
+            rsvpStatus: { not: "declined" },
+            guest: {
+              planId,
+            },
+          },
+          include: {
+            guest: {
+              include: {
+                assignments: {
+                  where: { planId },
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                },
+                group: {
+                  select: {
+                    id: true,
+                    name: true,
+                    color: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      ).map((item) => item.guest)
+    : await prisma.guest.findMany({
+        where: { planId },
+        include: {
+          assignments: {
+            where: { planId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+          group: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+  const guests = guestsRaw.map(({ assignments, ...guest }) => ({
+    ...guest,
+    assignment: assignments[0] ?? null,
+  }));
 
   return NextResponse.json({ guests });
 }
@@ -48,7 +98,13 @@ export async function POST(request: Request, context: RouteContext) {
 
     const existingPlan = await prisma.seatingPlan.findUnique({
       where: { id: planId },
-      select: { id: true },
+      select: {
+        id: true,
+        eventId: true,
+        event: {
+          select: { weddingId: true },
+        },
+      },
     });
 
     if (!existingPlan) {
@@ -88,25 +144,56 @@ export async function POST(request: Request, context: RouteContext) {
       }
     }
 
-    const guest = await prisma.guest.create({
-      data: {
-        planId,
-        name: payload.name,
-        sex: payload.sex,
-        groupId: payload.groupId ?? null,
-        plannedTableId: payload.plannedTableId ?? null,
-        notes: payload.notes,
-      },
-      include: {
-        assignment: true,
-        group: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
+    const guest = await prisma.$transaction(async (tx) => {
+      const createdGuest = await tx.guest.create({
+        data: {
+          planId,
+          weddingId: existingPlan.event?.weddingId ?? null,
+          name: payload.name,
+          sex: payload.sex,
+          groupId: payload.groupId ?? null,
+          plannedTableId: payload.plannedTableId ?? null,
+          notes: payload.notes,
+        },
+        include: {
+          assignments: {
+            where: { planId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+          group: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
           },
         },
-      },
+      });
+
+      if (existingPlan.eventId) {
+        await tx.eventGuest.upsert({
+          where: {
+            eventId_guestId: {
+              eventId: existingPlan.eventId,
+              guestId: createdGuest.id,
+            },
+          },
+          create: {
+            eventId: existingPlan.eventId,
+            guestId: createdGuest.id,
+            invitationStatus: "invited",
+            rsvpStatus: "confirmed",
+            requiresSeat: true,
+          },
+          update: {},
+        });
+      }
+
+      return {
+        ...createdGuest,
+        assignment: createdGuest.assignments[0] ?? null,
+      };
     });
 
     return NextResponse.json({ guest }, { status: 201 });

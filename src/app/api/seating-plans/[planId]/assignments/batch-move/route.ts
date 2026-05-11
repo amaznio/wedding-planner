@@ -29,6 +29,13 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const body = await request.json();
     const payload = batchMoveAssignmentsSchema.parse(body);
+    const plan = await prisma.seatingPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, eventId: true },
+    });
+    if (!plan) {
+      return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
+    }
 
     if (!payload.moveTogetherEnabled) {
       return NextResponse.json(
@@ -67,7 +74,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const [guests, tables, currentAssignments] = await Promise.all([
+    const [guests, tables, currentAssignments, eventGuests] = await Promise.all([
       prisma.guest.findMany({
         where: {
           id: { in: plannedGuestIds },
@@ -86,11 +93,29 @@ export async function POST(request: Request, context: RouteContext) {
         where: { planId },
         select: { guestId: true, tableId: true, seatNumber: true },
       }),
+      plan.eventId
+        ? prisma.eventGuest.findMany({
+            where: {
+              eventId: plan.eventId,
+              guestId: { in: plannedGuestIds },
+              requiresSeat: true,
+              rsvpStatus: { not: "declined" },
+            },
+            select: { guestId: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     if (guests.length !== plannedGuestIds.length) {
       return NextResponse.json(
         { error: "One or more planned guests do not belong to this plan" },
+        { status: 400 },
+      );
+    }
+
+    if (plan.eventId && eventGuests.length !== plannedGuestIds.length) {
+      return NextResponse.json(
+        { error: "One or more planned guests are not seat-eligible for this event" },
         { status: 400 },
       );
     }

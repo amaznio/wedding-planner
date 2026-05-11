@@ -12,8 +12,88 @@ enum GuestSex {
   unknown
 }
 
+enum WeddingEventType {
+  wedding
+  afterparty
+  bachelor
+  bachelorette
+  other
+}
+
+enum EventInvitationStatus {
+  not_invited
+  invited
+}
+
+enum EventRsvpStatus {
+  unknown
+  confirmed
+  declined
+  maybe
+}
+
+enum HouseholdMemberRole {
+  adult
+  child
+}
+
+enum VendorPaymentStatus {
+  not_started
+  partial
+  paid
+  canceled
+}
+
+enum ExpenseStatus {
+  planned
+  committed
+  paid
+  reimbursed
+  canceled
+}
+
+model Wedding {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime?
+  timezone  String?
+  currency  String   @default("PLN")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events WeddingEvent[]
+  guests Guest[]
+  households Household[]
+  guestGroups WeddingGuestGroup[]
+  vendors Vendor[]
+  expenses Expense[]
+}
+
+model WeddingEvent {
+  id        String           @id @default(cuid())
+  weddingId String
+  wedding   Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name      String
+  type      WeddingEventType @default(wedding)
+  startsAt  DateTime?
+  location  String?
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  seatingPlans SeatingPlan[]
+  eventGuests  EventGuest[]
+  vendorEvents VendorEvent[]
+  expenses Expense[]
+
+  @@index([weddingId])
+}
+
 model SeatingPlan {
   id        String   @id @default(cuid())
+  eventId   String?
+  event     WeddingEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
   name      String
   width     Int      @default(1600)
   height    Int      @default(1000)
@@ -26,6 +106,8 @@ model SeatingPlan {
   guests       Guest[]
   assignments  SeatAssignment[]
   relationships SeatingRelationship[]
+
+  @@index([eventId])
 }
 
 model SeatingTable {
@@ -54,12 +136,15 @@ model Guest {
   id        String      @id @default(cuid())
   planId    String
   plan      SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  weddingId String?
+  wedding   Wedding?    @relation(fields: [weddingId], references: [id], onDelete: SetNull)
   name      String
   sex       GuestSex    @default(unknown)
   groupId   String?
   group     SeatingGuestGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   plannedTableId String?
   plannedTable SeatingTable? @relation("PlannedTableGuests", fields: [plannedTableId], references: [id], onDelete: SetNull)
+  dietaryRestrictions String?
   notes     String?
   isPlaceholderPlusOne Boolean @default(false)
   plusOneHostGuestId String?
@@ -68,13 +153,160 @@ model Guest {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  assignment SeatAssignment?
+  assignments SeatAssignment[]
   relationshipMembers SeatingRelationshipMember[]
+  eventGuests EventGuest[]
+  householdMembership HouseholdMember?
+  weddingGroupMemberships WeddingGuestGroupMember[]
 
   @@index([planId])
+  @@index([weddingId])
   @@index([groupId])
   @@index([plannedTableId])
   @@index([plusOneHostGuestId])
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  weddingId String
+  wedding   Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members HouseholdMember[]
+
+  @@index([weddingId])
+}
+
+model HouseholdMember {
+  id          String              @id @default(cuid())
+  householdId String
+  household   Household           @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  guestId     String
+  guest       Guest               @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  role        HouseholdMemberRole @default(adult)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([householdId, guestId])
+  @@unique([guestId])
+  @@index([householdId])
+  @@index([guestId])
+}
+
+model WeddingGuestGroup {
+  id             String   @id @default(cuid())
+  weddingId      String
+  wedding        Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name           String
+  nameNormalized String
+  color          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships WeddingGuestGroupMember[]
+
+  @@index([weddingId])
+  @@unique([weddingId, nameNormalized])
+}
+
+model WeddingGuestGroupMember {
+  id        String           @id @default(cuid())
+  groupId   String
+  group     WeddingGuestGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  guestId   String
+  guest     Guest            @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([groupId, guestId])
+  @@index([groupId])
+  @@index([guestId])
+}
+
+model Vendor {
+  id             String             @id @default(cuid())
+  weddingId      String
+  wedding        Wedding            @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name           String
+  contactName    String?
+  contactEmail   String?
+  contactPhone   String?
+  notes          String?
+  totalCostMinor Int                @default(0)
+  depositMinor   Int                @default(0)
+  amountPaidMinor Int               @default(0)
+  paymentStatus  VendorPaymentStatus @default(not_started)
+  dueDate        DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  vendorEvents VendorEvent[]
+  expenses Expense[]
+
+  @@index([weddingId])
+}
+
+model VendorEvent {
+  id        String      @id @default(cuid())
+  vendorId  String
+  vendor    Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     WeddingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([vendorId, eventId])
+  @@index([vendorId])
+  @@index([eventId])
+}
+
+model Expense {
+  id         String       @id @default(cuid())
+  weddingId  String
+  wedding    Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  eventId    String?
+  event      WeddingEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  vendorId   String?
+  vendor     Vendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  title      String
+  category   String
+  amountMinor Int
+  currency   String       @default("PLN")
+  incurredAt DateTime     @default(now())
+  paidBy     String?
+  notes      String?
+  status     ExpenseStatus @default(planned)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([weddingId])
+  @@index([eventId])
+  @@index([vendorId])
+  @@index([category])
+  @@index([status])
+}
+
+model EventGuest {
+  id               String                @id @default(cuid())
+  eventId          String
+  event            WeddingEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guestId          String
+  guest            Guest                 @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  invitationStatus EventInvitationStatus @default(invited)
+  rsvpStatus       EventRsvpStatus       @default(confirmed)
+  requiresSeat     Boolean               @default(true)
+  notes            String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@unique([eventId, guestId])
+  @@index([eventId])
+  @@index([guestId])
+  @@index([requiresSeat])
+  @@index([rsvpStatus])
 }
 
 model SeatingGuestGroup {
@@ -132,12 +364,13 @@ model SeatAssignment {
   plan       SeatingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   tableId    String
   table      SeatingTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  guestId    String      @unique
+  guestId    String
   guest      Guest       @relation(fields: [guestId], references: [id], onDelete: Cascade)
   seatNumber Int
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
+  @@unique([planId, guestId])
   @@unique([planId, tableId, seatNumber])
   @@index([planId])
   @@index([tableId])

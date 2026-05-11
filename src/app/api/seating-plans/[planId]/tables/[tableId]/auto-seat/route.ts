@@ -90,6 +90,11 @@ export async function POST(request: Request, context: RouteContext) {
         planId: true,
         label: true,
         seatCount: true,
+        plan: {
+          select: {
+            eventId: true,
+          },
+        },
       },
     });
     if (!table) {
@@ -99,7 +104,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const [tableAssignments, plannedGuests] = await Promise.all([
+    const [tableAssignments, plannedGuestsRaw] = await Promise.all([
       prisma.seatAssignment.findMany({
         where: {
           planId,
@@ -111,9 +116,24 @@ export async function POST(request: Request, context: RouteContext) {
         where: {
           planId,
           plannedTableId: tableId,
+          ...(table.plan.eventId
+            ? {
+                eventGuests: {
+                  some: {
+                    eventId: table.plan.eventId,
+                    requiresSeat: true,
+                    rsvpStatus: { not: "declined" },
+                  },
+                },
+              }
+            : {}),
         },
         include: {
-          assignment: true,
+          assignments: {
+            where: { planId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
           group: {
             select: {
               id: true,
@@ -125,6 +145,10 @@ export async function POST(request: Request, context: RouteContext) {
         orderBy: { createdAt: "asc" },
       }),
     ]);
+    const plannedGuests = plannedGuestsRaw.map(({ assignments, ...guest }) => ({
+      ...guest,
+      assignment: assignments[0] ?? null,
+    }));
 
     const warnings: string[] = [];
     if (plannedGuests.length > table.seatCount) {
@@ -203,13 +227,17 @@ export async function POST(request: Request, context: RouteContext) {
       return createdRows;
     });
 
-    const [affectedGuests, updatedTableAssignments] = await Promise.all([
+    const [affectedGuestsRaw, updatedTableAssignments] = await Promise.all([
       prisma.guest.findMany({
         where: {
           id: { in: plannedAssignments.map((item) => item.guestId) },
         },
         include: {
-          assignment: true,
+          assignments: {
+            where: { planId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
           group: {
             select: {
               id: true,
@@ -227,6 +255,10 @@ export async function POST(request: Request, context: RouteContext) {
         orderBy: { seatNumber: "asc" },
       }),
     ]);
+    const affectedGuests = affectedGuestsRaw.map(({ assignments, ...guest }) => ({
+      ...guest,
+      assignment: assignments[0] ?? null,
+    }));
 
     return NextResponse.json(
       {
@@ -248,4 +280,3 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Failed to auto-seat table" }, { status: 500 });
   }
 }
-

@@ -17,6 +17,7 @@ const tableSchema = z.object({
 
 export const createSeatingPlanSchema = z.object({
   name: z.string().min(1).max(120),
+  eventId: z.string().min(1).optional(),
   width: z.int().positive().max(10000).default(1600),
   height: z.int().positive().max(10000).default(1000),
   pairSidePreference: pairSidePreferenceSchema.default("auto"),

@@ -80,7 +80,11 @@ export async function PATCH(request: Request, context: RouteContext) {
         notes: payload.notes,
       },
       include: {
-        assignment: true,
+        assignments: {
+          where: { planId },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
         group: {
           select: {
             id: true,
@@ -91,7 +95,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       },
     });
 
-    return NextResponse.json({ guest: updatedGuest });
+    return NextResponse.json({
+      guest: {
+        ...updatedGuest,
+        assignment: updatedGuest.assignments[0] ?? null,
+      },
+    });
   } catch (error) {
     if (error instanceof ZodError) {
       return validationErrorResponse(error);
