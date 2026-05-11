@@ -12,8 +12,8 @@ import {
 
 import {
   DEFAULT_LOCALE,
+  LOCALE_COOKIE_KEY,
   LOCALE_STORAGE_KEY,
-  normalizeLocale,
   type Locale,
 } from "./config";
 import { getMessageValue, interpolate, messagesByLocale } from "./messages";
@@ -26,11 +26,14 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return DEFAULT_LOCALE;
-    return normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-  });
+export function I18nProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -42,6 +45,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(nextLocale);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+      document.cookie = `${LOCALE_COOKIE_KEY}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
       document.documentElement.lang = nextLocale;
     }
   }, []);

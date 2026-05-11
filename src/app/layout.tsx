@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { Toaster } from "@/components/ui/toaster";
+import { normalizeLocale, LOCALE_COOKIE_KEY } from "@/i18n/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,18 +21,21 @@ export const metadata: Metadata = {
   description: "A simple tool to help plan wedding seating arrangements.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_KEY)?.value);
+
   return (
     <html
-      lang="en"
+      lang={initialLocale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white">
-        <AppProviders>
+        <AppProviders initialLocale={initialLocale}>
           {children}
           <Toaster />
         </AppProviders>

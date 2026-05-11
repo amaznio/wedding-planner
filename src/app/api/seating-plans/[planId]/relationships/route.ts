@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 
 import { createRelationshipSchema } from "@/features/seating-editor/schemas/relationship.schema";
@@ -76,16 +77,31 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { planId } = await context.params;
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
 
   try {
     const body = await request.json();
     const payload = createRelationshipSchema.parse(body);
+    console.info("[relationships.create] received", {
+      requestId,
+      planId,
+      type: payload.type,
+      guestIdsCount: payload.guestIds.length,
+      preferredSeating: payload.preferredSeating,
+      moveTogetherDefault: payload.moveTogetherDefault,
+      strict: payload.strict,
+    });
 
     const existingPlan = await prisma.seatingPlan.findUnique({
       where: { id: planId },
       select: { id: true },
     });
     if (!existingPlan) {
+      console.warn("[relationships.create] plan_not_found", {
+        requestId,
+        planId,
+      });
       return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
     }
 
@@ -97,6 +113,12 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (guests.length !== payload.guestIds.length) {
+      console.warn("[relationships.create] guests_missing", {
+        requestId,
+        planId,
+        payloadGuestIdsCount: payload.guestIds.length,
+        fetchedGuestsCount: guests.length,
+      });
       return NextResponse.json(
         { error: "One or more guests do not exist" },
         { status: 400 },
@@ -105,35 +127,28 @@ export async function POST(request: Request, context: RouteContext) {
 
     const hasCrossPlanGuest = guests.some((guest) => guest.planId !== planId);
     if (hasCrossPlanGuest) {
+      console.warn("[relationships.create] cross_plan_guest_detected", {
+        requestId,
+        planId,
+      });
       return NextResponse.json(
         { error: "All guests in a relationship must belong to this plan" },
         { status: 400 },
       );
     }
 
-    const relationship = await prisma.$transaction(async (tx) => {
-      const membershipsToReplace = await tx.seatingRelationshipMember.findMany({
+    const [deletedRelationships, relationship] = await prisma.$transaction([
+      prisma.seatingRelationship.deleteMany({
         where: {
-          guestId: { in: payload.guestIds },
-          relationship: { planId },
-        },
-        select: { relationshipId: true },
-      });
-
-      const relationshipIdsToReplace = Array.from(
-        new Set(membershipsToReplace.map((member) => member.relationshipId)),
-      );
-
-      if (relationshipIdsToReplace.length > 0) {
-        await tx.seatingRelationship.deleteMany({
-          where: {
-            id: { in: relationshipIdsToReplace },
-            planId,
+          planId,
+          members: {
+            some: {
+              guestId: { in: payload.guestIds },
+            },
           },
-        });
-      }
-
-      return tx.seatingRelationship.create({
+        },
+      }),
+      prisma.seatingRelationship.create({
         data: {
           planId,
           type: payload.type,
@@ -154,7 +169,14 @@ export async function POST(request: Request, context: RouteContext) {
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           },
         },
-      });
+      }),
+    ]);
+    console.info("[relationships.create] success", {
+      requestId,
+      planId,
+      relationshipId: relationship.id,
+      deletedRelationshipsCount: deletedRelationships.count,
+      durationMs: Date.now() - startedAt,
     });
 
     return NextResponse.json(
@@ -163,7 +185,37 @@ export async function POST(request: Request, context: RouteContext) {
     );
   } catch (error) {
     if (error instanceof ZodError) {
+      console.warn("[relationships.create] validation_error", {
+        requestId,
+        planId,
+        durationMs: Date.now() - startedAt,
+        issues: error.issues,
+      });
       return validationErrorResponse(error);
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("[relationships.create] prisma_known_error", {
+        requestId,
+        planId,
+        durationMs: Date.now() - startedAt,
+        code: error.code,
+        meta: error.meta,
+        message: error.message,
+      });
+    } else {
+      console.error("[relationships.create] unexpected_error", {
+        requestId,
+        planId,
+        durationMs: Date.now() - startedAt,
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : String(error),
+      });
     }
 
     return NextResponse.json(

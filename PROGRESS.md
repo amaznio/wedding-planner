@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 138 - Linking form default preset update (completed)
+Phase 143 - Relationship create timeout fix (non-interactive transaction) (completed)
 
 ## Completed Phases
 
@@ -144,9 +144,76 @@ Phase 138 - Linking form default preset update (completed)
 - Phase 136 - Linked guest propagation on table-drop planning
 - Phase 137 - Start-link runtime loop fix
 - Phase 138 - Linking form default preset update
+- Phase 139 - Left-panel start-link shortcut on guest rows
+- Phase 140 - Link action overflow fix via tooltip
+- Phase 141 - Locale hydration mismatch fix (cookie-backed SSR locale)
+- Phase 142 - Relationship create endpoint diagnostic logging
+- Phase 143 - Relationship create timeout fix (non-interactive transaction)
 
 
 ## Completed Work
+
+- Implemented Phase 143 relationship create timeout fix (non-interactive transaction):
+  - fixed `P2028` interactive transaction timeout on relationship create (`commit` expired transaction)
+  - replaced interactive callback transaction with batched non-interactive `$transaction([...])` operations:
+    - `deleteMany` existing plan relationships touching selected guests
+    - `create` new relationship + members
+  - preserved atomicity and replacement semantics while avoiding interactive transaction timeout window
+  - extended success log with `deletedRelationshipsCount` for easier runtime diagnostics
+  - files changed:
+    - `src/app/api/seating-plans/[planId]/relationships/route.ts`
+    - `PROGRESS.md`
+
+- Implemented Phase 142 relationship create endpoint diagnostic logging:
+  - added structured logs to `POST /api/seating-plans/[planId]/relationships` to diagnose 500 failures
+  - logging now includes:
+    - request correlation id (`requestId`)
+    - payload summary (type, guest count, seating flags)
+    - branch outcomes (`plan_not_found`, `guests_missing`, `cross_plan_guest_detected`)
+    - success log with created relationship id and total duration
+    - validation failure details (`Zod` issues)
+    - Prisma known error details (`code`, `meta`, message)
+    - fallback unexpected error details (`name`, message, stack)
+  - files changed:
+    - `src/app/api/seating-plans/[planId]/relationships/route.ts`
+    - `PROGRESS.md`
+
+- Implemented Phase 141 locale hydration mismatch fix (cookie-backed SSR locale):
+  - resolved hydration mismatch between server-rendered `en` text and client-rendered `pl` text in i18n-dependent UI
+  - switched i18n initialization to deterministic server/client startup locale:
+    - `RootLayout` now reads locale from request cookies via `cookies()` and passes it into providers
+    - `I18nProvider` now initializes from explicit `initialLocale` prop instead of reading `localStorage` during bootstrap
+  - kept locale persistence on client updates:
+    - `setLocale` now writes both `localStorage` and locale cookie (1 year, `path=/`, `samesite=lax`)
+  - synchronized document language attribute:
+    - `<html lang={initialLocale}>` in layout
+    - provider continues to update `document.documentElement.lang` on locale changes
+  - files changed:
+    - `src/i18n/config.ts`
+    - `src/i18n/provider.tsx`
+    - `src/components/providers/AppProviders.tsx`
+    - `src/app/layout.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 140 link action overflow fix via tooltip:
+  - compacted guest-row `Link` action to icon-only to prevent horizontal overflow in narrow list widths
+  - moved visible action text into tooltip content (`Połącz`) while keeping accessible `aria-label`
+  - preserved the same click behavior for starting linking mode
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 139 left-panel start-link shortcut on guest rows:
+  - added a direct `Link` action button on guest rows in `GuestPanel` to start linking without using the right inspector first
+  - shortcut behavior:
+    - clears current guest selection (hides inspector focus)
+    - initializes linking mode with the clicked guest as source
+  - button is shown only when:
+    - linking mode is not already active
+    - the guest currently has no relationships (matches existing inspector gating)
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 138 linking form default preset update:
   - updated linking form defaults in `GuestPanel` to:
@@ -1338,6 +1405,24 @@ Phase 138 - Linking form default preset update (completed)
 
 ## Files Changed
 
+- `src/app/api/seating-plans/[planId]/relationships/route.ts`
+- `PROGRESS.md`
+
+- `src/app/api/seating-plans/[planId]/relationships/route.ts`
+- `PROGRESS.md`
+
+- `src/i18n/config.ts`
+- `src/i18n/provider.tsx`
+- `src/components/providers/AppProviders.tsx`
+- `src/app/layout.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `PROGRESS.md`
 
@@ -1599,6 +1684,21 @@ Phase 138 - Linking form default preset update (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; Phase 143 relationship create timeout fix)
+- `corepack pnpm lint` (pass with existing warnings; Phase 143 relationship create timeout fix)
+
+- `corepack pnpm typecheck` (pass; Phase 142 relationship create endpoint diagnostic logging)
+- `corepack pnpm lint` (pass with existing warnings; Phase 142 relationship create endpoint diagnostic logging)
+
+- `corepack pnpm typecheck` (pass; Phase 141 locale hydration mismatch fix)
+- `corepack pnpm lint` (pass with existing warnings; Phase 141 locale hydration mismatch fix)
+
+- `corepack pnpm typecheck` (pass; Phase 140 link action overflow fix via tooltip)
+- `corepack pnpm lint` (pass with existing warnings; Phase 140 link action overflow fix via tooltip)
+
+- `corepack pnpm typecheck` (pass; Phase 139 left-panel start-link shortcut on guest rows)
+- `corepack pnpm lint` (pass with existing warnings; Phase 139 left-panel start-link shortcut on guest rows)
 
 - `corepack pnpm typecheck` (pass; Phase 138 linking form default preset update)
 - `corepack pnpm lint` (pass with existing warnings; Phase 138 linking form default preset update)

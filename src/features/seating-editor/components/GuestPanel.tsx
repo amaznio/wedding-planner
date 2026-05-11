@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Download,
   Ellipsis,
+  Link2,
   Plus,
   Settings,
   Shapes,
@@ -576,6 +577,7 @@ export function GuestPanel({
                   selectedRelationshipGuestIds.includes(guest.id);
                 const isSelectedGuestRow = selectedGuestId === guest.id;
                 const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
+                const canStartLinking = !isLinkingMode && guestRelationships.length === 0;
 
                 return (
                   <li key={guest.id}>
@@ -649,6 +651,30 @@ export function GuestPanel({
                           ) : null}
                         </div>
                       </button>
+                      {canStartLinking ? (
+                        <TooltipProvider delayDuration={250}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="size-8 shrink-0 p-0"
+                                aria-label={t("guestPanel.startLinking")}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onSelectGuest(null);
+                                  onGuestSelected?.(null);
+                                  setSelectedRelationshipGuestIds([guest.id]);
+                                }}
+                              >
+                                <Link2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("guestPanel.link")}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : null}
                     </div>
                   </li>
                 );
