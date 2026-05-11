@@ -1,14 +1,20 @@
 import { z } from "zod";
 
+export const guestSexSchema = z.enum(["male", "female", "unknown"]);
+
 export const createGuestSchema = z.object({
   name: z.string().min(1).max(120),
+  sex: guestSexSchema.default("unknown"),
   groupId: z.string().min(1).optional(),
+  plannedTableId: z.string().min(1).nullable().optional(),
   notes: z.string().max(500).optional(),
 });
 
 export const updateGuestSchema = z.object({
   name: z.string().min(1).max(120).optional(),
+  sex: guestSexSchema.optional(),
   groupId: z.string().min(1).nullable().optional(),
+  plannedTableId: z.string().min(1).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
 });
 

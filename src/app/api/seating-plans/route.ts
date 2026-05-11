@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         name: payload.name,
         width: payload.width,
         height: payload.height,
+        pairSidePreference: payload.pairSidePreference,
       },
       include: {
         tables: true,

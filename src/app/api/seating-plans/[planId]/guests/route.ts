@@ -71,12 +71,30 @@ export async function POST(request: Request, context: RouteContext) {
         );
       }
     }
+    if (payload.plannedTableId) {
+      const table = await prisma.seatingTable.findFirst({
+        where: {
+          id: payload.plannedTableId,
+          planId,
+        },
+        select: { id: true },
+      });
+
+      if (!table) {
+        return NextResponse.json(
+          { error: "Table does not exist for this seating plan" },
+          { status: 400 },
+        );
+      }
+    }
 
     const guest = await prisma.guest.create({
       data: {
         planId,
         name: payload.name,
+        sex: payload.sex,
         groupId: payload.groupId ?? null,
+        plannedTableId: payload.plannedTableId ?? null,
         notes: payload.notes,
       },
       include: {

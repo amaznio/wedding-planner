@@ -1,5 +1,6 @@
 export type SeatingTableType = "rectangle";
 export type RectangleSeatLayout = "balanced" | "top-only" | "bottom-only";
+export type PlanPairSidePreference = "auto" | "male-left" | "female-left";
 
 export type SeatingTable = {
   id: string;
@@ -17,5 +18,6 @@ export type SeatingPlan = {
   name: string;
   width: number;
   height: number;
+  pairSidePreference: PlanPairSidePreference;
   tables: SeatingTable[];
 };

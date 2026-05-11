@@ -53,12 +53,30 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
     }
+    if (payload.plannedTableId !== undefined && payload.plannedTableId !== null) {
+      const table = await prisma.seatingTable.findFirst({
+        where: {
+          id: payload.plannedTableId,
+          planId,
+        },
+        select: { id: true },
+      });
+
+      if (!table) {
+        return NextResponse.json(
+          { error: "Table does not exist for this seating plan" },
+          { status: 400 },
+        );
+      }
+    }
 
     const updatedGuest = await prisma.guest.update({
       where: { id: guestId },
       data: {
         name: payload.name,
+        sex: payload.sex,
         groupId: payload.groupId,
+        plannedTableId: payload.plannedTableId,
         notes: payload.notes,
       },
       include: {

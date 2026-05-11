@@ -18,6 +18,7 @@ import { useI18n } from "@/i18n/provider";
 import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
+  type PairSidePreference,
 } from "../lib/group-move";
 import { resolveEffectiveGuestGroup } from "../lib/guest-group";
 import { getSeatPositions } from "../lib/seat-positioning";
@@ -50,6 +51,8 @@ type SeatingCanvasProps = {
   guests?: Array<{
     id: string;
     name: string;
+    sex: "male" | "female" | "unknown";
+    plannedTableId: string | null;
     plusOneHostGuestId?: string | null;
     group: {
       id: string;
@@ -81,6 +84,8 @@ type SeatingCanvasProps = {
     seatNumber: number,
     guestId: string,
   ) => Promise<void> | void;
+  onGuestDropToTable?: (tableId: string, guestId: string) => Promise<void> | void;
+  pairSidePreference?: PairSidePreference;
   relationshipsByGuestId?: Record<string, SeatingRelationship[]>;
 };
 
@@ -116,6 +121,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
   onGuestDropToSeat,
+  onGuestDropToTable,
+  pairSidePreference,
   relationshipsByGuestId = {},
 }, ref) {
   const { t } = useI18n();
@@ -166,6 +173,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const [seatMenuGuestFilter, setSeatMenuGuestFilter] = useState<"all" | "unseated" | "assigned">(
     "unseated",
   );
+  const [seatMenuShowAllGuests, setSeatMenuShowAllGuests] = useState(false);
   const [seatMenuQuery, setSeatMenuQuery] = useState("");
   const [isSeatUnassignConfirmOpen, setIsSeatUnassignConfirmOpen] = useState(false);
   const [conflictSeat, setConflictSeat] = useState<{
@@ -176,6 +184,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     tableId: string;
     seatNumber: number;
   } | null>(null);
+  const [dragHoverTableId, setDragHoverTableId] = useState<string | null>(null);
   const [linkedDragPreviewSeatsByTable, setLinkedDragPreviewSeatsByTable] = useState<
     Record<string, number[]>
   >({});
@@ -494,6 +503,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     setSeatMenuError(null);
     setConflictSeat(null);
     setSeatMenuGuestFilter(guests.some((guest) => guest.assignment === null) ? "unseated" : "all");
+    setSeatMenuShowAllGuests(false);
     setSeatMenuQuery("");
     setSeatMenu({ tableId, seatNumber, x, y });
     onSelectSeat?.(tableId, seatNumber);
@@ -506,8 +516,15 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
   }, [guests]);
   const seatMenuGuests = useMemo(() => {
+    if (!seatMenu) return [];
     const query = seatMenuQuery.trim().toLowerCase();
     const filtered = guests.filter((guest) => {
+      const isCurrentSeatOccupant = menuSeatAssignment?.guestId === guest.id;
+      const matchesPlannedTable =
+        guest.plannedTableId === seatMenu.tableId || isCurrentSeatOccupant;
+      const inPool = seatMenuShowAllGuests ? true : matchesPlannedTable;
+      if (!inPool) return false;
+
       const matchesFilter =
         seatMenuGuestFilter === "assigned"
           ? guest.assignment !== null
@@ -534,10 +551,11 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     }
 
     return filtered.sort((a, b) => byName(a.name, b.name));
-  }, [guests, seatMenuGuestFilter, seatMenuQuery]);
+  }, [guests, menuSeatAssignment?.guestId, seatMenu, seatMenuGuestFilter, seatMenuQuery, seatMenuShowAllGuests]);
   const closeSeatMenu = () => {
     setSeatMenu(null);
     setIsSeatUnassignConfirmOpen(false);
+    setSeatMenuShowAllGuests(false);
   };
   const handleSeatMenuAssign = async (guestId: string | null) => {
     if (!seatMenu) return;
@@ -634,6 +652,22 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
         placeholder={t("guestPanel.searchPlaceholder")}
         className="mb-2 h-8 text-xs"
       />
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[11px] text-zinc-500">
+          {seatMenuShowAllGuests
+            ? t("canvas.showingAllGuests")
+            : t("canvas.showingPlannedGuests")}
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-6 px-2 text-[10px]"
+          onClick={() => setSeatMenuShowAllGuests((current) => !current)}
+        >
+          {seatMenuShowAllGuests ? t("canvas.showPlannedOnly") : t("canvas.showAllGuests")}
+        </Button>
+      </div>
       <div
         className="mb-2 max-h-64 overflow-auto overscroll-contain rounded-lg border border-zinc-200 bg-white/60"
         onWheelCapture={(event) => event.stopPropagation()}
@@ -713,7 +747,18 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           );
         })}
         {seatMenuGuests.length === 0 ? (
-          <div className="px-3 py-2 text-xs text-zinc-500">{t("guestPanel.empty")}</div>
+          <div className="space-y-1 px-3 py-2 text-xs text-zinc-500">
+            <p>{t("canvas.noPlannedGuestsForTable")}</p>
+            {!seatMenuShowAllGuests ? (
+              <button
+                type="button"
+                className="font-medium text-zinc-700 underline"
+                onClick={() => setSeatMenuShowAllGuests(true)}
+              >
+                {t("canvas.showAllGuests")}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <button
@@ -728,6 +773,21 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   ) : null;
   const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
   const isAnyGuestDragActive = isDraggingGuest || draggedSeatGuestId !== null;
+  useEffect(() => {
+    if (!isAnyGuestDragActive) {
+      setDragHoverSeat(null);
+      setDragHoverTableId(null);
+      setLinkedDragPreviewSeatsByTable({});
+    }
+  }, [isAnyGuestDragActive]);
+  const plannedCountByTable = useMemo(() => {
+    const next: Record<string, number> = {};
+    for (const guest of guests) {
+      if (!guest.plannedTableId) continue;
+      next[guest.plannedTableId] = (next[guest.plannedTableId] ?? 0) + 1;
+    }
+    return next;
+  }, [guests]);
   const totalSeats = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
   const filledSeats = Object.values(seatAssignments ?? {}).reduce(
     (sum, tableSeats) => sum + Object.keys(tableSeats).length,
@@ -1053,6 +1113,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               seatOccupants={seatAssignments?.[table.id]}
               selectedGuestId={selectedGuestId}
               showGroupColors={showGroupColors}
+              plannedGuestCount={plannedCountByTable[table.id] ?? 0}
+              isPlannedOverCapacity={(plannedCountByTable[table.id] ?? 0) > table.seatCount}
+              isTableDropTarget={dragHoverTableId === table.id}
               conflictSeatNumber={
                 conflictSeat?.tableId === table.id
                   ? conflictSeat.seatNumber
@@ -1097,6 +1160,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   initiatorGuestId: hoverGuestId,
                   targetTableId: tableId,
                   targetSeatNumber: seatNumber,
+                  pairSidePreference,
                   tables: plan.tables.map((table) => ({
                     id: table.id,
                     x: table.x,
@@ -1130,11 +1194,32 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }}
               onSeatDrop={async (tableId, seatNumber, guestId) => {
                 setDragHoverSeat(null);
+                setDragHoverTableId(null);
                 setLinkedDragPreviewSeatsByTable({});
                 if (!isAnyGuestDragActive) return;
                 const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
                 await onGuestDropToSeat?.(tableId, seatNumber, effectiveGuestId);
+                setDraggedSeatGuestId(null);
+                onSeatGuestDragEnd?.();
+              }}
+              onTableDragEnter={(tableId) => {
+                if (!isAnyGuestDragActive) return;
+                setDragHoverTableId(tableId);
+              }}
+              onTableDragLeave={(tableId) => {
+                if (dragHoverTableId === tableId) {
+                  setDragHoverTableId(null);
+                }
+              }}
+              onTableDrop={async (tableId, guestId) => {
+                setDragHoverTableId(null);
+                setDragHoverSeat(null);
+                setLinkedDragPreviewSeatsByTable({});
+                if (!isAnyGuestDragActive) return;
+                const effectiveGuestId = guestId || effectiveDraggedGuestId;
+                if (!effectiveGuestId) return;
+                await onGuestDropToTable?.(tableId, effectiveGuestId);
                 setDraggedSeatGuestId(null);
                 onSeatGuestDragEnd?.();
               }}
@@ -1146,6 +1231,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               onSeatGuestDragEnd={() => {
                 setDraggedSeatGuestId(null);
                 setDragHoverSeat(null);
+                setDragHoverTableId(null);
                 setLinkedDragPreviewSeatsByTable({});
                 onSeatGuestDragEnd?.();
               }}

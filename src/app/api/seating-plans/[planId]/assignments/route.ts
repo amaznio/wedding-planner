@@ -56,13 +56,20 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const assignment = await prisma.seatAssignment.create({
-      data: {
-        planId,
-        tableId: payload.tableId,
-        guestId: payload.guestId,
-        seatNumber: payload.seatNumber,
-      },
+    const assignment = await prisma.$transaction(async (tx) => {
+      const created = await tx.seatAssignment.create({
+        data: {
+          planId,
+          tableId: payload.tableId,
+          guestId: payload.guestId,
+          seatNumber: payload.seatNumber,
+        },
+      });
+      await tx.guest.update({
+        where: { id: payload.guestId },
+        data: { plannedTableId: payload.tableId },
+      });
+      return created;
     });
 
     return NextResponse.json({ assignment }, { status: 201 });

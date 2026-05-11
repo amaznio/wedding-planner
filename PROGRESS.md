@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 114 - Guest-list group color indicators with plus-one inheritance (completed)
+Phase 118 - Desktop guest quick-add collapsible (completed)
 
 ## Completed Phases
 
@@ -120,10 +120,124 @@ Phase 114 - Guest-list group color indicators with plus-one inheritance (complet
 - Phase 111 - Add-members list restricted to ungrouped guests only
 - Phase 112 - Non-blocking background post-save refresh for guests/relationships
 - Phase 113 - Optimistic guest add-to-group membership update
-- Phase 114 - Guest-list group color indicators with plus-one inheritance
+- Phase 115 - Table-first planning + sex-aware auto-seating
+- Phase 116 - Pair drag sex-side toggle
+- Phase 117 - Plan settings for pair-side preference
+- Phase 118 - Desktop guest quick-add collapsible
 
 
 ## Completed Work
+
+- Implemented Phase 118 desktop guest quick-add collapsible:
+  - changed desktop `GuestPanel` quick-add from always-visible to collapsible (accordion-style)
+  - quick-add is now hidden by default on desktop to increase guest-list space
+  - added toggle row in guest panel header area:
+    - `Show add guest`
+    - `Hide add guest`
+  - kept quick-add behavior unchanged once expanded (same input + add action)
+  - left non-desktop/sheet behavior unchanged
+  - added EN/PL i18n keys for new toggle labels
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 117 plan settings for pair-side preference:
+  - replaced drag-time pair-side toggle with plan-level setting:
+    - `auto`
+    - `boy left`
+    - `girl left`
+  - persisted setting on `SeatingPlan` as `pairSidePreference` (default `auto`)
+  - added migration `20260511070426_add_plan_pair_side_preference`
+  - wired setting through:
+    - Prisma schema
+    - plan create/update validation (Zod)
+    - plan GET/PUT/POST API payloads
+    - editor store plan state (`updatePlanPairSidePreference`)
+    - save/load hydration and autosave payload
+  - added Plan Settings UI:
+    - desktop: `Settings` button in toolbar opens dedicated sheet
+    - mobile: `More -> Settings` view in existing More drawer
+  - pair move planning now reads plan setting automatically for adjacent pair placement preference
+  - removed drag-time pair-side UI from canvas interaction flow
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260511070426_add_plan_pair_side_preference/migration.sql`
+    - `src/features/seating-editor/types/seating-plan.types.ts`
+    - `src/features/seating-editor/store/seating-editor-store.ts`
+    - `src/features/seating-editor/schemas/seating-plan.schema.ts`
+    - `src/app/api/seating-plans/route.ts`
+    - `src/app/api/seating-plans/[planId]/route.ts`
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 116 pair-drag sex-side toggle:
+  - added a drag-time pair-side toggle for adjacent mixed-sex pairs:
+    - `Boy left`
+    - `Girl left`
+  - toggle appears during guest drag when:
+    - dragged guest has move-together relationship with exactly one linked guest
+    - relationship preference is adjacent
+    - both guests have known and different sex values
+  - wired preference through seat-drop flow and group move planner:
+    - `onGuestDropToSeat(..., pairSidePreference?)`
+    - `buildGroupMovePlan(..., pairSidePreference?)`
+  - planner now applies side preference as a soft seat-order preference for the linked pair guest (fallback to existing behavior when unavailable)
+  - preserved existing behavior for:
+    - non-pair moves
+    - unknown/equal-sex pair cases
+    - manual click-to-assign seat flow
+  - added i18n keys for pair-side toggle labels (EN/PL)
+  - files changed:
+    - `src/features/seating-editor/lib/group-move.ts`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 115 table-first planning + sex-aware auto-seating:
+  - added Prisma `GuestSex` enum and guest fields:
+    - `sex` (`male` / `female` / `unknown`, default `unknown`)
+    - `plannedTableId` (nullable FK to `SeatingTable`, `onDelete: SetNull`)
+  - created migration `20260511062732_add_guest_sex_and_planned_table`
+  - extended guest validation and APIs (`POST/PATCH/GET`) to support `sex` and `plannedTableId` with plan ownership checks
+  - synced `plannedTableId` to assigned table in assignment APIs:
+    - single assignment create
+    - batch move assignments
+  - added table auto-seat API:
+    - `POST /api/seating-plans/:planId/tables/:tableId/auto-seat`
+    - fills empty seats with unseated guests planned for table
+    - alternates boy/girl where possible with unknown fallback
+    - returns soft warnings (no blocking)
+  - added guest sex editor in inspector (`Boy/Girl/Unknown`)
+  - added drag guest-to-table-body planned assignment (seat drop behavior unchanged)
+  - updated seat picker default pool to planned-table guests + `Show all guests` toggle
+  - added table planning indicators on canvas:
+    - planned count per table
+    - soft over-capacity visual warning
+  - added table inspector action `Auto-seat table`
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260511062732_add_guest_sex_and_planned_table/migration.sql`
+    - `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+    - `src/app/api/seating-plans/[planId]/guests/route.ts`
+    - `src/app/api/seating-plans/[planId]/guests/[guestId]/route.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/route.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/batch-move/route.ts`
+    - `src/app/api/seating-plans/[planId]/tables/[tableId]/auto-seat/route.ts`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/features/seating-editor/components/InspectorPanel.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
 
 - Implemented Phase 114 guest-list group color indicators with plus-one inheritance:
   - added pure helper `resolveEffectiveGuestGroup` to resolve display group from:
@@ -1218,6 +1332,26 @@ Phase 114 - Guest-list group color indicators with plus-one inheritance (complet
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 118 desktop guest quick-add collapsible)
+- `corepack pnpm lint` (pass with existing warnings; Phase 118 desktop guest quick-add collapsible)
+- `corepack pnpm i18n:audit` (pass; Phase 118 desktop guest quick-add collapsible)
+
+- `corepack pnpm prisma migrate dev --name add_plan_pair_side_preference` (pass; created/applied migration `20260511070426_add_plan_pair_side_preference`)
+- `corepack pnpm prisma generate` (pass; after adding plan setting field)
+- `corepack pnpm typecheck` (pass; Phase 117 plan settings pair-side preference)
+- `corepack pnpm lint` (pass with existing warnings; Phase 117 plan settings pair-side preference)
+- `corepack pnpm i18n:audit` (pass; Phase 117 plan settings pair-side preference)
+
+- `corepack pnpm typecheck` (pass; Phase 116 pair drag sex-side toggle)
+- `corepack pnpm lint` (pass with existing warnings; Phase 116 pair drag sex-side toggle)
+- `corepack pnpm i18n:audit` (pass; Phase 116 pair drag sex-side toggle)
+
+- `corepack pnpm prisma migrate dev --name add_guest_sex_and_planned_table` (pass; created/applied migration `20260511062732_add_guest_sex_and_planned_table`)
+- `corepack pnpm prisma generate` (pass)
+- `corepack pnpm typecheck` (initial fail before callback-order fix; pass after fixes)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm build` (pass)
+
 - `corepack pnpm typecheck` (pass; phase 114 guest-list group color indicators with plus-one inheritance)
 - `corepack pnpm lint` (pass with existing warnings)
 
@@ -1465,81 +1599,67 @@ Phase 114 - Guest-list group color indicators with plus-one inheritance (complet
 
 ## Check Results
 
-- Prisma schema validation: pass.
+- Prisma migration: pass (`20260511070426_add_plan_pair_side_preference` applied).
+- Prisma migration: pass (`20260511062732_add_guest_sex_and_planned_table` applied).
+- Prisma client generation: pass.
 - TypeScript: pass.
-- i18n audit: not run in this phase set.
 - Lint: pass with existing warnings.
-- Build: not run in this phase set.
+- i18n audit: pass.
+- Build: pass.
 
 ## How To Test
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
-3. Select a table so inspector is open.
-4. Start typing in `Nazwa stołu`, wait for autosave to begin, and continue typing before request completes.
-5. Confirm typing remains smooth (no text rollback/focus jump/inspector close) while save response and toast occur.
-6. Stop typing and confirm latest value is eventually autosaved.
-7. Edit `Liczba miejsc` several times quickly and confirm save occurs for final value without blocking further actions.
-8. Confirm inspector remains open and same table remains selected through autosave/manual save.
-9. In the Groups manager, create at least two groups and verify each gets an auto-assigned color.
-10. Select one group to open group details, then rename and recolor it; verify updates persist in the group list and guest selectors.
-11. In selected-group details, add guests to the group and remove at least one guest from the group; verify guest group tags update immediately.
-12. Delete a group assigned to one or more guests; verify guests remain and become ungrouped.
-13. Open guest details in inspector, assign an existing group, then quick-create a new group inline and verify it is auto-selected.
-14. Add at least two guests and assign them to seats.
-15. Toggle `Group colors` in desktop canvas controls and verify occupied seats are colored by guest group.
-16. Confirm seat visual priority still works (`conflict/drop/linked/selected`) when group colors mode is enabled.
-17. Open legend and verify active seated group swatches are listed.
-18. On mobile viewport, open `More` and toggle group colors; verify canvas seat coloring updates.
-19. Verify adjacent move-table toggle and zoom/reset controls still render and work.
-20. Use keyboard:
-  - `]` to select next guest
-  - `[` to select previous guest
-  - `U` to unassign selected guest
-21. Export guests to CSV and verify exported group names match selected groups.
-22. Save and refresh; verify groups, colors, assignments, and canvas mode behavior remain consistent.
-23. Open Groups list view and hover each group row; verify row background highlights on hover.
-24. Hover `Usuń` action in group rows; verify destructive hover tint appears.
-25. Confirm pointer cursor appears on shadcn buttons and other interactive controls (links/selects/checkboxes/radios/color picker).
-26. On desktop, open `Groups` sheet and enter a group with many guests; verify scrolling uses full sheet height with no dead bottom gap.
-27. On desktop, open `Import / Export` sheet and verify it also scrolls within full available sheet height.
-28. In selected-group details, verify sections are separated by dividers (not outer bordered cards) while guest rows/actions still work.
-29. In `Dodaj gości do grupy`, type a partial name and verify the list filters in real time.
-30. Switch sort to `first name` and `last name` and verify ordering changes accordingly.
-31. Use a search term with no matches and verify the dedicated no-results message appears.
-32. In selected-group details, collapse and expand `Goście w grupie` and `Dodaj gości do grupy` sections; verify chevrons and item counts update/display correctly.
-33. Confirm add/remove actions and add-members search/sort still work after expanding sections.
-34. Confirm `Dodaj gości do grupy` shows only ungrouped guests (no guests already assigned to other groups).
-35. Trigger autosave by editing table name/seat count and watch left guest panel: it should keep current list visible (no `Loading...` flicker).
-36. Click manual save and confirm save toast/status appears immediately without guest-list blocking state.
-37. Change seat count down so out-of-range assignments are pruned server-side, save, and confirm guests/assignments re-sync shortly after via background refresh.
-38. Open Groups details and click `Dodaj` for an ungrouped guest; confirm the row disappears immediately and appears in `Goście w grupie` without waiting for network.
-39. Simulate API failure (e.g. temporary backend error) and confirm membership reverts to previous state with an error message.
+3. Select a guest and verify new `Sex` field appears in inspector with values `Boy/Girl/Unknown`; save and refresh to confirm persistence.
+4. Drag a guest row from the desktop guest list onto a table body (not a seat):
+   - verify guest gets planned for that table
+   - verify seat assignment is unchanged
+5. Drag a guest onto a seat:
+   - verify exact seat assignment still works as before
+   - verify planned table syncs to seat table
+6. Click a seat and verify seat picker default list is limited to guests planned to that table (plus current occupant when relevant).
+7. In seat picker, click `Show all guests` and verify global pool is shown.
+8. Plan more guests to a table than its `seatCount` and verify soft visual warning/planned count appears on table.
+9. Select a table in inspector and click `Auto-seat table`:
+   - verify only unseated guests planned for that table are seated
+   - verify already seated guests are not moved
+   - verify success/info toasts and soft warnings are shown as applicable
+10. Validate warning scenarios:
+   - imbalance between boy/girl
+   - unknown sex used
+   - not enough empty seats
+11. Save/reload plan and verify:
+   - `sex` persists
+   - `plannedTableId` persists
+   - assignments remain consistent
+12. Re-run keyboard shortcuts and seat swap/unassign flows to confirm no regressions.
+13. Open Plan Settings:
+   - desktop: toolbar `Settings` button
+   - mobile: `More -> Settings`
+14. Change pair-side preference to `Boy left` / `Girl left`, then drag a linked mixed-sex adjacent pair and verify placement follows selected plan preference.
+15. Change preference to `Auto` and verify pair placement returns to default ordering behavior.
+16. On desktop guest panel, verify add-guest row is collapsed by default.
+17. Click `Show add guest`, verify input + add button expand.
+18. Add a guest and verify creation flow still works.
+19. Click `Hide add guest` and verify panel collapses back to save vertical space.
 
 ## Known Issues
 
-- Existing lint warnings remain:
-  - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
-  - `SeatingCanvas` `useEffect` dependency warning (still present)
-  - unused `totalSeatCount` warning in `page.tsx` (pre-existing)
-- Post-save guest/relationship revalidation is now intentionally silent in UI (background refresh failures do not surface immediate panel errors).
-- CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
-- Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
-- Group manager detail lists do not yet have dedicated search/filter controls for very large guest lists.
+- Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
+- Auto-seat warning messages are currently returned as backend strings and surfaced directly in info toasts.
+- Drag-to-table planned assignment is desktop-only (touch/mobile drag not added in this phase).
+- CSV import/export remains backward-compatible and does not yet include `sex` / `plannedTableId` columns.
+- Pair-side preference currently uses seat-number side heuristic (`< target seat` as left, `> target seat` as right), which may not perfectly match visual left/right on all table rotations/layouts.
+- Existing historical i18n keys for the removed drag-time pair toggle remain in `canvas.*` and can be cleaned up in a later i18n tidy phase.
 
 ## Next Recommended Step
 
-Next recommended follow-up:
-
-- Run targeted manual UX verification for new mobile/desktop guest flows:
-  - mobile Guests vs Groups vs More/Data split
-  - add-guest drawer behavior
-  - import/export placement and behavior
-- Add search/filter controls inside group-detail membership lists for large plans.
-- Add focused UI regression coverage for in-flight save continuity (typing/actions remain uninterrupted while response/toast lands).
-- Add focused UI regression coverage for non-blocking post-save background refresh (no guest-panel loading flicker).
-- Add focused UI regression coverage for optimistic guest-group membership updates with rollback on API errors.
-- Add focused UI regression coverage for autosave debounce behavior (save after last edit, not first) and inspector selection persistence.
-- Refactor `savePlan` into a lint-clean stable callback shape that satisfies both React Compiler and exhaustive-deps without warnings.
-- Add backend tests for group endpoint conflict and ownership validation.
-- Add unit tests for seat color-priority logic when group mode is enabled.
+- Refine pair-side preference from seat-number heuristic to geometry-aware left/right using actual rendered seat coordinates (including table rotation).
+- Add targeted API tests for:
+  - guest `sex/plannedTableId` validation and plan-ownership checks
+  - assignment-to-planned-table sync
+  - auto-seat endpoint warning cases and assignment behavior.
+- Add optional table-level planning controls (clear planned table / bulk plan selected guests) in desktop UI.
+- Add mobile-first table planning actions (tap-to-plan from guest sheet).
+- Decide if CSV import/export should include `sex` and planned table labels in a backward-compatible optional format.

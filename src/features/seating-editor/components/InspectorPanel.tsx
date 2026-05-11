@@ -25,7 +25,9 @@ import type { SeatingTable } from "../types/seating-plan.types";
 type Guest = {
   id: string;
   name: string;
+  sex: "male" | "female" | "unknown";
   groupId: string | null;
+  plannedTableId: string | null;
   group: {
     id: string;
     name: string;
@@ -62,17 +64,33 @@ type InspectorPanelProps = {
   guests: Guest[];
   groups: GuestGroup[];
   relationships: SeatingRelationship[];
-  guestForm: { name: string; groupId: string | null; notes: string };
+  guestForm: {
+    name: string;
+    sex: "male" | "female" | "unknown";
+    groupId: string | null;
+    notes: string;
+  };
   selectedTable: SeatingTable | null;
   selectedSeatGuest: Guest | null;
   tableLabelById?: Record<string, string>;
   onClose: () => void;
   onBackToGuestList?: () => void;
   onSelectTable: (tableId: string) => void;
-  onGuestFormChange: (next: { name: string; groupId: string | null; notes: string }) => void;
+  onGuestFormChange: (next: {
+    name: string;
+    sex: "male" | "female" | "unknown";
+    groupId: string | null;
+    notes: string;
+  }) => void;
   onUpdateGuest: (
     guestId: string,
-    payload: { name: string; groupId: string | null; notes: string },
+    payload: {
+      name: string;
+      sex: "male" | "female" | "unknown";
+      groupId: string | null;
+      notes: string;
+      plannedTableId?: string | null;
+    },
   ) => Promise<void>;
   onCreateGroup: (name: string) => Promise<GuestGroup>;
   onDeleteGuest: (guestId: string) => Promise<void>;
@@ -96,6 +114,7 @@ type InspectorPanelProps = {
   onTableSeatLayoutChange: (seatLayout: "balanced" | "top-only" | "bottom-only") => void;
   onRotateTable: () => void;
   onDeleteTable: () => void;
+  onAutoSeatTable: (tableId: string) => Promise<void>;
   side?: "right" | "bottom";
   showOverlay?: boolean;
 };
@@ -136,6 +155,7 @@ export function InspectorPanel({
   onTableSeatLayoutChange,
   onRotateTable,
   onDeleteTable,
+  onAutoSeatTable,
   side = "right",
   showOverlay = false,
 }: InspectorPanelProps) {
@@ -148,6 +168,7 @@ export function InspectorPanel({
   const [newGroupName, setNewGroupName] = useState("");
   const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
   const [groupActionError, setGroupActionError] = useState<string | null>(null);
+  const [isAutoSeating, setIsAutoSeating] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const relationshipTypeLabel: Record<RelationshipType, string> = {
@@ -324,6 +345,23 @@ export function InspectorPanel({
                     ))}
                   </select>
                 </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">{t("guestPanel.sex")}</span>
+                  <select
+                    value={guestForm.sex}
+                    onChange={(event) =>
+                      onGuestFormChange({
+                        ...guestForm,
+                        sex: event.target.value as "male" | "female" | "unknown",
+                      })
+                    }
+                    className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  >
+                    <option value="male">{t("guestPanel.sexMale")}</option>
+                    <option value="female">{t("guestPanel.sexFemale")}</option>
+                    <option value="unknown">{t("guestPanel.sexUnknown")}</option>
+                  </select>
+                </label>
                 <div className="space-y-1.5">
                   <span className="text-xs font-medium text-zinc-500">
                     {t("guestPanel.createGroupInline")}
@@ -390,6 +428,7 @@ export function InspectorPanel({
                   onClick={() =>
                     void onUpdateGuest(selectedGuest.id, {
                       name: guestForm.name,
+                      sex: guestForm.sex,
                       groupId: guestForm.groupId,
                       notes: guestForm.notes,
                     })
@@ -647,6 +686,21 @@ export function InspectorPanel({
                 <Button variant="outline" onClick={onRotateTable} className="gap-2">
                   <RotateCw className="h-4 w-4" aria-hidden="true" />
                   {t("inspector.rotate")}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isAutoSeating}
+                  onClick={async () => {
+                    if (!selectedTable) return;
+                    setIsAutoSeating(true);
+                    try {
+                      await onAutoSeatTable(selectedTable.id);
+                    } finally {
+                      setIsAutoSeating(false);
+                    }
+                  }}
+                >
+                  {isAutoSeating ? t("common.saving") : t("inspector.autoSeatTable")}
                 </Button>
                 <Button
                   variant="destructive"

@@ -252,6 +252,12 @@ export async function POST(request: Request, context: RouteContext) {
           seatNumber: item.seatNumber,
         })),
       });
+      for (const item of payload.plannedAssignments) {
+        await tx.guest.update({
+          where: { id: item.guestId },
+          data: { plannedTableId: item.tableId },
+        });
+      }
 
       return tx.seatAssignment.findMany({
         where: {

@@ -113,6 +113,7 @@ export function GuestPanel({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(variant !== "desktop");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRelationshipGuestIds, setSelectedRelationshipGuestIds] = useState<
     string[]
@@ -271,16 +272,55 @@ export function GuestPanel({
               ) : null}
             </div>
             {showAddRow ? (
-              <div className="flex gap-2">
-                <Input
-                  value={newGuestName}
-                  onChange={(event) => setNewGuestName(event.target.value)}
-                  placeholder={t("guestPanel.addGuestPlaceholder")}
-                />
-                <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
-                  {t("common.add")}
-                </Button>
-              </div>
+              variant === "desktop" ? (
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 w-full justify-between px-3 text-sm"
+                    onClick={() => setIsQuickAddOpen((current) => !current)}
+                    aria-expanded={isQuickAddOpen}
+                  >
+                    <span>
+                      {isQuickAddOpen
+                        ? t("guestPanel.addGuestCollapse")
+                        : t("guestPanel.addGuestExpand")}
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      className={`h-4 w-4 transition-transform ${isQuickAddOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </Button>
+                  {isQuickAddOpen ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={newGuestName}
+                        onChange={(event) => setNewGuestName(event.target.value)}
+                        placeholder={t("guestPanel.addGuestPlaceholder")}
+                      />
+                      <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
+                        {t("common.add")}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={newGuestName}
+                    onChange={(event) => setNewGuestName(event.target.value)}
+                    placeholder={t("guestPanel.addGuestPlaceholder")}
+                  />
+                  <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
+                    {t("common.add")}
+                  </Button>
+                </div>
+              )
             ) : null}
           </div>
           <Separator />

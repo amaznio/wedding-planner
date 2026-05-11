@@ -74,9 +74,19 @@
     "share": "Share",
     "help": "Help & Feedback"
   },
+  "planSettings": {
+    "title": "Plan settings",
+    "pairSidePreference": "Pair side preference",
+    "pairSideAuto": "Auto",
+    "pairSideMaleLeft": "Boy left",
+    "pairSideFemaleLeft": "Girl left",
+    "pairSideHelp": "Default side preference used when auto-placing adjacent mixed-sex pairs."
+  },
   "guestPanel": {
     "title": "Guests",
     "addGuest": "Add guest",
+    "addGuestExpand": "Show add guest",
+    "addGuestCollapse": "Hide add guest",
     "addGuestPlaceholder": "Add guest",
     "import": "Import",
     "export": "Export",
@@ -150,6 +160,10 @@
     "guestDetails": "Guest details",
     "name": "Name",
     "group": "Group",
+    "sex": "Sex",
+    "sexMale": "Boy",
+    "sexFemale": "Girl",
+    "sexUnknown": "Unknown",
     "notes": "Notes",
     "saveGuest": "Save Guest",
     "unassign": "Unassign",
@@ -198,6 +212,9 @@
     "layoutTopOnly": "Top side only",
     "layoutBottomOnly": "Bottom side only",
     "rotate": "Rotate 90°",
+    "autoSeatTable": "Auto-seat table",
+    "autoSeatSuccess": "Auto-seated {{count}} guests.",
+    "autoSeatNoChanges": "No new guests were auto-seated.",
     "seatAssigned": "Assigned: {{name}}",
     "unassigned": "Unassigned",
     "assignmentActionsInfo": "Assignment actions stay in the seat popover in this phase.",
@@ -218,6 +235,16 @@
     "moveTables": "Move tables: {{value}}",
     "noTables": "No tables yet. Use Add Table to start.",
     "current": "Current: {{name}}",
+    "showAllGuests": "Show all guests",
+    "showPlannedOnly": "Show planned only",
+    "showingAllGuests": "Showing all guests",
+    "showingPlannedGuests": "Showing guests planned to this table",
+    "pairSideLabel": "Pair side",
+    "pairSideMaleLeft": "Boy left",
+    "pairSideFemaleLeft": "Girl left",
+    "noPlannedGuestsForTable": "No matching planned guests for this table.",
+    "plannedTableAssigned": "Guest assigned to this table for planning.",
+    "failedPlanAssign": "Failed to assign guest to planned table",
     "unassignSeat": "Unassign Seat",
     "confirmUnassignSeatTitle": "Unassign seat?",
     "confirmUnassignSeatDescription": "Remove {{name}} from seat {{seat}}?",
@@ -226,7 +253,8 @@
     "groupMove": "group move: {{count}}"
   },
   "table": {
-    "occupied": "{{occupied}}/{{total}} occupied"
+    "occupied": "{{occupied}}/{{total}} occupied",
+    "planned": "planned {{planned}}/{{total}}"
   },
   "seat": {
     "seatLabel": "Seat {{seat}}",

@@ -23,6 +23,9 @@ type RectTableProps = {
   >;
   selectedGuestId?: string | null;
   showGroupColors?: boolean;
+  plannedGuestCount?: number;
+  isPlannedOverCapacity?: boolean;
+  isTableDropTarget?: boolean;
   selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
@@ -34,6 +37,9 @@ type RectTableProps = {
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
   onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
   onSeatDrop?: (tableId: string, seatNumber: number, guestId: string) => void;
+  onTableDragEnter?: (tableId: string) => void;
+  onTableDragLeave?: (tableId: string) => void;
+  onTableDrop?: (tableId: string, guestId: string) => void;
   onSeatGuestDragStart?: (guestId: string) => void;
   onSeatGuestDragEnd?: () => void;
   onDragStateChange?: (isDragging: boolean) => void;
@@ -48,6 +54,9 @@ function RectTableComponent({
   seatOccupants,
   selectedGuestId,
   showGroupColors = false,
+  plannedGuestCount = 0,
+  isPlannedOverCapacity = false,
+  isTableDropTarget = false,
   selectedSeatNumber,
   conflictSeatNumber,
   dropTargetSeatNumber,
@@ -59,6 +68,9 @@ function RectTableComponent({
   onSeatDragEnter,
   onSeatDragLeave,
   onSeatDrop,
+  onTableDragEnter,
+  onTableDragLeave,
+  onTableDrop,
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
   onDragStateChange,
@@ -165,13 +177,41 @@ function RectTableComponent({
           className={`h-full w-full rounded-md border bg-zinc-100 shadow-sm transition-shadow ${
             isSelected
               ? "border-rose-500 ring-2 ring-rose-200 shadow-md shadow-rose-100"
-              : "border-zinc-300 hover:shadow-md"
+              : isTableDropTarget
+                ? "border-blue-500 ring-2 ring-blue-200 shadow-md"
+                : isPlannedOverCapacity
+                  ? "border-amber-500 ring-1 ring-amber-200"
+                  : "border-zinc-300 hover:shadow-md"
           }`}
+          onDragOver={(event) => {
+            event.preventDefault();
+          }}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            onTableDragEnter?.(table.id);
+          }}
+          onDragLeave={() => {
+            onTableDragLeave?.(table.id);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const guestId = event.dataTransfer.getData("text/plain");
+            if (!guestId) return;
+            onTableDrop?.(table.id, guestId);
+          }}
         >
           <div className="flex h-full flex-col items-center justify-center gap-1 text-zinc-700">
             <span className="text-sm font-semibold">{table.label}</span>
             <span className="text-xs text-zinc-500">
               {t("table.occupied", { occupied: occupiedSeatCount, total: table.seatCount })}
+            </span>
+            <span
+              className={`text-[11px] ${
+                isPlannedOverCapacity ? "font-semibold text-amber-700" : "text-zinc-500"
+              }`}
+            >
+              {t("table.planned", { planned: plannedGuestCount, total: table.seatCount })}
             </span>
           </div>
         </div>
@@ -260,6 +300,9 @@ function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
     prev.isSelected === next.isSelected &&
     prev.selectedGuestId === next.selectedGuestId &&
     prev.showGroupColors === next.showGroupColors &&
+    prev.plannedGuestCount === next.plannedGuestCount &&
+    prev.isPlannedOverCapacity === next.isPlannedOverCapacity &&
+    prev.isTableDropTarget === next.isTableDropTarget &&
     prev.selectedSeatNumber === next.selectedSeatNumber &&
     prev.conflictSeatNumber === next.conflictSeatNumber &&
     prev.dropTargetSeatNumber === next.dropTargetSeatNumber &&

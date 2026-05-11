@@ -1,6 +1,10 @@
 import { create } from "zustand";
 
-import type { SeatingPlan, SeatingTable } from "../types/seating-plan.types";
+import type {
+  PlanPairSidePreference,
+  SeatingPlan,
+  SeatingTable,
+} from "../types/seating-plan.types";
 
 const GRID_SIZE = 24;
 
@@ -22,6 +26,7 @@ type SeatingEditorState = {
   ) => void;
   markSaved: () => void;
   updatePlanName: (name: string) => void;
+  updatePlanPairSidePreference: (preference: PlanPairSidePreference) => void;
   addTable: () => void;
   selectGuest: (guestId: string | null) => void;
   selectTable: (tableId: string | null) => void;
@@ -42,6 +47,7 @@ const DEFAULT_PLAN: SeatingPlan = {
   name: "Wedding Reception Layout",
   width: 1400,
   height: 900,
+  pairSidePreference: "auto",
   tables: [
     {
       id: "table-1",
@@ -132,6 +138,18 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
       plan: {
         ...state.plan,
         name: trimmed,
+      },
+      isDirty: true,
+    });
+  },
+  updatePlanPairSidePreference: (preference) => {
+    const state = get();
+    if (state.plan.pairSidePreference === preference) return;
+
+    set({
+      plan: {
+        ...state.plan,
+        pairSidePreference: preference,
       },
       isDirty: true,
     });

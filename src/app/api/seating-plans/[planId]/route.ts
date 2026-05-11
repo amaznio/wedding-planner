@@ -63,6 +63,7 @@ export async function PUT(request: Request, context: RouteContext) {
           name: payload.name,
           width: payload.width,
           height: payload.height,
+          pairSidePreference: payload.pairSidePreference,
         },
       });
 

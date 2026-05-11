@@ -12,8 +12,11 @@ type TableLike = {
 
 type GuestLike = {
   id: string;
+  sex: "male" | "female" | "unknown";
   assignment: { tableId: string; seatNumber: number } | null;
 };
+
+export type PairSidePreference = "male-left" | "female-left";
 
 export type PlannedAssignment = {
   guestId: string;
@@ -42,7 +45,41 @@ type PlanInput = {
   tables: TableLike[];
   guests: GuestLike[];
   relationships: SeatingRelationship[];
+  pairSidePreference?: PairSidePreference;
 };
+
+function reorderAdjacentSeatsForPair(params: {
+  adjacencySeats: number[];
+  targetSeatNumber: number;
+  initiatorSex: GuestLike["sex"];
+  linkedGuestSex: GuestLike["sex"];
+  pairSidePreference?: PairSidePreference;
+}): number[] {
+  const {
+    adjacencySeats,
+    targetSeatNumber,
+    initiatorSex,
+    linkedGuestSex,
+    pairSidePreference,
+  } = params;
+  if (!pairSidePreference) return adjacencySeats;
+  if (initiatorSex === "unknown" || linkedGuestSex === "unknown") return adjacencySeats;
+  if (initiatorSex === linkedGuestSex) return adjacencySeats;
+
+  const linkedGuestPrefersLeft =
+    pairSidePreference === "male-left"
+      ? linkedGuestSex === "male"
+      : linkedGuestSex === "female";
+
+  const preferredSeats = adjacencySeats.filter((seat) =>
+    linkedGuestPrefersLeft ? seat < targetSeatNumber : seat > targetSeatNumber,
+  );
+  const fallbackSeats = adjacencySeats.filter((seat) =>
+    linkedGuestPrefersLeft ? seat >= targetSeatNumber : seat <= targetSeatNumber,
+  );
+
+  return [...preferredSeats, ...fallbackSeats];
+}
 
 function seatDistances(seatCount: number, fromSeat: number): number[] {
   const seats = Array.from({ length: seatCount }, (_, i) => i + 1);
@@ -100,6 +137,7 @@ export function buildGroupMovePlan({
   tables,
   guests,
   relationships,
+  pairSidePreference,
 }: PlanInput): GroupMovePlanResult {
   const relevantRelationships = relationships.filter((relationship) =>
     relationship.guestIds.includes(initiatorGuestId),
@@ -176,6 +214,10 @@ export function buildGroupMovePlan({
   const allLinkedGuestsOrdered = movedGuestIds
     .filter((guestId) => guestId !== initiatorGuestId)
     .sort((a, b) => a.localeCompare(b));
+  const guestsById = Object.fromEntries(guests.map((guest) => [guest.id, guest]));
+  const initiatorGuest = guestsById[initiatorGuestId] ?? null;
+  const pairLinkedGuestId = allLinkedGuestsOrdered.length === 1 ? allLinkedGuestsOrdered[0] : null;
+  const pairLinkedGuest = pairLinkedGuestId ? guestsById[pairLinkedGuestId] ?? null : null;
 
   const adjacencySeats = seatDistances(targetTable.seatCount, targetSeatNumber).filter(
     (seatNumber) => seatNumber !== targetSeatNumber,
@@ -201,9 +243,21 @@ export function buildGroupMovePlan({
     let assigned: PlannedAssignment | null = null;
 
     if (needsAdjacent) {
+      const orderedAdjacentSeats =
+        initiatorGuest &&
+        pairLinkedGuest &&
+        pairLinkedGuestId === guestId
+          ? reorderAdjacentSeatsForPair({
+              adjacencySeats,
+              targetSeatNumber,
+              initiatorSex: initiatorGuest.sex,
+              linkedGuestSex: pairLinkedGuest.sex,
+              pairSidePreference,
+            })
+          : adjacencySeats;
       const seat = allocateSeat(
         targetTableId,
-        adjacencySeats.filter(
+        orderedAdjacentSeats.filter(
           (seatNumber) => !usedSeatKeys.has(`${targetTableId}:${seatNumber}`),
         ),
         occupiedBySeat,

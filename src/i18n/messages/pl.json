@@ -74,9 +74,19 @@
     "share": "Udostępnij",
     "help": "Pomoc i opinie"
   },
+  "planSettings": {
+    "title": "Ustawienia planu",
+    "pairSidePreference": "Preferencja stron pary",
+    "pairSideAuto": "Auto",
+    "pairSideMaleLeft": "Chłopak po lewej",
+    "pairSideFemaleLeft": "Dziewczyna po lewej",
+    "pairSideHelp": "Domyślna preferencja strony używana przy automatycznym sadzaniu par różnej płci obok siebie."
+  },
   "guestPanel": {
     "title": "Goście",
     "addGuest": "Dodaj gościa",
+    "addGuestExpand": "Pokaż dodawanie gościa",
+    "addGuestCollapse": "Ukryj dodawanie gościa",
     "addGuestPlaceholder": "Dodaj gościa",
     "import": "Importuj",
     "export": "Eksportuj",
@@ -150,6 +160,10 @@
     "guestDetails": "Szczegóły gościa",
     "name": "Imię i nazwisko",
     "group": "Grupa",
+    "sex": "Płeć",
+    "sexMale": "Chłopak",
+    "sexFemale": "Dziewczyna",
+    "sexUnknown": "Nieznana",
     "notes": "Notatki",
     "saveGuest": "Zapisz gościa",
     "unassign": "Usuń przypisanie",
@@ -198,6 +212,9 @@
     "layoutTopOnly": "Tylko górna strona",
     "layoutBottomOnly": "Tylko dolna strona",
     "rotate": "Obróć o 90°",
+    "autoSeatTable": "Auto-usadź stół",
+    "autoSeatSuccess": "Automatycznie usadzono {{count}} gości.",
+    "autoSeatNoChanges": "Brak nowych automatycznych przypisań.",
     "seatAssigned": "Przypisano: {{name}}",
     "unassigned": "Nieprzypisane",
     "assignmentActionsInfo": "Akcje przypisywania pozostają w popoverze miejsca.",
@@ -218,6 +235,16 @@
     "moveTables": "Przesuwanie stołów: {{value}}",
     "noTables": "Brak stołów. Użyj Dodaj stół, aby zacząć.",
     "current": "Aktualnie: {{name}}",
+    "showAllGuests": "Pokaż wszystkich gości",
+    "showPlannedOnly": "Pokaż tylko zaplanowanych",
+    "showingAllGuests": "Wyświetlanie wszystkich gości",
+    "showingPlannedGuests": "Wyświetlanie gości zaplanowanych do tego stołu",
+    "pairSideLabel": "Strona pary",
+    "pairSideMaleLeft": "Chłopak po lewej",
+    "pairSideFemaleLeft": "Dziewczyna po lewej",
+    "noPlannedGuestsForTable": "Brak pasujących zaplanowanych gości dla tego stołu.",
+    "plannedTableAssigned": "Gość przypisany do stołu na etapie planowania.",
+    "failedPlanAssign": "Nie udało się przypisać gościa do planowanego stołu",
     "unassignSeat": "Usuń przypisanie miejsca",
     "confirmUnassignSeatTitle": "Usunąć przypisanie miejsca?",
     "confirmUnassignSeatDescription": "Usunąć {{name}} z miejsca {{seat}}?",
@@ -226,7 +253,8 @@
     "groupMove": "ruch grupy: {{count}}"
   },
   "table": {
-    "occupied": "zajęte {{occupied}}/{{total}}"
+    "occupied": "zajęte {{occupied}}/{{total}}",
+    "planned": "zaplanowane {{planned}}/{{total}}"
   },
   "seat": {
     "seatLabel": "Miejsce {{seat}}",

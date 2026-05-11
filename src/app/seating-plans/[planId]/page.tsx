@@ -24,17 +24,26 @@ import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type GuestSex = "male" | "female" | "unknown";
 
 type ApiPlan = {
   id: string;
   name: string;
   width: number;
   height: number;
+  pairSidePreference?: "auto" | "male-left" | "female-left";
   tables: Array<{
     id: string;
     label: string;
@@ -50,7 +59,9 @@ type ApiPlan = {
 type ApiGuest = {
   id: string;
   name: string;
+  sex: GuestSex;
   groupId: string | null;
+  plannedTableId: string | null;
   group: {
     id: string;
     name: string;
@@ -117,6 +128,7 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
     name: plan.name,
     width: plan.width,
     height: plan.height,
+    pairSidePreference: plan.pairSidePreference ?? "auto",
     tables: plan.tables.map((table) => ({
       id: table.id,
       label: table.label,
@@ -142,6 +154,7 @@ export default function SeatingPlanEditorPage() {
     setPlan,
     markSaved,
     updatePlanName,
+    updatePlanPairSidePreference,
     addTable,
     selectGuest,
     selectTable,
@@ -163,7 +176,9 @@ export default function SeatingPlanEditorPage() {
   const [mobileGuestsOpen, setMobileGuestsOpen] = useState(false);
   const [mobileTablesOpen, setMobileTablesOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const [mobileMoreView, setMobileMoreView] = useState<"menu" | "legend" | "data">("menu");
+  const [mobileMoreView, setMobileMoreView] = useState<
+    "menu" | "legend" | "data" | "settings"
+  >("menu");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [mobileGuestsView, setMobileGuestsView] = useState<"guests" | "groups">("guests");
   const [mobileAddGuestOpen, setMobileAddGuestOpen] = useState(false);
@@ -172,6 +187,7 @@ export default function SeatingPlanEditorPage() {
   const [mobileAddGuestSubmitting, setMobileAddGuestSubmitting] = useState(false);
   const [desktopGroupsManagerOpen, setDesktopGroupsManagerOpen] = useState(false);
   const [desktopDataToolsOpen, setDesktopDataToolsOpen] = useState(false);
+  const [desktopPlanSettingsOpen, setDesktopPlanSettingsOpen] = useState(false);
   const [mobileTableDragEnabled, setMobileTableDragEnabled] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [draggedGuestId, setDraggedGuestId] = useState<string | null>(null);
@@ -186,9 +202,10 @@ export default function SeatingPlanEditorPage() {
   const [relationshipsError, setRelationshipsError] = useState<string | null>(null);
   const [guestForm, setGuestForm] = useState<{
     name: string;
+    sex: GuestSex;
     groupId: string | null;
     notes: string;
-  }>({ name: "", groupId: null, notes: "" });
+  }>({ name: "", sex: "unknown", groupId: null, notes: "" });
   const [showGroupColors, setShowGroupColors] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
@@ -250,6 +267,7 @@ export default function SeatingPlanEditorPage() {
       const guest = guests.find((item) => item.id === guestId);
       setGuestForm({
         name: guest?.name ?? "",
+        sex: guest?.sex ?? "unknown",
         groupId: guest?.groupId ?? null,
         notes: guest?.notes ?? "",
       });
@@ -511,7 +529,11 @@ export default function SeatingPlanEditorPage() {
     }
   }, [deleteAssignment]);
 
-  const handleSeatAssign = useCallback(async (tableId: string, seatNumber: number, guestId: string | null) => {
+  const handleSeatAssign = useCallback(async (
+    tableId: string,
+    seatNumber: number,
+    guestId: string | null,
+  ) => {
     setGuestsError(null);
     const previousGuests = guests;
     const clickedGuest = guests.find(
@@ -545,6 +567,8 @@ export default function SeatingPlanEditorPage() {
         initiatorGuestId: targetGuest.id,
         targetTableId: tableId,
         targetSeatNumber: seatNumber,
+        pairSidePreference:
+          plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference,
         tables: plan.tables.map((table) => ({
           id: table.id,
           x: table.x,
@@ -553,6 +577,7 @@ export default function SeatingPlanEditorPage() {
         })),
         guests: guests.map((guest) => ({
           id: guest.id,
+          sex: guest.sex,
           assignment: guest.assignment
             ? {
                 tableId: guest.assignment.tableId,
@@ -576,6 +601,7 @@ export default function SeatingPlanEditorPage() {
           if (!assignment) return guest;
           return {
             ...guest,
+            plannedTableId: assignment.tableId,
             assignment: {
               id: guest.assignment?.id ?? `optimistic-${guest.id}`,
               tableId: assignment.tableId,
@@ -606,6 +632,7 @@ export default function SeatingPlanEditorPage() {
             if (!assignment) return guest;
             return {
               ...guest,
+              plannedTableId: assignment.tableId,
               assignment: {
                 id: assignment.id,
                 tableId: assignment.tableId,
@@ -649,8 +676,20 @@ export default function SeatingPlanEditorPage() {
         : null;
     setGuests((current) =>
       current.map((guest) => {
-        if (guest.id === targetGuest.id) return { ...guest, assignment: optimisticTargetAssignment };
-        if (clickedGuest && guest.id === clickedGuest.id) return { ...guest, assignment: optimisticClickedAssignment };
+        if (guest.id === targetGuest.id) {
+          return {
+            ...guest,
+            plannedTableId: tableId,
+            assignment: optimisticTargetAssignment,
+          };
+        }
+        if (clickedGuest && guest.id === clickedGuest.id) {
+          return {
+            ...guest,
+            plannedTableId: targetGuestAssignment?.tableId ?? guest.plannedTableId,
+            assignment: optimisticClickedAssignment,
+          };
+        }
         return guest;
       }),
     );
@@ -670,8 +709,20 @@ export default function SeatingPlanEditorPage() {
 
       setGuests((current) =>
         current.map((guest) => {
-          if (guest.id === targetGuest.id) return { ...guest, assignment: targetToClickedSeat };
-          if (clickedGuest && guest.id === clickedGuest.id) return { ...guest, assignment: clickedToTargetSeat };
+          if (guest.id === targetGuest.id) {
+            return {
+              ...guest,
+              plannedTableId: tableId,
+              assignment: targetToClickedSeat,
+            };
+          }
+          if (clickedGuest && guest.id === clickedGuest.id) {
+            return {
+              ...guest,
+              plannedTableId: targetGuestAssignment?.tableId ?? guest.plannedTableId,
+              assignment: clickedToTargetSeat,
+            };
+          }
           return guest;
         }),
       );
@@ -682,7 +733,15 @@ export default function SeatingPlanEditorPage() {
 
     if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: t("editor.occupied") };
     return { level: "success" as const, message: t("editor.seatAssigned") };
-  }, [createAssignment, deleteAssignment, executeBatchMoveAssignments, guests, plan.tables, relationshipsByGuestId]);
+  }, [
+    createAssignment,
+    deleteAssignment,
+    executeBatchMoveAssignments,
+    guests,
+    plan.pairSidePreference,
+    plan.tables,
+    relationshipsByGuestId,
+  ]);
   const dropGuestOnSeat = useCallback(
     async (tableId: string, seatNumber: number, guestId: string) => {
       if (!isDesktopViewport) return;
@@ -705,7 +764,6 @@ export default function SeatingPlanEditorPage() {
     },
     [endGuestDrag, handleSeatAssign, handleSelectGuest, isDesktopViewport],
   );
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -802,6 +860,7 @@ export default function SeatingPlanEditorPage() {
           name: nextPlan.name,
           width: nextPlan.width,
           height: nextPlan.height,
+          pairSidePreference: nextPlan.pairSidePreference,
           tables: nextPlan.tables.map((table) => ({
             id: table.id,
             label: table.label,
@@ -894,7 +953,7 @@ export default function SeatingPlanEditorPage() {
     const response = await fetch(`/api/seating-plans/${planId}/guests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, sex: "unknown" }),
     });
     if (!response.ok) {
       const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -1071,15 +1130,25 @@ export default function SeatingPlanEditorPage() {
 
   const handleUpdateGuest = useCallback(async (
     guestId: string,
-    payload: { name: string; groupId: string | null; notes: string },
+    payload: {
+      name: string;
+      sex: GuestSex;
+      groupId: string | null;
+      notes: string;
+      plannedTableId?: string | null;
+    },
   ) => {
     const response = await fetch(`/api/seating-plans/${planId}/guests/${guestId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: payload.name,
+        sex: payload.sex,
         groupId: payload.groupId,
         notes: payload.notes || null,
+        ...(payload.plannedTableId !== undefined
+          ? { plannedTableId: payload.plannedTableId }
+          : {}),
       }),
     });
     if (!response.ok) {
@@ -1128,6 +1197,7 @@ export default function SeatingPlanEditorPage() {
       try {
         await handleUpdateGuest(guestId, {
           name: guest.name,
+          sex: guest.sex,
           groupId,
           notes: guest.notes ?? "",
         });
@@ -1152,6 +1222,125 @@ export default function SeatingPlanEditorPage() {
       }
     },
     [groups, guests, handleUpdateGuest, selectedGuestId],
+  );
+
+  const handlePlanGuestToTable = useCallback(
+    async (tableId: string, guestId: string) => {
+      const guest = guests.find((item) => item.id === guestId);
+      if (!guest) {
+        throw new Error("Guest not found");
+      }
+
+      const previousPlannedTableId = guest.plannedTableId;
+      setGuests((current) =>
+        current.map((item) =>
+          item.id === guestId ? { ...item, plannedTableId: tableId } : item,
+        ),
+      );
+
+      try {
+        await handleUpdateGuest(guestId, {
+          name: guest.name,
+          sex: guest.sex,
+          groupId: guest.groupId,
+          notes: guest.notes ?? "",
+          plannedTableId: tableId,
+        });
+      } catch (error) {
+        setGuests((current) =>
+          current.map((item) =>
+            item.id === guestId
+              ? { ...item, plannedTableId: previousPlannedTableId }
+              : item,
+          ),
+        );
+        throw error;
+      }
+    },
+    [guests, handleUpdateGuest],
+  );
+
+  const dropGuestOnTable = useCallback(
+    async (tableId: string, guestId: string) => {
+      if (!isDesktopViewport) return;
+      if (isTableDraggingRef.current) return;
+      try {
+        await handlePlanGuestToTable(tableId, guestId);
+        toast({
+          variant: "success",
+          title: t("toasts.success"),
+          description: t("canvas.plannedTableAssigned"),
+        });
+        handleSelectGuest(guestId);
+      } catch (error) {
+        setGuestsError(error instanceof Error ? error.message : t("canvas.failedPlanAssign"));
+      } finally {
+        endGuestDrag();
+      }
+    },
+    [endGuestDrag, handlePlanGuestToTable, handleSelectGuest, isDesktopViewport, t],
+  );
+
+  const handleAutoSeatTable = useCallback(
+    async (tableId: string) => {
+      const response = await fetch(
+        `/api/seating-plans/${planId}/tables/${tableId}/auto-seat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(errorData?.error ?? "Failed to auto-seat table");
+      }
+      const data = (await response.json()) as {
+        assignmentsCreated: Array<{
+          id: string;
+          planId: string;
+          tableId: string;
+          guestId: string;
+          seatNumber: number;
+        }>;
+        warnings: string[];
+        guests: ApiGuest[];
+      };
+
+      if (data.guests.length > 0) {
+        const guestsById = Object.fromEntries(data.guests.map((guest) => [guest.id, guest]));
+        setGuests((current) =>
+          current.map((guest) => guestsById[guest.id] ?? guest),
+        );
+      }
+
+      if (data.assignmentsCreated.length > 0) {
+        toast({
+          variant: "success",
+          title: t("toasts.success"),
+          description: t("inspector.autoSeatSuccess", {
+            count: data.assignmentsCreated.length,
+          }),
+        });
+      } else {
+        toast({
+          variant: "info",
+          title: t("toasts.info"),
+          description: t("inspector.autoSeatNoChanges"),
+        });
+      }
+
+      for (const warning of data.warnings) {
+        toast({
+          variant: "info",
+          title: t("toasts.info"),
+          description: warning,
+        });
+      }
+    },
+    [planId, t],
   );
 
   const handleDeleteGuest = useCallback(async (guestId: string) => {
@@ -1422,6 +1611,7 @@ export default function SeatingPlanEditorPage() {
           lastSavedLabel={lastSavedLabel}
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
+          onOpenPlanSettings={() => setMobileMoreView("settings")}
         />
         <div className="relative min-h-0 flex-1 overflow-hidden border-t border-zinc-200 bg-zinc-100/40">
           <SeatingCanvas
@@ -1437,6 +1627,8 @@ export default function SeatingPlanEditorPage() {
             guests={guests.map((guest) => ({
               id: guest.id,
               name: guest.name,
+              sex: guest.sex,
+              plannedTableId: guest.plannedTableId,
               plusOneHostGuestId: guest.plusOneHostGuestId,
               group: guest.group,
               assignment: guest.assignment
@@ -1451,6 +1643,9 @@ export default function SeatingPlanEditorPage() {
             onToggleGroupColors={() => setShowGroupColors((current) => !current)}
             onToggleTableDrag={() =>
               setMobileTableDragEnabled((current) => !current)
+            }
+            pairSidePreference={
+              plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
             }
             relationshipsByGuestId={relationshipsByGuestId}
             mobileMode
@@ -1694,7 +1889,9 @@ export default function SeatingPlanEditorPage() {
                 ? t("editor.more")
                 : mobileMoreView === "legend"
                   ? t("canvas.legendTitle")
-                  : t("editor.importExport")}
+                  : mobileMoreView === "settings"
+                    ? t("planSettings.title")
+                    : t("editor.importExport")}
             </DrawerTitle>
             {mobileMoreView === "menu" ? (
               <>
@@ -1710,11 +1907,13 @@ export default function SeatingPlanEditorPage() {
                     <span>{t("editor.importExport")}</span>
                     <span className="text-zinc-400">›</span>
                   </Button>
-                  <Button variant="ghost" className="h-11 w-full justify-between px-3 text-sm" disabled>
+                  <Button
+                    variant="ghost"
+                    className="h-11 w-full justify-between px-3 text-sm"
+                    onClick={() => setMobileMoreView("settings")}
+                  >
                     <span>{t("editor.settings")}</span>
-                    <span className="rounded-full border border-blue-200 px-2 py-0.5 text-[10px] text-blue-600">
-                      {t("editor.customComing")}
-                    </span>
+                    <span className="text-zinc-400">›</span>
                   </Button>
                   <Button
                     variant="ghost"
@@ -1817,6 +2016,46 @@ export default function SeatingPlanEditorPage() {
                   </Button>
                 </div>
               </>
+            ) : mobileMoreView === "settings" ? (
+              <>
+                <div className="px-4 py-4">
+                  <h3 className="text-sm font-semibold text-zinc-900">{t("planSettings.title")}</h3>
+                </div>
+                <div className="space-y-3 border-t border-zinc-200 px-4 py-4">
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-zinc-600">
+                      {t("planSettings.pairSidePreference")}
+                    </p>
+                    <Select
+                      value={plan.pairSidePreference}
+                      onValueChange={(value) =>
+                        updatePlanPairSidePreference(
+                          value as "auto" | "male-left" | "female-left",
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">{t("planSettings.pairSideAuto")}</SelectItem>
+                        <SelectItem value="male-left">{t("planSettings.pairSideMaleLeft")}</SelectItem>
+                        <SelectItem value="female-left">{t("planSettings.pairSideFemaleLeft")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-zinc-500">{t("planSettings.pairSideHelp")}</p>
+                  </div>
+                </div>
+                <div className="border-t border-zinc-200 p-3">
+                  <Button
+                    variant="outline"
+                    className="h-10 w-full"
+                    onClick={() => setMobileMoreView("menu")}
+                  >
+                    {t("common.close")}
+                  </Button>
+                </div>
+              </>
             ) : (
               <>
                 <div className="px-4 py-4">
@@ -1882,6 +2121,7 @@ export default function SeatingPlanEditorPage() {
           onTableSeatLayoutChange={updateSelectedTableSeatLayout}
           onRotateTable={rotateSelectedTable}
           onDeleteTable={deleteSelectedTable}
+          onAutoSeatTable={handleAutoSeatTable}
           side="bottom"
           showOverlay
         />
@@ -1897,6 +2137,7 @@ export default function SeatingPlanEditorPage() {
           lastSavedLabel={lastSavedLabel}
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
+          onOpenPlanSettings={() => setDesktopPlanSettingsOpen(true)}
         />
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
@@ -1932,6 +2173,8 @@ export default function SeatingPlanEditorPage() {
               guests={guests.map((guest) => ({
                 id: guest.id,
                 name: guest.name,
+                sex: guest.sex,
+                plannedTableId: guest.plannedTableId,
                 plusOneHostGuestId: guest.plusOneHostGuestId,
                 group: guest.group,
                 assignment: guest.assignment
@@ -1950,6 +2193,10 @@ export default function SeatingPlanEditorPage() {
               onSeatGuestDragStart={startGuestDrag}
               onSeatGuestDragEnd={endGuestDrag}
               onGuestDropToSeat={dropGuestOnSeat}
+              onGuestDropToTable={dropGuestOnTable}
+              pairSidePreference={
+                plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
+              }
               relationshipsByGuestId={relationshipsByGuestId}
             />
             <InspectorPanel
@@ -1982,6 +2229,7 @@ export default function SeatingPlanEditorPage() {
               onTableSeatLayoutChange={updateSelectedTableSeatLayout}
               onRotateTable={rotateSelectedTable}
               onDeleteTable={deleteSelectedTable}
+              onAutoSeatTable={handleAutoSeatTable}
             />
           </div>
         </div>
@@ -2009,6 +2257,40 @@ export default function SeatingPlanEditorPage() {
             </SheetTitle>
             <div className="min-h-0 flex-1 overflow-y-auto border-t border-zinc-200 px-4 py-4">
               <GuestDataTools guests={guests} onBulkImportGuests={handleBulkImportGuests} />
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={desktopPlanSettingsOpen} onOpenChange={setDesktopPlanSettingsOpen}>
+          <SheetContent side="right" className="flex w-[420px] flex-col p-0 sm:max-w-[420px]">
+            <SheetTitle className="px-4 py-4 text-left text-sm font-semibold text-zinc-900">
+              {t("planSettings.title")}
+            </SheetTitle>
+            <div className="min-h-0 flex-1 overflow-y-auto border-t border-zinc-200 px-4 py-4">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-zinc-600">
+                    {t("planSettings.pairSidePreference")}
+                  </p>
+                  <Select
+                    value={plan.pairSidePreference}
+                    onValueChange={(value) =>
+                      updatePlanPairSidePreference(
+                        value as "auto" | "male-left" | "female-left",
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{t("planSettings.pairSideAuto")}</SelectItem>
+                      <SelectItem value="male-left">{t("planSettings.pairSideMaleLeft")}</SelectItem>
+                      <SelectItem value="female-left">{t("planSettings.pairSideFemaleLeft")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-zinc-500">{t("planSettings.pairSideHelp")}</p>
+                </div>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

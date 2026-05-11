@@ -22,6 +22,7 @@ type SeatingToolbarProps = {
   lastSavedLabel: string | null;
   onPlanNameChange: (name: string) => void;
   onSave: () => void;
+  onOpenPlanSettings?: () => void;
 };
 
 export function SeatingToolbar({
@@ -31,6 +32,7 @@ export function SeatingToolbar({
   lastSavedLabel,
   onPlanNameChange,
   onSave,
+  onOpenPlanSettings,
 }: SeatingToolbarProps) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
@@ -87,6 +89,16 @@ export function SeatingToolbar({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {onOpenPlanSettings ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 px-3 text-xs"
+              onClick={onOpenPlanSettings}
+            >
+              {t("editor.settings")}
+            </Button>
+          ) : null}
           <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
             <SelectTrigger className="h-9 w-[150px]" aria-label={t("common.language")}>
               <SelectValue />
