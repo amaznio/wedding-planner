@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 118 - Desktop guest quick-add collapsible (completed)
+Phase 125 - Guest panel icon normalization + downsizing (completed)
 
 ## Completed Phases
 
@@ -124,9 +124,95 @@ Phase 118 - Desktop guest quick-add collapsible (completed)
 - Phase 116 - Pair drag sex-side toggle
 - Phase 117 - Plan settings for pair-side preference
 - Phase 118 - Desktop guest quick-add collapsible
+- Phase 119 - Desktop guest panel section hierarchy polish
+- Phase 120 - Desktop guests header actions + add-guest modal
+- Phase 121 - Desktop guests header icon-only action compacting
+- Phase 122 - Desktop guests header tightening
+- Phase 123 - Desktop guests heading size reduction
+- Phase 124 - Desktop guests header action size alignment
+- Phase 125 - Guest panel icon normalization + downsizing
 
 
 ## Completed Work
+
+- Implemented Phase 125 guest panel icon normalization + downsizing:
+  - switched remaining inline close icon in guest add modal to Lucide (`X`) for icon-set consistency inside `GuestPanel`
+  - reduced guest panel header/menu icon sizes to `h-4 w-4`:
+    - `+`
+    - `More` (ellipsis)
+    - dropdown action icons (`Import CSV`, `Export CSV`, `Groups`, `Legend`, `Settings`)
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 124 desktop guests header action size alignment:
+  - matched desktop header action buttons (`+`, `More`) to the same compact size token as filter buttons below (`h-8`)
+  - kept icon-only style and dropdown behavior unchanged
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 123 desktop guests heading size reduction:
+  - reduced desktop guests heading size one additional step (`text-3xl` -> `text-2xl`)
+  - preserved compact action button sizes and spacing from prior phase
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 122 desktop guests header tightening:
+  - reduced desktop guests title size for a less dominant heading
+  - further reduced header action button footprints (`+` and `More` icon-only)
+  - tightened horizontal spacing between action buttons
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 121 desktop guests header icon-only action compacting:
+  - reduced desktop header action control footprint:
+    - `+` button set to compact square size
+    - `More` trigger switched to icon-only compact square
+  - removed visible `More` trigger text while keeping dropdown behavior unchanged
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 120 desktop guests header actions + add-guest modal:
+  - replaced desktop guest-panel header actions with:
+    - `+` button that opens a modal for adding a guest
+    - `More` outline button with dropdown sections/actions
+  - added desktop add-guest modal fields:
+    - name (required)
+    - group (optional select)
+    - notes (optional textarea)
+  - wired modal submit to guest create API payload with optional `groupId` and `notes`
+  - updated desktop `More` dropdown actions to match requested IA:
+    - `Import CSV`
+    - `Export CSV`
+    - `Groups`
+    - `Legend`
+    - `Settings`
+  - added desktop header counters row:
+    - total guests
+    - seated badge
+  - preserved sheet/mobile guest panel flow
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 119 desktop guest panel section hierarchy polish:
+  - refined desktop `GuestPanel` into clearer stacked sections:
+    - panel heading row (`Goście`) with kebab menu
+    - dedicated `Dodaj gościa` accordion section
+    - always-visible `Lista gości` controls and list section
+  - changed desktop accordion trigger copy from verbose show/hide wording to stable section title (`Dodaj gościa`)
+  - moved separators so the sections are visually distinct without changing guest create/filter/list behavior
+  - preserved sheet/mobile panel behavior and existing menu actions
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 118 desktop guest quick-add collapsible:
   - changed desktop `GuestPanel` quick-add from always-visible to collapsible (accordion-style)
@@ -1332,6 +1418,29 @@ Phase 118 - Desktop guest quick-add collapsible (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 125 guest panel icon normalization + downsizing)
+- `corepack pnpm lint` (pass with existing warnings; Phase 125 guest panel icon normalization + downsizing)
+
+- `corepack pnpm typecheck` (pass; Phase 124 desktop guests header action size alignment)
+- `corepack pnpm lint` (pass with existing warnings; Phase 124 desktop guests header action size alignment)
+
+- `corepack pnpm typecheck` (pass; Phase 123 desktop guests heading size reduction)
+- `corepack pnpm lint` (pass with existing warnings; Phase 123 desktop guests heading size reduction)
+
+- `corepack pnpm typecheck` (pass; Phase 122 desktop guests header tightening)
+- `corepack pnpm lint` (pass with existing warnings; Phase 122 desktop guests header tightening)
+
+- `corepack pnpm typecheck` (pass; Phase 121 desktop guests header icon-only action compacting)
+- `corepack pnpm lint` (pass with existing warnings; Phase 121 desktop guests header icon-only action compacting)
+
+- `corepack pnpm typecheck` (pass; Phase 120 desktop guests header actions + add-guest modal)
+- `corepack pnpm lint` (pass with existing warnings; Phase 120 desktop guests header actions + add-guest modal)
+- `corepack pnpm i18n:audit` (pass; Phase 120 desktop guests header actions + add-guest modal)
+
+- `corepack pnpm typecheck` (pass; Phase 119 desktop guest panel section hierarchy polish)
+- `corepack pnpm lint` (pass with existing warnings; Phase 119 desktop guest panel section hierarchy polish)
+- `corepack pnpm i18n:audit` (pass; Phase 119 desktop guest panel section hierarchy polish)
+
 - `corepack pnpm typecheck` (pass; Phase 118 desktop guest quick-add collapsible)
 - `corepack pnpm lint` (pass with existing warnings; Phase 118 desktop guest quick-add collapsible)
 - `corepack pnpm i18n:audit` (pass; Phase 118 desktop guest quick-add collapsible)
@@ -1640,9 +1749,28 @@ Phase 118 - Desktop guest quick-add collapsible (completed)
 14. Change pair-side preference to `Boy left` / `Girl left`, then drag a linked mixed-sex adjacent pair and verify placement follows selected plan preference.
 15. Change preference to `Auto` and verify pair placement returns to default ordering behavior.
 16. On desktop guest panel, verify add-guest row is collapsed by default.
-17. Click `Show add guest`, verify input + add button expand.
+17. Click `Dodaj gościa`, verify input + add button expand.
 18. Add a guest and verify creation flow still works.
-19. Click `Hide add guest` and verify panel collapses back to save vertical space.
+19. Click `Dodaj gościa` again and verify panel collapses back to save vertical space.
+20. On desktop guest panel, verify a `+` action button appears next to `More`.
+21. Click `+` and verify `Add guest` modal opens with Name, Group, and Notes fields.
+22. Submit with only Name and verify guest is created.
+23. Submit with Name + Group + Notes and verify created guest has group assignment and notes persisted.
+24. Click `More` and verify dropdown sections/actions:
+    - `Import CSV`
+    - `Export CSV`
+    - `Groups`
+    - `Legend`
+    - `Settings`
+25. Click `Settings` from `More` and verify plan settings sheet opens.
+26. Verify desktop header action buttons are compact square icon buttons.
+27. Verify `More` trigger no longer shows text and still opens the same dropdown.
+28. Verify guests heading appears smaller than previous iteration.
+29. Verify `+` and `More` icon buttons are visibly smaller and tighter than previous iteration.
+30. Verify guests heading is smaller again than the prior revision.
+31. Verify `+` and `More` buttons match the filter-button height in `Lista gości`.
+32. Verify guest panel header and dropdown icons are visually smaller than previous revision.
+33. Verify guest add modal close control uses Lucide style matching other panel icons.
 
 ## Known Issues
 

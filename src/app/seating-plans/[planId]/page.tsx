@@ -948,12 +948,23 @@ export default function SeatingPlanEditorPage() {
     await savePlanRef.current("manual");
   }, []);
 
-  const handleCreateGuest = useCallback(async (name: string) => {
+  const handleCreateGuest = useCallback(async (payload: {
+    name: string;
+    groupId?: string | null;
+    notes?: string;
+  }) => {
     setGuestsError(null);
+    const trimmedName = payload.name.trim();
+    if (!trimmedName) return;
     const response = await fetch(`/api/seating-plans/${planId}/guests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, sex: "unknown" }),
+      body: JSON.stringify({
+        name: trimmedName,
+        sex: "unknown",
+        groupId: payload.groupId ?? undefined,
+        notes: payload.notes?.trim() ? payload.notes.trim() : undefined,
+      }),
     });
     if (!response.ok) {
       const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -973,7 +984,7 @@ export default function SeatingPlanEditorPage() {
     setMobileAddGuestSubmitting(true);
     setMobileAddGuestError(null);
     try {
-      await handleCreateGuest(trimmed);
+      await handleCreateGuest({ name: trimmed });
       setMobileNewGuestName("");
       setMobileAddGuestOpen(false);
     } catch (error) {
@@ -982,6 +993,10 @@ export default function SeatingPlanEditorPage() {
       setMobileAddGuestSubmitting(false);
     }
   }, [handleCreateGuest, mobileNewGuestName]);
+
+  const handleOpenLegend = useCallback(() => {
+    window.dispatchEvent(new Event("mobile-open-legend"));
+  }, []);
 
   const handleCreateGroup = useCallback(
     async (name: string) => {
@@ -1807,6 +1822,7 @@ export default function SeatingPlanEditorPage() {
                   showHeader={false}
                   showQuickAdd={false}
                   guests={guests}
+                  groups={groups}
                   relationships={relationships}
                   tableLabelById={tableLabelById}
                   selectedGuestId={selectedGuestId}
@@ -2142,6 +2158,7 @@ export default function SeatingPlanEditorPage() {
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
             guests={guests}
+            groups={groups}
             relationships={relationships}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
@@ -2153,6 +2170,8 @@ export default function SeatingPlanEditorPage() {
             onOpenGroupsManager={() => setDesktopGroupsManagerOpen(true)}
             onOpenDataTools={() => setDesktopDataToolsOpen(true)}
             onExportGuests={handleExportGuestsCsv}
+            onOpenLegend={handleOpenLegend}
+            onOpenSettings={() => setDesktopPlanSettingsOpen(true)}
             linkingSourceGuestId={linkingSourceGuestId}
             onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
             enableGuestDnD

@@ -1,4 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import {
+  Download,
+  Ellipsis,
+  Plus,
+  Settings,
+  Shapes,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -57,13 +68,22 @@ type RelationshipForm = {
 
 type GuestPanelProps = {
   guests: Guest[];
+  groups: Array<{
+    id: string;
+    name: string;
+    color: string;
+  }>;
   relationships: SeatingRelationship[];
   tableLabelById: Record<string, string>;
   selectedGuestId: string | null;
   isLoading: boolean;
   error: string | null;
   onSelectGuest: (guestId: string | null) => void;
-  onCreateGuest: (name: string) => Promise<void>;
+  onCreateGuest: (payload: {
+    name: string;
+    groupId?: string | null;
+    notes?: string;
+  }) => Promise<void>;
   onCreateRelationship: (
     payload: RelationshipForm & { guestIds: string[] },
   ) => Promise<void>;
@@ -73,6 +93,8 @@ type GuestPanelProps = {
   onOpenGroupsManager?: () => void;
   onOpenDataTools?: () => void;
   onExportGuests?: () => void;
+  onOpenLegend?: () => void;
+  onOpenSettings?: () => void;
   onGuestSelected?: (guestId: string | null) => void;
   enableGuestDnD?: boolean;
   onGuestDragStart?: (guestId: string) => void;
@@ -88,6 +110,7 @@ function getInitials(name: string): string {
 
 export function GuestPanel({
   guests,
+  groups,
   relationships,
   tableLabelById,
   selectedGuestId,
@@ -102,6 +125,8 @@ export function GuestPanel({
   onOpenGroupsManager,
   onOpenDataTools,
   onExportGuests,
+  onOpenLegend,
+  onOpenSettings,
   onGuestSelected,
   enableGuestDnD = false,
   onGuestDragStart,
@@ -113,7 +138,9 @@ export function GuestPanel({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
   const [newGuestName, setNewGuestName] = useState("");
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(variant !== "desktop");
+  const [newGuestGroupId, setNewGuestGroupId] = useState<string>("");
+  const [newGuestNotes, setNewGuestNotes] = useState("");
+  const [isAddGuestDialogOpen, setIsAddGuestDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRelationshipGuestIds, setSelectedRelationshipGuestIds] = useState<
     string[]
@@ -171,8 +198,15 @@ export function GuestPanel({
 
     setIsSubmitting(true);
     try {
-      await onCreateGuest(trimmed);
+      await onCreateGuest({
+        name: trimmed,
+        groupId: newGuestGroupId.trim() ? newGuestGroupId : null,
+        notes: newGuestNotes.trim() ? newGuestNotes.trim() : undefined,
+      });
       setNewGuestName("");
+      setNewGuestGroupId("");
+      setNewGuestNotes("");
+      setIsAddGuestDialogOpen(false);
     } catch {
       // Parent surface renders actionable guest errors.
     } finally {
@@ -241,102 +275,169 @@ export function GuestPanel({
   const selectedLinkGuests = selectedRelationshipGuestIds
     .map((guestId) => guests.find((guest) => guest.id === guestId))
     .filter((guest): guest is Guest => guest !== undefined);
-  const showAddRow = showQuickAdd ?? variant === "desktop";
+  const showAddRow = showQuickAdd ?? variant !== "desktop";
 
   return (
     <aside className={rootClassName}>
       {showHeader ? (
         <>
           <div className="px-4 py-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-zinc-900">{t("guestPanel.title")}</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-zinc-900">{t("guestPanel.title")}</h2>
               {variant === "desktop" ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon" aria-label={t("editor.more")}>
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                        <circle cx="6" cy="12" r="1.6" />
-                        <circle cx="12" cy="12" r="1.6" />
-                        <circle cx="18" cy="12" r="1.6" />
-                      </svg>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={onOpenGroupsManager}>
-                      {t("guestPanel.manageGroups")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onOpenDataTools}>{t("guestPanel.import")}</DropdownMenuItem>
-                    <DropdownMenuItem onClick={onExportGuests}>{t("guestPanel.export")}</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
-            {showAddRow ? (
-              variant === "desktop" ? (
-                <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 w-full justify-between px-3 text-sm"
-                    onClick={() => setIsQuickAddOpen((current) => !current)}
-                    aria-expanded={isQuickAddOpen}
+                    size="sm"
+                    className="size-8 p-0"
+                    aria-label={t("guestPanel.addGuest")}
+                    onClick={() => setIsAddGuestDialogOpen(true)}
                   >
-                    <span>
-                      {isQuickAddOpen
-                        ? t("guestPanel.addGuestCollapse")
-                        : t("guestPanel.addGuestExpand")}
-                    </span>
-                    <svg
-                      viewBox="0 0 24 24"
-                      className={`h-4 w-4 transition-transform ${isQuickAddOpen ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <Plus className="h-4 w-4" />
                   </Button>
-                  {isQuickAddOpen ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newGuestName}
-                        onChange={(event) => setNewGuestName(event.target.value)}
-                        placeholder={t("guestPanel.addGuestPlaceholder")}
-                      />
-                      <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
-                        {t("common.add")}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="size-8 p-0"
+                        aria-label={t("editor.more")}
+                      >
+                        <Ellipsis className="h-4 w-4" />
                       </Button>
-                    </div>
-                  ) : null}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
+                      <p className="px-2 py-1 text-sm font-semibold text-zinc-900">{t("editor.more")}</p>
+                      <DropdownMenuItem onClick={onOpenDataTools} className="gap-2">
+                        <Upload className="h-4 w-4" />
+                        {t("guestPanel.importCsv")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onExportGuests} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        {t("guestPanel.exportCsv")}
+                      </DropdownMenuItem>
+                      <Separator className="my-1" />
+                      <DropdownMenuItem onClick={onOpenGroupsManager} className="gap-2">
+                        <Users className="h-4 w-4" />
+                        {t("guestPanel.manageGroups")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onOpenLegend} className="gap-2">
+                        <Shapes className="h-4 w-4" />
+                        {t("editor.legend")}
+                      </DropdownMenuItem>
+                      <Separator className="my-1" />
+                      <DropdownMenuItem onClick={onOpenSettings} className="gap-2">
+                        <Settings className="h-4 w-4" />
+                        {t("editor.settings")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    value={newGuestName}
-                    onChange={(event) => setNewGuestName(event.target.value)}
-                    placeholder={t("guestPanel.addGuestPlaceholder")}
-                  />
-                  <Button type="button" disabled={isSubmitting} onClick={handleCreateGuest}>
-                    {t("common.add")}
-                  </Button>
-                </div>
-              )
+              ) : null}
+            </div>
+            {variant === "desktop" ? (
+              <div className="mt-1 flex items-center gap-2 text-xs">
+                <span className="text-zinc-500">{t("guestPanel.guestsCount", { count: totalGuests })}</span>
+                <Badge variant="secondary">
+                  {t("guestPanel.seatedCount", { count: seatedGuests })}
+                </Badge>
+              </div>
             ) : null}
           </div>
+          <DialogPrimitive.Root open={isAddGuestDialogOpen} onOpenChange={setIsAddGuestDialogOpen}>
+            <DialogPrimitive.Portal>
+              <DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-black/30" />
+              <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-[71] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-5 shadow-xl">
+                <div className="mb-5 flex items-center justify-between">
+                  <DialogPrimitive.Title className="text-xl font-semibold text-zinc-900">
+                    {t("guestPanel.addGuest")}
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Close asChild>
+                    <Button type="button" variant="ghost" size="icon" aria-label={t("common.close")}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DialogPrimitive.Close>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.name")}</label>
+                    <Input
+                      value={newGuestName}
+                      onChange={(event) => setNewGuestName(event.target.value)}
+                      placeholder={t("guestPanel.fullNamePlaceholder")}
+                    />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.group")}</label>
+                    <select
+                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+                      value={newGuestGroupId}
+                      onChange={(event) => setNewGuestGroupId(event.target.value)}
+                    >
+                      <option value="">{t("guestPanel.selectGroupPlaceholder")}</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-start">
+                    <label className="pt-2 text-sm font-medium text-zinc-700">{t("guestPanel.notesOptional")}</label>
+                    <textarea
+                      value={newGuestNotes}
+                      onChange={(event) => setNewGuestNotes(event.target.value)}
+                      placeholder={t("guestPanel.notesPlaceholder")}
+                      className="min-h-24 w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+                    />
+                  </div>
+                </div>
+                <div className="mt-5 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddGuestDialogOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button type="button" onClick={handleCreateGuest} disabled={isSubmitting}>
+                    {t("guestPanel.addGuest")}
+                  </Button>
+                </div>
+              </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
+          </DialogPrimitive.Root>
           <Separator />
         </>
+      ) : null}
+      {showAddRow ? <Separator /> : null}
+      {showAddRow ? (
+        <div className="px-4 py-4">
+          <div className="flex gap-2">
+            <Input
+              value={newGuestName}
+              onChange={(event) => setNewGuestName(event.target.value)}
+              placeholder={t("guestPanel.addGuestPlaceholder")}
+            />
+            <Button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => void handleCreateGuest()}
+            >
+              {t("common.add")}
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       <div
         className={`shrink-0 px-4 ${variant === "sheet" ? "space-y-2 py-3" : "space-y-3 py-4"}`}
       >
         {variant === "desktop" ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
-            <Badge variant="secondary">
-              {t("guestPanel.guestsSeated", { seated: seatedGuests, total: totalGuests })}
-            </Badge>
-          </div>
+          <p className="text-sm font-semibold text-zinc-900">{t("guestPanel.guestList")}</p>
         ) : null}
         <Input
           value={query}
