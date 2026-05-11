@@ -346,24 +346,35 @@ export default function SeatingPlanEditorPage() {
     return next;
   }, [relationships]);
 
-  const loadGuests = useCallback(async () => {
-    setIsGuestsLoading(true);
-    try {
-      const guestsResponse = await fetch(`/api/seating-plans/${planId}/guests`, {
-        cache: "no-store",
-      });
+  const loadGuests = useCallback(
+    async (options?: { showLoading?: boolean; surfaceErrors?: boolean }) => {
+      const showLoading = options?.showLoading ?? true;
+      const surfaceErrors = options?.surfaceErrors ?? true;
+      if (showLoading) {
+        setIsGuestsLoading(true);
+      }
+      try {
+        const guestsResponse = await fetch(`/api/seating-plans/${planId}/guests`, {
+          cache: "no-store",
+        });
 
-      if (!guestsResponse.ok) throw new Error("Failed to load guests");
+        if (!guestsResponse.ok) throw new Error("Failed to load guests");
 
-      const guestsData = (await guestsResponse.json()) as { guests: ApiGuest[] };
-      setGuests(guestsData.guests ?? []);
-      setGuestsError(null);
-    } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : t("editor.loadGuestsError"));
-    } finally {
-      setIsGuestsLoading(false);
-    }
-  }, [planId]);
+        const guestsData = (await guestsResponse.json()) as { guests: ApiGuest[] };
+        setGuests(guestsData.guests ?? []);
+        setGuestsError(null);
+      } catch (error) {
+        if (surfaceErrors) {
+          setGuestsError(error instanceof Error ? error.message : t("editor.loadGuestsError"));
+        }
+      } finally {
+        if (showLoading) {
+          setIsGuestsLoading(false);
+        }
+      }
+    },
+    [planId, t],
+  );
 
   const loadGroups = useCallback(async () => {
     try {
@@ -381,7 +392,8 @@ export default function SeatingPlanEditorPage() {
     }
   }, [planId]);
 
-  const loadRelationships = useCallback(async () => {
+  const loadRelationships = useCallback(async (options?: { surfaceErrors?: boolean }) => {
+    const surfaceErrors = options?.surfaceErrors ?? true;
     try {
       const response = await fetch(`/api/seating-plans/${planId}/relationships`, {
         cache: "no-store",
@@ -393,11 +405,13 @@ export default function SeatingPlanEditorPage() {
       setRelationships(data.relationships ?? []);
       setRelationshipsError(null);
     } catch (error) {
-      setRelationshipsError(
-        error instanceof Error ? error.message : t("editor.loadRelationshipsError"),
-      );
+      if (surfaceErrors) {
+        setRelationshipsError(
+          error instanceof Error ? error.message : t("editor.loadRelationshipsError"),
+        );
+      }
     }
-  }, [planId]);
+  }, [planId, t]);
 
   useEffect(() => {
     const loadPlan = async () => {
@@ -812,7 +826,6 @@ export default function SeatingPlanEditorPage() {
           setPlan(normalizePlan(payload.plan), { preserveSelection: true });
         }
         if (!didPlanChangeDuringSave) {
-          await Promise.all([loadGuests(), loadRelationships()]);
           shouldAutosaveGuestsRef.current = false;
           markSaved();
           setSaveState("saved");
@@ -823,6 +836,10 @@ export default function SeatingPlanEditorPage() {
             variant: "success",
           });
           setTimeout(() => setSaveState("idle"), 1200);
+          void Promise.all([
+            loadGuests({ showLoading: false, surfaceErrors: false }),
+            loadRelationships({ surfaceErrors: false }),
+          ]);
         } else {
           // User kept editing while the request was in-flight; don't clobber local state.
           setSaveState("idle");
@@ -1082,17 +1099,59 @@ export default function SeatingPlanEditorPage() {
         throw new Error("Guest not found");
       }
 
-      await handleUpdateGuest(guestId, {
-        name: guest.name,
-        groupId,
-        notes: guest.notes ?? "",
-      });
+      const previousGroupId = guest.groupId;
+      const previousGroup = guest.group;
+      const nextGroup = groupId ? groups.find((item) => item.id === groupId) ?? null : null;
+
+      setGuests((current) =>
+        current.map((item) =>
+          item.id === guestId
+            ? {
+                ...item,
+                groupId,
+                group: nextGroup
+                  ? {
+                      id: nextGroup.id,
+                      name: nextGroup.name,
+                      color: nextGroup.color,
+                    }
+                  : null,
+              }
+            : item,
+        ),
+      );
 
       if (selectedGuestId === guestId) {
         setGuestForm((current) => ({ ...current, groupId }));
       }
+
+      try {
+        await handleUpdateGuest(guestId, {
+          name: guest.name,
+          groupId,
+          notes: guest.notes ?? "",
+        });
+      } catch (error) {
+        setGuests((current) =>
+          current.map((item) =>
+            item.id === guestId
+              ? {
+                  ...item,
+                  groupId: previousGroupId,
+                  group: previousGroup,
+                }
+              : item,
+          ),
+        );
+
+        if (selectedGuestId === guestId) {
+          setGuestForm((current) => ({ ...current, groupId: previousGroupId }));
+        }
+
+        throw error;
+      }
     },
-    [guests, handleUpdateGuest, selectedGuestId],
+    [groups, guests, handleUpdateGuest, selectedGuestId],
   );
 
   const handleDeleteGuest = useCallback(async (guestId: string) => {
@@ -1378,6 +1437,7 @@ export default function SeatingPlanEditorPage() {
             guests={guests.map((guest) => ({
               id: guest.id,
               name: guest.name,
+              plusOneHostGuestId: guest.plusOneHostGuestId,
               group: guest.group,
               assignment: guest.assignment
                 ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
@@ -1872,6 +1932,7 @@ export default function SeatingPlanEditorPage() {
               guests={guests.map((guest) => ({
                 id: guest.id,
                 name: guest.name,
+                plusOneHostGuestId: guest.plusOneHostGuestId,
                 group: guest.group,
                 assignment: guest.assignment
                   ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }

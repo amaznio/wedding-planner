@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 111 - Add-members list restricted to ungrouped guests only (completed)
+Phase 114 - Guest-list group color indicators with plus-one inheritance (completed)
 
 ## Completed Phases
 
@@ -118,9 +118,45 @@ Phase 111 - Add-members list restricted to ungrouped guests only (completed)
 - Phase 109 - Group add-members search + first/last name sorting
 - Phase 110 - Collapsible group member/add-member accordion sections
 - Phase 111 - Add-members list restricted to ungrouped guests only
+- Phase 112 - Non-blocking background post-save refresh for guests/relationships
+- Phase 113 - Optimistic guest add-to-group membership update
+- Phase 114 - Guest-list group color indicators with plus-one inheritance
 
 
 ## Completed Work
+
+- Implemented Phase 114 guest-list group color indicators with plus-one inheritance:
+  - added pure helper `resolveEffectiveGuestGroup` to resolve display group from:
+    - guest's own group first
+    - linked plus-one host group as fallback (`plusOneHostGuestId`)
+  - added left color stripe indicators in desktop/mobile `GuestPanel` list rows
+  - added left color stripe indicators in seat-assignment guest list rows inside `SeatingCanvas`
+  - preserved current-seat highlight precedence in seat popover (`amber` current indicator remains)
+  - passed `plusOneHostGuestId` through `SeatingCanvas` guest props so plus-ones inherit host group colors in list UIs
+  - files changed:
+    - `src/features/seating-editor/lib/guest-group.ts`
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 113 optimistic guest-group membership updates in groups manager flow:
+  - `handleUpdateGuestGroup` now applies local `groupId`/`group` state immediately before the API call
+  - `Dodaj` action in group details now removes the guest from the add-members list instantly (no wait for roundtrip)
+  - selected guest form state is updated optimistically and rolled back on error
+  - on API failure, guest membership rolls back to previous group state and error is surfaced as before
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 112 non-blocking post-save background refresh:
+  - save success no longer waits for `loadGuests` and `loadRelationships` before showing saved state/toast
+  - post-save revalidation now runs in the background (`void Promise.all(...)`)
+  - guest reload now supports silent mode (`showLoading: false`) so the left guest panel no longer flips to loading during autosave/manual save
+  - silent post-save refresh suppresses transient panel errors (`surfaceErrors: false`) while preserving optimistic UI continuity
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 111 single-group-membership UX enforcement in group details:
   - changed `Dodaj gości do grupy` source list to include only guests with `groupId === null`
@@ -1182,6 +1218,15 @@ Phase 111 - Add-members list restricted to ungrouped guests only (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; phase 114 guest-list group color indicators with plus-one inheritance)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 113 optimistic guest add-to-group membership update)
+- `corepack pnpm lint` (pass with existing warnings)
+
+- `corepack pnpm typecheck` (pass; phase 112 non-blocking background post-save refresh)
+- `corepack pnpm lint` (pass with existing warnings)
+
 - `corepack pnpm typecheck` (pass; phase 111 ungrouped-only add-members list)
 - `corepack pnpm lint` (pass with existing warnings)
 
@@ -1422,7 +1467,7 @@ Phase 111 - Add-members list restricted to ungrouped guests only (completed)
 
 - Prisma schema validation: pass.
 - TypeScript: pass.
-- i18n audit: pass.
+- i18n audit: not run in this phase set.
 - Lint: pass with existing warnings.
 - Build: not run in this phase set.
 
@@ -1465,6 +1510,11 @@ Phase 111 - Add-members list restricted to ungrouped guests only (completed)
 32. In selected-group details, collapse and expand `Goście w grupie` and `Dodaj gości do grupy` sections; verify chevrons and item counts update/display correctly.
 33. Confirm add/remove actions and add-members search/sort still work after expanding sections.
 34. Confirm `Dodaj gości do grupy` shows only ungrouped guests (no guests already assigned to other groups).
+35. Trigger autosave by editing table name/seat count and watch left guest panel: it should keep current list visible (no `Loading...` flicker).
+36. Click manual save and confirm save toast/status appears immediately without guest-list blocking state.
+37. Change seat count down so out-of-range assignments are pruned server-side, save, and confirm guests/assignments re-sync shortly after via background refresh.
+38. Open Groups details and click `Dodaj` for an ungrouped guest; confirm the row disappears immediately and appears in `Goście w grupie` without waiting for network.
+39. Simulate API failure (e.g. temporary backend error) and confirm membership reverts to previous state with an error message.
 
 ## Known Issues
 
@@ -1472,6 +1522,7 @@ Phase 111 - Add-members list restricted to ungrouped guests only (completed)
   - `savePlan` hook dependency warning in `page.tsx` (pre-existing)
   - `SeatingCanvas` `useEffect` dependency warning (still present)
   - unused `totalSeatCount` warning in `page.tsx` (pre-existing)
+- Post-save guest/relationship revalidation is now intentionally silent in UI (background refresh failures do not surface immediate panel errors).
 - CSV plus-one marker list is currently hardcoded (`Osoba Tow.` only).
 - Mobile behavior depends on browser UI chrome; `dvh` improves this but exact visible height can still vary slightly across devices.
 - Group manager detail lists do not yet have dedicated search/filter controls for very large guest lists.
@@ -1486,6 +1537,8 @@ Next recommended follow-up:
   - import/export placement and behavior
 - Add search/filter controls inside group-detail membership lists for large plans.
 - Add focused UI regression coverage for in-flight save continuity (typing/actions remain uninterrupted while response/toast lands).
+- Add focused UI regression coverage for non-blocking post-save background refresh (no guest-panel loading flicker).
+- Add focused UI regression coverage for optimistic guest-group membership updates with rollback on API errors.
 - Add focused UI regression coverage for autosave debounce behavior (save after last edit, not first) and inspector selection persistence.
 - Refactor `savePlan` into a lint-clean stable callback shape that satisfies both React Compiler and exhaustive-deps without warnings.
 - Add backend tests for group endpoint conflict and ownership validation.

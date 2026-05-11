@@ -19,6 +19,7 @@ import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
 } from "../lib/group-move";
+import { resolveEffectiveGuestGroup } from "../lib/guest-group";
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
 import type { SeatingRelationship } from "../types/relationship.types";
@@ -49,6 +50,7 @@ type SeatingCanvasProps = {
   guests?: Array<{
     id: string;
     name: string;
+    plusOneHostGuestId?: string | null;
     group: {
       id: string;
       name: string;
@@ -500,6 +502,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const menuSeatAssignment = seatMenu
     ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
     : null;
+  const guestsById = useMemo(() => {
+    return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
+  }, [guests]);
   const seatMenuGuests = useMemo(() => {
     const query = seatMenuQuery.trim().toLowerCase();
     const filtered = guests.filter((guest) => {
@@ -638,6 +643,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           const assignmentLabel = guest.assignment
             ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
             : t("guestPanel.unseated");
+          const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
           const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
           const moveTogetherGuestIds = new Set(
             guestRelationships
@@ -651,10 +657,17 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               type="button"
               disabled={isAssigningSeat}
               onClick={() => void handleSeatMenuAssign(guest.id)}
-              className={`w-full border-b border-zinc-200/70 px-3 py-1.5 text-left transition-colors last:border-b-0 hover:bg-zinc-100/60 ${
+              className={`relative w-full overflow-hidden border-b border-zinc-200/70 px-3 py-1.5 text-left transition-colors last:border-b-0 hover:bg-zinc-100/60 ${
                 isCurrent ? "border-l-2 border-l-amber-500 bg-zinc-50" : ""
               }`}
             >
+              {effectiveGroup?.color && !isCurrent ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-0 h-full w-1"
+                  style={{ backgroundColor: effectiveGroup.color }}
+                />
+              ) : null}
               <div className="flex items-start justify-between gap-2">
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span

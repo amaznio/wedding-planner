@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { createGuestDragPreview } from "../lib/drag-preview";
+import { resolveEffectiveGuestGroup } from "../lib/guest-group";
 import type {
   PreferredSeating,
   RelationshipType,
@@ -156,6 +157,9 @@ export function GuestPanel({
     }
     return next;
   }, [relationships]);
+  const guestsById = useMemo<Record<string, Guest>>(() => {
+    return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
+  }, [guests]);
 
   const totalGuests = guests.length;
   const seatedGuests = guests.filter((guest) => guest.assignment !== null).length;
@@ -347,6 +351,7 @@ export function GuestPanel({
                 const isSelectedForRelationship =
                   selectedRelationshipGuestIds.includes(guest.id);
                 const isSelectedGuestRow = selectedGuestId === guest.id;
+                const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
 
                 return (
                   <li key={guest.id}>
@@ -378,7 +383,7 @@ export function GuestPanel({
                           onSelectGuest(nextGuestId);
                           onGuestSelected?.(nextGuestId);
                         }}
-                        className={`flex min-w-0 flex-1 items-center gap-3 rounded-md border px-3 py-2 text-left ${
+                        className={`relative flex min-w-0 flex-1 items-center gap-3 overflow-hidden rounded-md border px-3 py-2 text-left ${
                           isSelectedForRelationship
                             ? "border-blue-300 bg-blue-50/70"
                             : isSelectedGuestRow
@@ -386,6 +391,13 @@ export function GuestPanel({
                               : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
                         }`}
                       >
+                        {effectiveGroup?.color ? (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-0 h-full w-1"
+                            style={{ backgroundColor: effectiveGroup.color }}
+                          />
+                        ) : null}
                         <Avatar>
                           <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
                         </Avatar>
