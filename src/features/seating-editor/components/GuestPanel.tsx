@@ -74,6 +74,14 @@ type RelationshipForm = {
   strict: boolean;
 };
 
+const LINKING_DEFAULTS: RelationshipForm = {
+  type: "couple",
+  name: "",
+  preferredSeating: "adjacent",
+  moveTogetherDefault: true,
+  strict: true,
+};
+
 type GuestPanelProps = {
   guests: Guest[];
   groups: Array<{
@@ -157,13 +165,15 @@ export function GuestPanel({
   >([]);
   const [isRelationshipSubmitting, setIsRelationshipSubmitting] = useState(false);
   const [newRelationshipType, setNewRelationshipType] =
-    useState<RelationshipType>("couple");
-  const [newRelationshipName, setNewRelationshipName] = useState("");
+    useState<RelationshipType>(LINKING_DEFAULTS.type);
+  const [newRelationshipName, setNewRelationshipName] = useState(LINKING_DEFAULTS.name);
   const [newRelationshipPreferredSeating, setNewRelationshipPreferredSeating] =
-    useState<PreferredSeating>("none");
+    useState<PreferredSeating>(LINKING_DEFAULTS.preferredSeating);
   const [newRelationshipMoveTogetherDefault, setNewRelationshipMoveTogetherDefault] =
-    useState(false);
-  const [newRelationshipStrict, setNewRelationshipStrict] = useState(false);
+    useState(LINKING_DEFAULTS.moveTogetherDefault);
+  const [newRelationshipStrict, setNewRelationshipStrict] = useState(
+    LINKING_DEFAULTS.strict,
+  );
 
   const guestsById = useMemo<Record<string, Guest>>(() => {
     return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
@@ -292,11 +302,11 @@ export function GuestPanel({
         guestIds: selectedRelationshipGuestIds,
       });
       setSelectedRelationshipGuestIds([]);
-      setNewRelationshipName("");
-      setNewRelationshipMoveTogetherDefault(false);
-      setNewRelationshipStrict(false);
-      setNewRelationshipPreferredSeating("none");
-      setNewRelationshipType("couple");
+      setNewRelationshipType(LINKING_DEFAULTS.type);
+      setNewRelationshipName(LINKING_DEFAULTS.name);
+      setNewRelationshipPreferredSeating(LINKING_DEFAULTS.preferredSeating);
+      setNewRelationshipMoveTogetherDefault(LINKING_DEFAULTS.moveTogetherDefault);
+      setNewRelationshipStrict(LINKING_DEFAULTS.strict);
     } finally {
       setIsRelationshipSubmitting(false);
     }
@@ -759,7 +769,16 @@ export function GuestPanel({
               size="sm"
               variant="outline"
               className="h-8 text-xs"
-              onClick={() => setSelectedRelationshipGuestIds([])}
+              onClick={() => {
+                setSelectedRelationshipGuestIds([]);
+                setNewRelationshipType(LINKING_DEFAULTS.type);
+                setNewRelationshipName(LINKING_DEFAULTS.name);
+                setNewRelationshipPreferredSeating(LINKING_DEFAULTS.preferredSeating);
+                setNewRelationshipMoveTogetherDefault(
+                  LINKING_DEFAULTS.moveTogetherDefault,
+                );
+                setNewRelationshipStrict(LINKING_DEFAULTS.strict);
+              }}
             >
               {t("guestPanel.clear")}
             </Button>

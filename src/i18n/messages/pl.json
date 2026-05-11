@@ -257,6 +257,7 @@
     "pairSideFemaleLeft": "Dziewczyna po lewej",
     "noPlannedGuestsForTable": "Brak pasujących zaplanowanych gości dla tego stołu.",
     "plannedTableAssigned": "Gość przypisany do stołu na etapie planowania.",
+    "plannedTableAssignedGroup": "Goście przypisani do tego stołu na etapie planowania: {{count}}.",
     "failedPlanAssign": "Nie udało się przypisać gościa do planowanego stołu",
     "unassignSeat": "Usuń przypisanie miejsca",
     "confirmUnassignSeatTitle": "Usunąć przypisanie miejsca?",

@@ -257,6 +257,7 @@
     "pairSideFemaleLeft": "Girl left",
     "noPlannedGuestsForTable": "No matching planned guests for this table.",
     "plannedTableAssigned": "Guest assigned to this table for planning.",
+    "plannedTableAssignedGroup": "Guests assigned to this table for planning: {{count}}.",
     "failedPlanAssign": "Failed to assign guest to planned table",
     "unassignSeat": "Unassign Seat",
     "confirmUnassignSeatTitle": "Unassign seat?",

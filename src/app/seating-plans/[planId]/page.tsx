@@ -274,6 +274,9 @@ export default function SeatingPlanEditorPage() {
     },
     [guests, selectGuest],
   );
+  const handleLinkingSourceApplied = useCallback(() => {
+    setLinkingSourceGuestId(null);
+  }, []);
   const handleSelectTableWithMobileInspector = useCallback(
     (tableId: string | null) => {
       selectTable(tableId);
@@ -1239,33 +1242,47 @@ export default function SeatingPlanEditorPage() {
     [groups, guests, handleUpdateGuest, selectedGuestId],
   );
 
-  const handlePlanGuestToTable = useCallback(
-    async (tableId: string, guestId: string) => {
-      const guest = guests.find((item) => item.id === guestId);
-      if (!guest) {
+  const handlePlanGuestsToTable = useCallback(
+    async (tableId: string, guestIds: string[]) => {
+      const uniqueGuestIds = Array.from(new Set(guestIds));
+      const guestsToPlan = uniqueGuestIds
+        .map((guestId) => guests.find((item) => item.id === guestId))
+        .filter((guest): guest is ApiGuest => guest !== undefined);
+      if (guestsToPlan.length === 0) {
         throw new Error("Guest not found");
       }
 
-      const previousPlannedTableId = guest.plannedTableId;
+      const guestIdSet = new Set(guestsToPlan.map((guest) => guest.id));
+      const previousPlannedTableByGuestId = Object.fromEntries(
+        guestsToPlan.map((guest) => [guest.id, guest.plannedTableId]),
+      ) as Record<string, string | null>;
+
       setGuests((current) =>
         current.map((item) =>
-          item.id === guestId ? { ...item, plannedTableId: tableId } : item,
+          guestIdSet.has(item.id) ? { ...item, plannedTableId: tableId } : item,
         ),
       );
 
       try {
-        await handleUpdateGuest(guestId, {
-          name: guest.name,
-          sex: guest.sex,
-          groupId: guest.groupId,
-          notes: guest.notes ?? "",
-          plannedTableId: tableId,
-        });
+        await Promise.all(
+          guestsToPlan.map((guest) =>
+            handleUpdateGuest(guest.id, {
+              name: guest.name,
+              sex: guest.sex,
+              groupId: guest.groupId,
+              notes: guest.notes ?? "",
+              plannedTableId: tableId,
+            }),
+          ),
+        );
       } catch (error) {
         setGuests((current) =>
           current.map((item) =>
-            item.id === guestId
-              ? { ...item, plannedTableId: previousPlannedTableId }
+            guestIdSet.has(item.id)
+              ? {
+                  ...item,
+                  plannedTableId: previousPlannedTableByGuestId[item.id] ?? null,
+                }
               : item,
           ),
         );
@@ -1280,11 +1297,27 @@ export default function SeatingPlanEditorPage() {
       if (!isDesktopViewport) return;
       if (isTableDraggingRef.current) return;
       try {
-        await handlePlanGuestToTable(tableId, guestId);
+        const moveTogetherRelationships = getAutoMoveTogetherRelationships(
+          guestId,
+          relationshipsByGuestId,
+        );
+        const guestIdsToPlan = new Set<string>([guestId]);
+        for (const relationship of moveTogetherRelationships) {
+          for (const relationshipGuestId of relationship.guestIds) {
+            guestIdsToPlan.add(relationshipGuestId);
+          }
+        }
+
+        await handlePlanGuestsToTable(tableId, Array.from(guestIdsToPlan));
         toast({
           variant: "success",
           title: t("toasts.success"),
-          description: t("canvas.plannedTableAssigned"),
+          description:
+            guestIdsToPlan.size > 1
+              ? t("canvas.plannedTableAssignedGroup", {
+                  count: guestIdsToPlan.size,
+                })
+              : t("canvas.plannedTableAssigned"),
         });
         handleSelectGuest(guestId);
       } catch (error) {
@@ -1293,7 +1326,14 @@ export default function SeatingPlanEditorPage() {
         endGuestDrag();
       }
     },
-    [endGuestDrag, handlePlanGuestToTable, handleSelectGuest, isDesktopViewport, t],
+    [
+      endGuestDrag,
+      handlePlanGuestsToTable,
+      handleSelectGuest,
+      isDesktopViewport,
+      relationshipsByGuestId,
+      t,
+    ],
   );
 
   const handleAutoSeatTable = useCallback(
@@ -1832,7 +1872,7 @@ export default function SeatingPlanEditorPage() {
                   onCreateGuest={handleCreateGuest}
                   onCreateRelationship={handleCreateRelationship}
                   linkingSourceGuestId={linkingSourceGuestId}
-                  onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
+                  onLinkingSourceApplied={handleLinkingSourceApplied}
                   onGuestSelected={(guestId) => {
                     if (!guestId) return;
                     setMobileGuestsOpen(false);
@@ -2173,7 +2213,7 @@ export default function SeatingPlanEditorPage() {
             onOpenLegend={handleOpenLegend}
             onOpenSettings={() => setDesktopPlanSettingsOpen(true)}
             linkingSourceGuestId={linkingSourceGuestId}
-            onLinkingSourceApplied={() => setLinkingSourceGuestId(null)}
+            onLinkingSourceApplied={handleLinkingSourceApplied}
             enableGuestDnD
             onGuestDragStart={startGuestDrag}
             onGuestDragEnd={endGuestDrag}

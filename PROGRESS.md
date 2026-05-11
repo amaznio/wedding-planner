@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 135 - Guest list filters switched to shadcn Select (completed)
+Phase 138 - Linking form default preset update (completed)
 
 ## Completed Phases
 
@@ -141,9 +141,50 @@ Phase 135 - Guest list filters switched to shadcn Select (completed)
 - Phase 133 - Hover-label and tooltip z-index elevation
 - Phase 134 - Guest list group/table filtering expansion
 - Phase 135 - Guest list filters switched to shadcn Select
+- Phase 136 - Linked guest propagation on table-drop planning
+- Phase 137 - Start-link runtime loop fix
+- Phase 138 - Linking form default preset update
 
 
 ## Completed Work
+
+- Implemented Phase 138 linking form default preset update:
+  - updated linking form defaults in `GuestPanel` to:
+    - relationship type: `couple`
+    - preferred seating: `adjacent`
+    - move together default: `true`
+    - strict: `true`
+  - centralized defaults via `LINKING_DEFAULTS` constant
+  - applied defaults in:
+    - initial linking form state
+    - post-create reset flow
+    - `Clear` action reset flow
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 137 start-link runtime loop fix:
+  - fixed `Maximum update depth exceeded` triggered when starting linking flow from guest actions
+  - root cause: unstable inline `onLinkingSourceApplied` callback identity passed into `GuestPanel` effect dependencies
+  - added stable `handleLinkingSourceApplied` callback in page and reused it for both mobile + desktop `GuestPanel` instances
+  - this prevents repeated effect re-execution while `linkingSourceGuestId` is active
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 136 linked guest propagation on table-drop planning:
+  - updated desktop table-body guest drop flow so `moveTogetherDefault` linked guests are planned to the same table together
+  - replaced single-guest planner helper with multi-guest planner helper:
+    - optimistic `plannedTableId` update for all affected guests
+    - parallel API patch updates
+    - full rollback to prior `plannedTableId` values on failure
+  - kept existing single-guest behavior when no move-together links are configured
+  - added grouped success toast copy with linked guest count
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
 
 - Implemented Phase 135 guest list filters switched to shadcn Select:
   - replaced the two native dropdown filters in `GuestPanel` with shadcn `Select` composition:
@@ -1300,6 +1341,17 @@ Phase 135 - Guest list filters switched to shadcn Select (completed)
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `PROGRESS.md`
 
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GuestPanel.tsx`
 - `src/i18n/messages/en.json`
 - `src/i18n/messages/pl.json`
@@ -1547,6 +1599,16 @@ Phase 135 - Guest list filters switched to shadcn Select (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; Phase 138 linking form default preset update)
+- `corepack pnpm lint` (pass with existing warnings; Phase 138 linking form default preset update)
+
+- `corepack pnpm typecheck` (pass; Phase 137 start-link runtime loop fix)
+- `corepack pnpm lint` (pass with existing warnings; Phase 137 start-link runtime loop fix)
+
+- `corepack pnpm typecheck` (pass; Phase 136 linked guest propagation on table-drop planning)
+- `corepack pnpm lint` (pass with existing warnings; Phase 136 linked guest propagation on table-drop planning)
+- `corepack pnpm i18n:audit` (pass; Phase 136 linked guest propagation on table-drop planning)
 
 - `corepack pnpm typecheck` (pass; Phase 135 guest list filters switched to shadcn Select)
 - `corepack pnpm lint` (pass with existing warnings; Phase 135 guest list filters switched to shadcn Select)
