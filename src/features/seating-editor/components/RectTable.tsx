@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useRef, useState } from "react";
 
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
@@ -33,6 +33,7 @@ type RectTableProps = {
   isDragActive?: boolean;
   enableTableDrag?: boolean;
   enableSeatDrag?: boolean;
+  showHoverSeatNames?: boolean;
   onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
   onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
@@ -64,6 +65,7 @@ function RectTableComponent({
   isDragActive = false,
   enableTableDrag = true,
   enableSeatDrag = false,
+  showHoverSeatNames = false,
   onSeatClick,
   onSeatDragEnter,
   onSeatDragLeave,
@@ -88,16 +90,26 @@ function RectTableComponent({
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const movedDuringDragRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
       data-table-root="true"
       className="absolute"
+      onPointerEnter={() => {
+        if (!showHoverSeatNames) return;
+        setIsHovered(true);
+      }}
+      onPointerLeave={() => {
+        if (!showHoverSeatNames) return;
+        setIsHovered(false);
+      }}
       style={{
         left: table.x,
         top: table.y,
         transform: `rotate(${table.rotation}deg)`,
         transformOrigin: "center",
+        zIndex: showHoverSeatNames && isHovered ? 80 : isSelected ? 30 : 1,
       }}
     >
       <div className="relative" style={{ width: dimensions.width, height: dimensions.height }}>
@@ -248,6 +260,42 @@ function RectTableComponent({
             onSeatGuestDragEnd={onSeatGuestDragEnd}
           />
         ))}
+        {showHoverSeatNames && isHovered ? (
+          <div className="pointer-events-none absolute inset-0 z-[90]">
+            {seatPositions.map((seat) => {
+              const occupantName = seatOccupants?.[seat.seatNumber]?.guestName ?? null;
+              if (!occupantName) return null;
+              const centerY = dimensions.height / 2;
+              const isTopSideSeat = seat.y <= centerY;
+              const seatRadius = 18;
+              const labelGap = 1;
+              const labelX = seat.x;
+              const labelY = isTopSideSeat
+                ? seat.y - seatRadius - labelGap
+                : seat.y + seatRadius + labelGap;
+              const anchorTransform = isTopSideSeat
+                ? "translate(-50%, -100%)"
+                : "translate(-50%, 0)";
+
+              return (
+                <span
+                  key={`seat-label-${seat.seatNumber}`}
+                  className="absolute"
+                  style={{
+                    left: labelX,
+                    top: labelY,
+                    transform: anchorTransform,
+                  }}
+                  title={occupantName}
+                >
+                  <span className="inline-flex max-h-[140px] items-center rounded-md border border-zinc-300/90 bg-white/95 px-1.5 py-0.5 text-[10px] font-medium leading-none text-zinc-800 shadow-sm backdrop-blur [writing-mode:vertical-rl] [text-orientation:mixed]">
+                    <span className="truncate">{occupantName}</span>
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -308,6 +356,7 @@ function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
     prev.dropTargetSeatNumber === next.dropTargetSeatNumber &&
     prev.isDragActive === next.isDragActive &&
     prev.enableTableDrag === next.enableTableDrag &&
+    prev.showHoverSeatNames === next.showHoverSeatNames &&
     prev.enableSeatDrag === next.enableSeatDrag &&
     areNumberArraysEqual(prev.linkedDropPreviewSeatNumbers, next.linkedDropPreviewSeatNumbers) &&
     areSeatOccupantsEqual(prev.seatOccupants, next.seatOccupants)

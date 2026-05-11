@@ -1130,6 +1130,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               isDragActive={isAnyGuestDragActive}
               enableTableDrag={enableTableDrag}
               enableSeatDrag={enableSeatDrag}
+              showHoverSeatNames={!mobileMode}
               selectedSeatNumber={
                 selectedSeat?.tableId === table.id ? selectedSeat.seatNumber : null
               }

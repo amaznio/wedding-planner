@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 125 - Guest panel icon normalization + downsizing (completed)
+Phase 135 - Guest list filters switched to shadcn Select (completed)
 
 ## Completed Phases
 
@@ -131,9 +131,131 @@ Phase 125 - Guest panel icon normalization + downsizing (completed)
 - Phase 123 - Desktop guests heading size reduction
 - Phase 124 - Desktop guests header action size alignment
 - Phase 125 - Guest panel icon normalization + downsizing
+- Phase 126 - Hover table full-name seat labels
+- Phase 127 - Perpendicular hover seat-label rotation
+- Phase 128 - Hover seat-label offset tightening
+- Phase 129 - Vertical hover labels with minimal seat offset
+- Phase 130 - Vertical hover label anchor correction
+- Phase 131 - Seat-edge anchored vertical hover labels
+- Phase 132 - Precise edge anchoring via vertical text flow
+- Phase 133 - Hover-label and tooltip z-index elevation
+- Phase 134 - Guest list group/table filtering expansion
+- Phase 135 - Guest list filters switched to shadcn Select
 
 
 ## Completed Work
+
+- Implemented Phase 135 guest list filters switched to shadcn Select:
+  - replaced the two native dropdown filters in `GuestPanel` with shadcn `Select` composition:
+    - `Select`, `SelectTrigger`, `SelectContent`, `SelectGroup`, `SelectItem`, `SelectValue`
+  - preserved filter behavior and values from Phase 134:
+    - group filter (`all`, `ungrouped`, specific group IDs)
+    - table filter (`all`, `unassigned`, specific table IDs)
+  - no data or filtering logic changes; this phase is a UI component consistency update only
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 134 guest list group/table filtering expansion:
+  - extended guest list filters in `GuestPanel` with two additional dropdowns:
+    - group filter: `All groups`, `Ungrouped`, and each defined group
+    - table filter: `All tables`, `No table`, and each table label
+  - wired filter logic into `visibleGuests` so all filters combine with existing:
+    - status chips (`All` / `Unseated` / `Assigned`)
+    - text search query
+  - group filtering now uses effective group resolution (including inherited plus-one group context)
+  - table names are used for filtering/UI options (no table IDs shown in user-facing controls)
+  - added EN/PL i18n keys for new filter labels/options
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 133 hover-label and tooltip z-index elevation:
+  - raised hovered table stacking context so hover seat-name labels render above neighboring tables/layers:
+    - `zIndex: 80` when hovered labels are active
+    - `zIndex: 30` when selected
+    - baseline `zIndex: 1`
+  - raised in-table hover label layer from `z-20` to `z-[90]`
+  - raised shared tooltip content portal z-index from `z-50` to `z-[120]`
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `src/components/ui/tooltip.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 132 precise edge anchoring via vertical text flow:
+  - replaced rotation-based label geometry with native vertical text flow on the label pill:
+    - `[writing-mode:vertical-rl]`
+    - `[text-orientation:mixed]`
+  - tightened seat-edge gap from `2` to `1` px
+  - retained side-aware edge anchoring model (top labels above edge, bottom labels below edge)
+  - this removes rotation bounding-box drift and improves precise circle-edge alignment
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 131 seat-edge anchored vertical hover labels:
+  - switched from center-offset placement to edge anchoring against seat circles:
+    - top-side seats: labels anchor above the seat edge
+    - bottom-side seats: labels anchor below the seat edge
+  - used seat radius + small gap constants for consistent near-circle placement:
+    - `seatRadius = 18`
+    - `labelGap = 2`
+  - updated anchor transform by side:
+    - top: `translate(-50%, -100%)`
+    - bottom: `translate(-50%, 0)`
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 130 vertical hover label anchor correction:
+  - fixed label anchor offset behavior by separating position translation from rotation:
+    - outer wrapper handles seat-centered anchor translation only
+    - inner label handles `-90deg` rotation only
+  - reduced seat-adjacent offset from `24` to `22` for tighter proximity
+  - this removes transform-order drift and keeps labels directly next to their seats
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 129 vertical hover labels with minimal seat offset:
+  - changed hover full-name labels to fixed vertical orientation (`rotate(-90deg)`)
+  - aligned labels directly next to seats by:
+    - centering on seat X
+    - applying small constant Y offset by top/bottom side (`-24` / `+24`)
+  - removed radial-angle placement so labels no longer fan out diagonally
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 128 hover seat-label offset tightening:
+  - reduced perpendicular hover label offset from `28` to `20` so labels render directly next to seats
+  - kept perpendicular rotation behavior unchanged
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 127 perpendicular hover seat-label rotation:
+  - updated hover full-name labels in `RectTable` to rotate on the seat-perpendicular axis
+  - replaced previous upright/counter-rotation behavior with angle derived from seat normal:
+    - perpendicular angle = radial angle + 90°
+    - normalized to readable orientation range
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 126 hover table full-name seat labels:
+  - added optional hover-label rendering in `RectTable` for occupied seats only
+  - when hovering a table (desktop), full guest names appear near each occupied seat
+  - label placement uses outward seat normal (perpendicular outward positioning from table center)
+  - labels are counter-rotated so text stays readable when table is rotated
+  - no extra panel/window introduced; labels render directly in canvas near seats
+  - wired feature from `SeatingCanvas` (`showHoverSeatNames={!mobileMode}`)
+  - files changed:
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 125 guest panel icon normalization + downsizing:
   - switched remaining inline close icon in guest add modal to Lucide (`X`) for icon-set consistency inside `GuestPanel`
@@ -1175,6 +1297,14 @@ Phase 125 - Guest panel icon normalization + downsizing (completed)
 
 ## Files Changed
 
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `PROGRESS.md`
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
 - `src/features/seating-editor/components/GroupsManager.tsx`
 - `PROGRESS.md`
 
@@ -1417,6 +1547,38 @@ Phase 125 - Guest panel icon normalization + downsizing (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; Phase 135 guest list filters switched to shadcn Select)
+- `corepack pnpm lint` (pass with existing warnings; Phase 135 guest list filters switched to shadcn Select)
+- `corepack pnpm i18n:audit` (pass; Phase 135 guest list filters switched to shadcn Select)
+
+- `corepack pnpm typecheck` (pass; Phase 134 guest list group/table filtering expansion)
+- `corepack pnpm lint` (pass with existing warnings; Phase 134 guest list group/table filtering expansion)
+- `corepack pnpm i18n:audit` (pass; Phase 134 guest list group/table filtering expansion)
+
+- `corepack pnpm typecheck` (pass; Phase 133 hover-label and tooltip z-index elevation)
+- `corepack pnpm lint` (pass with existing warnings; Phase 133 hover-label and tooltip z-index elevation)
+
+- `corepack pnpm typecheck` (pass; Phase 132 precise edge anchoring via vertical text flow)
+- `corepack pnpm lint` (pass with existing warnings; Phase 132 precise edge anchoring via vertical text flow)
+
+- `corepack pnpm typecheck` (pass; Phase 131 seat-edge anchored vertical hover labels)
+- `corepack pnpm lint` (pass with existing warnings; Phase 131 seat-edge anchored vertical hover labels)
+
+- `corepack pnpm typecheck` (pass; Phase 130 vertical hover label anchor correction)
+- `corepack pnpm lint` (pass with existing warnings; Phase 130 vertical hover label anchor correction)
+
+- `corepack pnpm typecheck` (pass; Phase 129 vertical hover labels with minimal seat offset)
+- `corepack pnpm lint` (pass with existing warnings; Phase 129 vertical hover labels with minimal seat offset)
+
+- `corepack pnpm typecheck` (pass; Phase 128 hover seat-label offset tightening)
+- `corepack pnpm lint` (pass with existing warnings; Phase 128 hover seat-label offset tightening)
+
+- `corepack pnpm typecheck` (pass; Phase 127 perpendicular hover seat-label rotation)
+- `corepack pnpm lint` (pass with existing warnings; Phase 127 perpendicular hover seat-label rotation)
+
+- `corepack pnpm typecheck` (pass; Phase 126 hover table full-name seat labels)
+- `corepack pnpm lint` (pass with existing warnings; Phase 126 hover table full-name seat labels)
 
 - `corepack pnpm typecheck` (pass; Phase 125 guest panel icon normalization + downsizing)
 - `corepack pnpm lint` (pass with existing warnings; Phase 125 guest panel icon normalization + downsizing)
@@ -1771,10 +1933,22 @@ Phase 125 - Guest panel icon normalization + downsizing (completed)
 31. Verify `+` and `More` buttons match the filter-button height in `Lista gości`.
 32. Verify guest panel header and dropdown icons are visually smaller than previous revision.
 33. Verify guest add modal close control uses Lucide style matching other panel icons.
+34. On desktop canvas, hover a table with seated guests and verify full-name labels appear near occupied seats.
+35. Verify labels disappear when pointer leaves that table.
+36. Rotate a table and verify hover labels remain readable (upright text).
+37. Verify hover name labels are rotated perpendicular to seat direction around the table.
+38. Verify hover labels render directly next to seats without wide gaps.
+39. Verify hover labels are fixed vertical and positioned directly above/below seats with minimal offset.
+40. Verify each vertical label is centered against its seat and no longer drifts sideways from transform order.
+41. Verify top-side labels anchor directly above seat edges and bottom-side labels anchor directly below seat edges.
+42. Verify labels sit at circle edge with ~1px gap and no overlap into seat fill.
+43. Verify hover seat-name labels render above all nearby table/canvas layers.
+44. Verify standard tooltips render above overlays/sheets where applicable.
 
 ## Known Issues
 
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
+- New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
 - Auto-seat warning messages are currently returned as backend strings and surfaced directly in info toasts.
 - Drag-to-table planned assignment is desktop-only (touch/mobile drag not added in this phase).
 - CSV import/export remains backward-compatible and does not yet include `sex` / `plannedTableId` columns.
@@ -1784,6 +1958,7 @@ Phase 125 - Guest panel icon normalization + downsizing (completed)
 ## Next Recommended Step
 
 - Refine pair-side preference from seat-number heuristic to geometry-aware left/right using actual rendered seat coordinates (including table rotation).
+- Optionally add a second table filter mode for planned table (`plannedTableId`) if you want planning-stage filtering before assignment.
 - Add targeted API tests for:
   - guest `sex/plannedTableId` validation and plan-ownership checks
   - assignment-to-planned-table sync

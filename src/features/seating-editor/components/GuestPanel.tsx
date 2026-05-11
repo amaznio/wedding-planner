@@ -23,6 +23,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -137,6 +145,8 @@ export function GuestPanel({
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unseated" | "assigned">("all");
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [tableFilter, setTableFilter] = useState<string>("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [newGuestGroupId, setNewGuestGroupId] = useState<string>("");
   const [newGuestNotes, setNewGuestNotes] = useState("");
@@ -155,23 +165,55 @@ export function GuestPanel({
     useState(false);
   const [newRelationshipStrict, setNewRelationshipStrict] = useState(false);
 
+  const guestsById = useMemo<Record<string, Guest>>(() => {
+    return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
+  }, [guests]);
+  const tableFilterOptions = useMemo(
+    () =>
+      Object.entries(tableLabelById)
+        .map(([id, label]) => ({ id, label }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [tableLabelById],
+  );
   const visibleGuests = useMemo(() => {
     const queryLower = query.trim().toLowerCase();
     return guests.filter((guest) => {
-      const matchesFilter =
+      const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
+      const assignedTableId = guest.assignment?.tableId ?? null;
+      const matchesStatusFilter =
         filter === "all"
           ? true
           : filter === "assigned"
             ? guest.assignment !== null
             : guest.assignment === null;
+      const matchesGroupFilter =
+        groupFilter === "all"
+          ? true
+          : groupFilter === "ungrouped"
+            ? effectiveGroup === null
+            : effectiveGroup?.id === groupFilter;
+      const matchesTableFilter =
+        tableFilter === "all"
+          ? true
+          : tableFilter === "unassigned"
+            ? assignedTableId === null
+            : assignedTableId === tableFilter;
       const matchesQuery =
         queryLower.length === 0
           ? true
           : guest.name.toLowerCase().includes(queryLower) ||
-            (guest.group?.name ?? "").toLowerCase().includes(queryLower);
-      return matchesFilter && matchesQuery;
+            (effectiveGroup?.name ?? "").toLowerCase().includes(queryLower) ||
+            (assignedTableId ? (tableLabelById[assignedTableId] ?? "").toLowerCase() : "").includes(
+              queryLower,
+            );
+      return (
+        matchesStatusFilter &&
+        matchesGroupFilter &&
+        matchesTableFilter &&
+        matchesQuery
+      );
     });
-  }, [filter, guests, query]);
+  }, [filter, groupFilter, guests, guestsById, query, tableFilter, tableLabelById]);
 
   const relationshipsByGuestId = useMemo(() => {
     const next: Record<string, SeatingRelationship[]> = {};
@@ -185,9 +227,6 @@ export function GuestPanel({
     }
     return next;
   }, [relationships]);
-  const guestsById = useMemo<Record<string, Guest>>(() => {
-    return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
-  }, [guests]);
 
   const totalGuests = guests.length;
   const seatedGuests = guests.filter((guest) => guest.assignment !== null).length;
@@ -445,6 +484,40 @@ export function GuestPanel({
           placeholder={t("guestPanel.searchPlaceholder")}
           className={variant === "sheet" ? "h-10" : undefined}
         />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Select value={groupFilter} onValueChange={setGroupFilter}>
+            <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByGroupLabel")}>
+              <SelectValue placeholder={t("guestPanel.filterByGroupLabel")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">{t("guestPanel.filterGroupAll")}</SelectItem>
+                <SelectItem value="ungrouped">{t("guestPanel.filterGroupUngrouped")}</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select value={tableFilter} onValueChange={setTableFilter}>
+            <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByTableLabel")}>
+              <SelectValue placeholder={t("guestPanel.filterByTableLabel")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">{t("guestPanel.filterTableAll")}</SelectItem>
+                <SelectItem value="unassigned">{t("guestPanel.filterTableUnassigned")}</SelectItem>
+                {tableFilterOptions.map((table) => (
+                  <SelectItem key={table.id} value={table.id}>
+                    {table.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-2">
           {(["all", "unseated", "assigned"] as const).map((next) => (
