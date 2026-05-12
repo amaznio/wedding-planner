@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 143 - Relationship create timeout fix (non-interactive transaction) (completed)
+Phase 148 - Compact pair row overflow layout and group-accent update (completed)
 
 ## Completed Phases
 
@@ -149,9 +149,79 @@ Phase 143 - Relationship create timeout fix (non-interactive transaction) (compl
 - Phase 141 - Locale hydration mismatch fix (cookie-backed SSR locale)
 - Phase 142 - Relationship create endpoint diagnostic logging
 - Phase 143 - Relationship create timeout fix (non-interactive transaction)
+- Phase 144 - Compact linked guests into one row (inline expansion)
+- Phase 145 - Draggable compact pair row in guest list
+- Phase 146 - Confirm dialog click propagation fix
+- Phase 147 - Remove link icon from compact pair row
+- Phase 148 - Compact pair row overflow layout and group-accent update
 
 
 ## Completed Work
+
+- Implemented Phase 148 compact pair row overflow layout and group-accent update:
+  - changed compact pair row name rendering from single-line truncate to two-line clamp to improve readability in narrow panel widths
+  - removed relationship-type badge from compact pair row and kept only seat-status badge to reduce horizontal pressure
+  - added pair-row group accent bar support with edge-case behavior:
+    - same effective group: single solid accent color
+    - different effective groups: split accent (top/bottom)
+    - one ungrouped member: grouped color on one half and neutral fallback on the other half
+  - kept pair-row drag and expand/collapse behavior unchanged
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 147 remove link icon from compact pair row:
+  - removed the left-side link icon from compact linked-guest rows in guest list
+  - preserved row behaviors (expand/collapse, drag handling, selection state)
+  - this frees horizontal space for long pair names/status chips
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 146 confirm dialog click propagation fix:
+  - fixed non-responsive `Cancel` / `Confirm` actions in seat unassign confirmation modal
+  - root cause: dialog content click/pointer events were bubbling into parent canvas handlers
+  - added event propagation guards on shared `ConfirmDialog` content:
+    - `onPointerDown={(event) => event.stopPropagation()}`
+    - `onClick={(event) => event.stopPropagation()}`
+  - this isolates confirmation modal interactions from canvas click/pan state changes
+  - files changed:
+    - `src/components/ui/confirm-dialog.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 145 draggable compact pair row in guest list:
+  - enabled drag-and-drop directly from the compact pair row card (desktop)
+  - pair-row drag now reuses existing guest DnD payload pipeline by sending the first pair member guest id
+  - pair-row drag preview now uses the combined pair label
+  - on drag end, pair row triggers the existing drag cleanup callback
+  - preserved existing click-to-expand behavior and all previous pair-row UI states
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 144 compact linked guests into one row (inline expansion):
+  - refactored guest-list rendering into row model (`single` / `pair`) derived from `guests + relationships`
+  - collapsed all valid 2-member relationships (including `plus_one`) into compact pair rows while preserving malformed-data fallback to single rows
+  - added pair-row UI with:
+    - link icon + dual avatars
+    - combined names
+    - relationship chip
+    - aggregated status chip (`assigned` / `unseated` / `split`)
+    - chevron expand/collapse state
+  - added inline expansion that renders compact member subrows and preserves existing member interactions:
+    - select/open inspector
+    - desktop drag source behavior
+    - existing assignment/group metadata
+  - updated list filtering semantics for pair rows:
+    - status tabs: `Assigned` includes `assigned` + `split`, `Unseated` includes only `unseated`
+    - group/table/search filters match if either pair member matches
+  - switched guest-list visible counters to row-based counts (`visibleRows` / `totalRows`) while keeping top header totals guest-based
+  - added i18n keys for pair-row accessibility and status labels (`split`, expand/collapse labels, combined-name template)
+  - files changed:
+    - `src/features/seating-editor/components/GuestPanel.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
 
 - Implemented Phase 143 relationship create timeout fix (non-interactive transaction):
   - fixed `P2028` interactive transaction timeout on relationship create (`commit` expired transaction)
@@ -1685,6 +1755,20 @@ Phase 143 - Relationship create timeout fix (non-interactive transaction) (compl
 
 ## Commands Run
 
+- `corepack pnpm lint` (pass with existing warnings; Phase 148 compact pair row overflow layout and group-accent update)
+
+- `corepack pnpm lint` (pass with existing warnings; Phase 147 remove link icon from compact pair row)
+
+- `corepack pnpm lint` (pass with existing warnings; Phase 146 confirm dialog click propagation fix)
+- `corepack pnpm i18n:audit` (pass; Phase 146 confirm dialog click propagation fix)
+
+- `corepack pnpm lint` (pass with existing warnings; Phase 145 draggable compact pair row in guest list)
+- `corepack pnpm i18n:audit` (pass; Phase 145 draggable compact pair row in guest list)
+
+- `corepack pnpm typecheck` (fail; pre-existing repo errors in `.next/types/validator.ts` unresolved `weddings/*` modules and existing Prisma `GuestInclude.assignment` typing errors; no new Phase 144 type errors in `GuestPanel`)
+- `corepack pnpm lint` (pass with existing warnings; Phase 144 compact linked guests into one row)
+- `corepack pnpm i18n:audit` (pass; Phase 144 compact linked guests into one row)
+
 - `corepack pnpm typecheck` (pass; Phase 143 relationship create timeout fix)
 - `corepack pnpm lint` (pass with existing warnings; Phase 143 relationship create timeout fix)
 
@@ -2032,15 +2116,35 @@ Phase 143 - Relationship create timeout fix (non-interactive transaction) (compl
 
 ## Check Results
 
-- Prisma migration: pass (`20260511070426_add_plan_pair_side_preference` applied).
-- Prisma migration: pass (`20260511062732_add_guest_sex_and_planned_table` applied).
-- Prisma client generation: pass.
-- TypeScript: pass.
+- TypeScript: fail (pre-existing repository issues in `.next/types/validator.ts` missing `weddings/*` files and existing Prisma `GuestInclude.assignment` typing errors in seating-plan API routes).
 - Lint: pass with existing warnings.
 - i18n audit: pass.
-- Build: pass.
 
 ## How To Test
+
+Phase 144 targeted checks:
+
+1. Run `corepack pnpm dev`.
+2. Open `/seating-plans/{id}` and create at least one 2-person relationship (including a `plus_one` pair).
+3. Verify linked pairs render as one compact row with link icon, two avatars, relationship chip, status chip, and chevron.
+4. Click the pair row and verify inline expansion reveals both member subrows.
+5. In expanded subrows, verify existing interactions still work:
+   - click selects guest and opens inspector
+   - desktop drag from subrow starts drag-and-drop
+   - assignment metadata still renders
+6. Verify status chip states:
+   - both unseated -> `Unseated`
+   - both seated at same table -> `Assigned`
+   - mixed or different tables -> `Split`
+7. Verify filters:
+   - `Assigned` includes split pair rows
+   - `Unseated` excludes split pair rows
+   - search/group/table filters include pair rows when either member matches
+8. Verify row counters:
+   - top header counts remain guest-based
+   - list showing count and mobile `x/y` counter use row counts.
+
+Regression checks:
 
 1. Run `corepack pnpm dev`.
 2. Open a plan editor (`/seating-plans/{id}`).
@@ -2110,6 +2214,7 @@ Phase 143 - Relationship create timeout fix (non-interactive transaction) (compl
 ## Known Issues
 
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
+- TypeScript currently fails from pre-existing repository/type artifacts unrelated to Phase 144 (`.next/types/validator.ts` `weddings/*` references and Prisma include typing mismatches on `assignment` in guest API routes).
 - New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
 - Auto-seat warning messages are currently returned as backend strings and surfaced directly in info toasts.
 - Drag-to-table planned assignment is desktop-only (touch/mobile drag not added in this phase).
@@ -2119,6 +2224,8 @@ Phase 143 - Relationship create timeout fix (non-interactive transaction) (compl
 
 ## Next Recommended Step
 
+- Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.
+- Add Playwright/manual QA pass for pair-row expansion UX on both desktop and mobile drawer variants.
 - Refine pair-side preference from seat-number heuristic to geometry-aware left/right using actual rendered seat coordinates (including table rotation).
 - Optionally add a second table filter mode for planned table (`plannedTableId`) if you want planning-stage filtering before assignment.
 - Add targeted API tests for:

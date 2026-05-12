@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
+  ChevronRight,
   Download,
   Ellipsis,
   Link2,
@@ -67,6 +68,22 @@ type Guest = {
   } | null;
 };
 
+type PairRowStatus = "assigned" | "unseated" | "split";
+
+type GuestListRow =
+  | {
+      kind: "single";
+      key: string;
+      guest: Guest;
+    }
+  | {
+      kind: "pair";
+      key: string;
+      relationship: SeatingRelationship;
+      guests: [Guest, Guest];
+      status: PairRowStatus;
+    };
+
 type RelationshipForm = {
   type: RelationshipType;
   name: string;
@@ -125,6 +142,14 @@ function getInitials(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
+function getPairRowStatus(first: Guest, second: Guest): PairRowStatus {
+  const firstTableId = first.assignment?.tableId ?? null;
+  const secondTableId = second.assignment?.tableId ?? null;
+  if (!firstTableId && !secondTableId) return "unseated";
+  if (firstTableId && secondTableId && firstTableId === secondTableId) return "assigned";
+  return "split";
+}
+
 export function GuestPanel({
   guests,
   groups,
@@ -175,57 +200,11 @@ export function GuestPanel({
   const [newRelationshipStrict, setNewRelationshipStrict] = useState(
     LINKING_DEFAULTS.strict,
   );
+  const [expandedPairRowIds, setExpandedPairRowIds] = useState<string[]>([]);
 
   const guestsById = useMemo<Record<string, Guest>>(() => {
     return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
   }, [guests]);
-  const tableFilterOptions = useMemo(
-    () =>
-      Object.entries(tableLabelById)
-        .map(([id, label]) => ({ id, label }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [tableLabelById],
-  );
-  const visibleGuests = useMemo(() => {
-    const queryLower = query.trim().toLowerCase();
-    return guests.filter((guest) => {
-      const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
-      const assignedTableId = guest.assignment?.tableId ?? null;
-      const matchesStatusFilter =
-        filter === "all"
-          ? true
-          : filter === "assigned"
-            ? guest.assignment !== null
-            : guest.assignment === null;
-      const matchesGroupFilter =
-        groupFilter === "all"
-          ? true
-          : groupFilter === "ungrouped"
-            ? effectiveGroup === null
-            : effectiveGroup?.id === groupFilter;
-      const matchesTableFilter =
-        tableFilter === "all"
-          ? true
-          : tableFilter === "unassigned"
-            ? assignedTableId === null
-            : assignedTableId === tableFilter;
-      const matchesQuery =
-        queryLower.length === 0
-          ? true
-          : guest.name.toLowerCase().includes(queryLower) ||
-            (effectiveGroup?.name ?? "").toLowerCase().includes(queryLower) ||
-            (assignedTableId ? (tableLabelById[assignedTableId] ?? "").toLowerCase() : "").includes(
-              queryLower,
-            );
-      return (
-        matchesStatusFilter &&
-        matchesGroupFilter &&
-        matchesTableFilter &&
-        matchesQuery
-      );
-    });
-  }, [filter, groupFilter, guests, guestsById, query, tableFilter, tableLabelById]);
-
   const relationshipsByGuestId = useMemo(() => {
     const next: Record<string, SeatingRelationship[]> = {};
     for (const relationship of relationships) {
@@ -238,6 +217,176 @@ export function GuestPanel({
     }
     return next;
   }, [relationships]);
+  const tableFilterOptions = useMemo(
+    () =>
+      Object.entries(tableLabelById)
+        .map(([id, label]) => ({ id, label }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [tableLabelById],
+  );
+  const allRows = useMemo<GuestListRow[]>(() => {
+    const rows: GuestListRow[] = [];
+    const emittedGuestIds = new Set<string>();
+
+    for (const guest of guests) {
+      if (emittedGuestIds.has(guest.id)) continue;
+      const candidatePairRelationship = (relationshipsByGuestId[guest.id] ?? []).find(
+        (relationship) => {
+          if (relationship.guestIds.length !== 2) return false;
+          const [firstGuestId, secondGuestId] = relationship.guestIds;
+          if (!firstGuestId || !secondGuestId || firstGuestId === secondGuestId) return false;
+          const firstGuest = guestsById[firstGuestId];
+          const secondGuest = guestsById[secondGuestId];
+          if (!firstGuest || !secondGuest) return false;
+          if (emittedGuestIds.has(firstGuest.id) || emittedGuestIds.has(secondGuest.id)) {
+            return false;
+          }
+          return true;
+        },
+      );
+
+      if (!candidatePairRelationship) {
+        emittedGuestIds.add(guest.id);
+        rows.push({ kind: "single", key: guest.id, guest });
+        continue;
+      }
+
+      const firstGuest = guestsById[candidatePairRelationship.guestIds[0]];
+      const secondGuest = guestsById[candidatePairRelationship.guestIds[1]];
+      if (!firstGuest || !secondGuest) {
+        emittedGuestIds.add(guest.id);
+        rows.push({ kind: "single", key: guest.id, guest });
+        continue;
+      }
+
+      emittedGuestIds.add(firstGuest.id);
+      emittedGuestIds.add(secondGuest.id);
+      rows.push({
+        kind: "pair",
+        key: candidatePairRelationship.id,
+        relationship: candidatePairRelationship,
+        guests: [firstGuest, secondGuest],
+        status: getPairRowStatus(firstGuest, secondGuest),
+      });
+    }
+
+    return rows;
+  }, [guests, guestsById, relationshipsByGuestId]);
+  const totalRows = allRows.length;
+  const visibleRows = useMemo(() => {
+    const queryLower = query.trim().toLowerCase();
+    return allRows.filter((row) => {
+      if (row.kind === "single") {
+        const effectiveGroup = resolveEffectiveGuestGroup(row.guest, guestsById);
+        const assignedTableId = row.guest.assignment?.tableId ?? null;
+        const matchesStatusFilter =
+          filter === "all"
+            ? true
+            : filter === "assigned"
+              ? row.guest.assignment !== null
+              : row.guest.assignment === null;
+        const matchesGroupFilter =
+          groupFilter === "all"
+            ? true
+            : groupFilter === "ungrouped"
+              ? effectiveGroup === null
+              : effectiveGroup?.id === groupFilter;
+        const matchesTableFilter =
+          tableFilter === "all"
+            ? true
+            : tableFilter === "unassigned"
+              ? assignedTableId === null
+              : assignedTableId === tableFilter;
+        const matchesQuery =
+          queryLower.length === 0
+            ? true
+            : row.guest.name.toLowerCase().includes(queryLower) ||
+              (effectiveGroup?.name ?? "").toLowerCase().includes(queryLower) ||
+              (assignedTableId
+                ? (tableLabelById[assignedTableId] ?? "").toLowerCase()
+                : ""
+              ).includes(queryLower);
+
+        return (
+          matchesStatusFilter &&
+          matchesGroupFilter &&
+          matchesTableFilter &&
+          matchesQuery
+        );
+      }
+
+      const memberMeta = row.guests.map((guest) => {
+        const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
+        const assignedTableId = guest.assignment?.tableId ?? null;
+        return {
+          guest,
+          effectiveGroup,
+          assignedTableId,
+        };
+      });
+
+      const matchesStatusFilter =
+        filter === "all"
+          ? true
+          : filter === "assigned"
+            ? row.status === "assigned" || row.status === "split"
+            : row.status === "unseated";
+      const matchesGroupFilter =
+        groupFilter === "all"
+          ? true
+          : memberMeta.some(({ effectiveGroup }) =>
+              groupFilter === "ungrouped"
+                ? effectiveGroup === null
+                : effectiveGroup?.id === groupFilter,
+            );
+      const matchesTableFilter =
+        tableFilter === "all"
+          ? true
+          : memberMeta.some(({ assignedTableId }) =>
+              tableFilter === "unassigned"
+                ? assignedTableId === null
+                : assignedTableId === tableFilter,
+            );
+      const matchesQuery =
+        queryLower.length === 0
+          ? true
+          : memberMeta.some(({ guest, effectiveGroup, assignedTableId }) => {
+              return (
+                guest.name.toLowerCase().includes(queryLower) ||
+                (effectiveGroup?.name ?? "").toLowerCase().includes(queryLower) ||
+                (assignedTableId
+                  ? (tableLabelById[assignedTableId] ?? "").toLowerCase()
+                  : ""
+                ).includes(queryLower)
+              );
+            });
+
+      return (
+        matchesStatusFilter &&
+        matchesGroupFilter &&
+        matchesTableFilter &&
+        matchesQuery
+      );
+    });
+  }, [allRows, filter, groupFilter, guestsById, query, tableFilter, tableLabelById]);
+
+  const togglePairExpanded = (rowId: string) => {
+    setExpandedPairRowIds((current) =>
+      current.includes(rowId)
+        ? current.filter((id) => id !== rowId)
+        : [...current, rowId],
+    );
+  };
+
+  const getPairStatusBadgeClassName = (status: PairRowStatus) => {
+    if (status === "assigned") {
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    }
+    if (status === "split") {
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    }
+    return "border-zinc-200 bg-zinc-100 text-zinc-600";
+  };
 
   const totalGuests = guests.length;
   const seatedGuests = guests.filter((guest) => guest.assignment !== null).length;
@@ -326,6 +475,110 @@ export function GuestPanel({
     .map((guestId) => guests.find((guest) => guest.id === guestId))
     .filter((guest): guest is Guest => guest !== undefined);
   const showAddRow = showQuickAdd ?? variant !== "desktop";
+  const renderGuestSingleRow = (guest: Guest, options?: { compact?: boolean }) => {
+    const compact = options?.compact ?? false;
+    const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
+    const isSelectedForRelationship = selectedRelationshipGuestIds.includes(guest.id);
+    const isSelectedGuestRow = selectedGuestId === guest.id;
+    const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
+    const canStartLinking = !isLinkingMode && guestRelationships.length === 0;
+
+    return (
+      <div className={`flex min-w-0 items-center gap-1 ${compact ? "" : "mb-1"}`}>
+        <button
+          type="button"
+          draggable={variant === "desktop" && enableGuestDnD}
+          onDragStart={(event) => {
+            if (!(variant === "desktop" && enableGuestDnD)) return;
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", guest.id);
+            const preview = createGuestDragPreview(guest.name);
+            event.dataTransfer.setDragImage(preview, 18, 18);
+            requestAnimationFrame(() => {
+              preview.remove();
+            });
+            onGuestDragStart?.(guest.id);
+          }}
+          onDragEnd={() => {
+            if (!(variant === "desktop" && enableGuestDnD)) return;
+            onGuestDragEnd?.();
+          }}
+          onClick={() => {
+            if (isLinkingMode) {
+              selectGuestForRelationship(guest.id);
+              return;
+            }
+            const nextGuestId = selectedGuestId === guest.id ? null : guest.id;
+            onSelectGuest(nextGuestId);
+            onGuestSelected?.(nextGuestId);
+          }}
+          className={`relative flex min-w-0 flex-1 items-center gap-3 overflow-hidden rounded-md border px-3 text-left ${
+            compact ? "py-1.5" : "py-2"
+          } ${
+            isSelectedForRelationship
+              ? "border-blue-300 bg-blue-50/70"
+              : isSelectedGuestRow
+                ? "border-zinc-400 bg-zinc-100"
+                : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
+          }`}
+        >
+          {effectiveGroup?.color ? (
+            <span
+              aria-hidden="true"
+              className="absolute left-0 top-0 h-full w-1"
+              style={{ backgroundColor: effectiveGroup.color }}
+            />
+          ) : null}
+          <Avatar>
+            <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-zinc-900">{guest.name}</p>
+            <p className="truncate text-xs text-zinc-500">
+              {guest.assignment
+                ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })} • ${t("guestPanel.assigned")}`
+                : t("guestPanel.unseated")}
+            </p>
+            {guestRelationships.length > 0 ? (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {guestRelationships.map((relationship) => (
+                  <Badge key={relationship.id} variant="secondary" className="text-[10px]">
+                    {relationship.name?.trim().length
+                      ? relationship.name
+                      : relationshipTypeLabel[relationship.type]}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </button>
+        {canStartLinking ? (
+          <TooltipProvider delayDuration={250}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="size-8 shrink-0 p-0"
+                  aria-label={t("guestPanel.startLinking")}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectGuest(null);
+                    onGuestSelected?.(null);
+                    setSelectedRelationshipGuestIds([guest.id]);
+                  }}
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("guestPanel.link")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <aside className={rootClassName}>
@@ -550,13 +803,13 @@ export function GuestPanel({
           </div>
           {variant === "sheet" ? (
             <span className="text-xs text-zinc-500">
-              {visibleGuests.length}/{totalGuests}
+              {visibleRows.length}/{totalRows}
             </span>
           ) : null}
         </div>
         {variant === "desktop" || query.trim().length > 0 ? (
           <p className="text-xs text-zinc-500">
-            {t("guestPanel.showing", { count: visibleGuests.length })}
+            {t("guestPanel.showing", { count: visibleRows.length })}
           </p>
         ) : null}
       </div>
@@ -567,49 +820,72 @@ export function GuestPanel({
         <ScrollArea className="h-full">
           {isLoading ? (
             <p className="p-4 text-sm text-zinc-600">{t("guestPanel.loading")}</p>
-          ) : visibleGuests.length === 0 ? (
+          ) : visibleRows.length === 0 ? (
             <p className="p-4 text-sm text-zinc-600">{t("guestPanel.empty")}</p>
           ) : (
             <ul className="p-2">
-              {visibleGuests.map((guest) => {
-                const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
+              {visibleRows.map((row) => {
+                if (row.kind === "single") {
+                  return <li key={row.key}>{renderGuestSingleRow(row.guest)}</li>;
+                }
+
+                const [firstGuest, secondGuest] = row.guests;
+                const isExpanded = expandedPairRowIds.includes(row.key);
                 const isSelectedForRelationship =
-                  selectedRelationshipGuestIds.includes(guest.id);
-                const isSelectedGuestRow = selectedGuestId === guest.id;
-                const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
-                const canStartLinking = !isLinkingMode && guestRelationships.length === 0;
+                  selectedRelationshipGuestIds.includes(firstGuest.id) ||
+                  selectedRelationshipGuestIds.includes(secondGuest.id);
+                const isSelectedGuestRow =
+                  selectedGuestId === firstGuest.id || selectedGuestId === secondGuest.id;
+                const pairCombinedName = t("guestPanel.pairCombinedName", {
+                  first: firstGuest.name,
+                  second: secondGuest.name,
+                });
+                const firstEffectiveGroup = resolveEffectiveGuestGroup(firstGuest, guestsById);
+                const secondEffectiveGroup = resolveEffectiveGuestGroup(secondGuest, guestsById);
+                const sameGroupColor =
+                  firstEffectiveGroup?.color &&
+                  secondEffectiveGroup?.color &&
+                  firstEffectiveGroup.color === secondEffectiveGroup.color
+                    ? firstEffectiveGroup.color
+                    : null;
+                const firstAccentColor = sameGroupColor ?? firstEffectiveGroup?.color ?? null;
+                const secondAccentColor = sameGroupColor ?? secondEffectiveGroup?.color ?? null;
+                const pairStatusLabel =
+                  row.status === "split"
+                    ? t("guestPanel.split")
+                    : row.status === "assigned"
+                      ? t("guestPanel.assigned")
+                      : t("guestPanel.unseated");
 
                 return (
-                  <li key={guest.id}>
-                    <div className="mb-1 flex min-w-0 items-center gap-1">
+                  <li key={row.key}>
+                    <div className="mb-1 space-y-1">
                       <button
                         type="button"
                         draggable={variant === "desktop" && enableGuestDnD}
                         onDragStart={(event) => {
                           if (!(variant === "desktop" && enableGuestDnD)) return;
                           event.dataTransfer.effectAllowed = "move";
-                          event.dataTransfer.setData("text/plain", guest.id);
-                          const preview = createGuestDragPreview(guest.name);
+                          event.dataTransfer.setData("text/plain", firstGuest.id);
+                          const preview = createGuestDragPreview(pairCombinedName);
                           event.dataTransfer.setDragImage(preview, 18, 18);
                           requestAnimationFrame(() => {
                             preview.remove();
                           });
-                          onGuestDragStart?.(guest.id);
+                          onGuestDragStart?.(firstGuest.id);
                         }}
                         onDragEnd={() => {
                           if (!(variant === "desktop" && enableGuestDnD)) return;
                           onGuestDragEnd?.();
                         }}
-                        onClick={() => {
-                          if (isLinkingMode) {
-                            selectGuestForRelationship(guest.id);
-                            return;
-                          }
-                          const nextGuestId = selectedGuestId === guest.id ? null : guest.id;
-                          onSelectGuest(nextGuestId);
-                          onGuestSelected?.(nextGuestId);
-                        }}
-                        className={`relative flex min-w-0 flex-1 items-center gap-3 overflow-hidden rounded-md border px-3 py-2 text-left ${
+                        onClick={() => togglePairExpanded(row.key)}
+                        aria-expanded={isExpanded}
+                        aria-label={
+                          isExpanded
+                            ? t("guestPanel.pairCollapse")
+                            : t("guestPanel.pairExpand")
+                        }
+                        className={`relative flex w-full min-w-0 items-center gap-3 rounded-md border px-3 py-2 text-left ${
                           isSelectedForRelationship
                             ? "border-blue-300 bg-blue-50/70"
                             : isSelectedGuestRow
@@ -617,63 +893,63 @@ export function GuestPanel({
                               : "border-transparent hover:border-zinc-200 hover:bg-zinc-100/70"
                         }`}
                       >
-                        {effectiveGroup?.color ? (
+                        {firstAccentColor || secondAccentColor ? (
                           <span
                             aria-hidden="true"
-                            className="absolute left-0 top-0 h-full w-1"
-                            style={{ backgroundColor: effectiveGroup.color }}
-                          />
+                            className="absolute left-0 top-0 h-full w-1 overflow-hidden rounded-l-md"
+                          >
+                            {sameGroupColor ? (
+                              <span
+                                className="block h-full w-full"
+                                style={{ backgroundColor: sameGroupColor }}
+                              />
+                            ) : (
+                              <>
+                                <span
+                                  className="block h-1/2 w-full"
+                                  style={{ backgroundColor: firstAccentColor ?? "transparent" }}
+                                />
+                                <span
+                                  className="block h-1/2 w-full"
+                                  style={{ backgroundColor: secondAccentColor ?? "#e4e4e7" }}
+                                />
+                              </>
+                            )}
+                          </span>
                         ) : null}
-                        <Avatar>
-                          <AvatarFallback>{getInitials(guest.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-zinc-900">{guest.name}</p>
-                          <p className="truncate text-xs text-zinc-500">
-                            {guest.assignment
-                              ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })} • ${t("guestPanel.assigned")}`
-                              : t("guestPanel.unseated")}
-                          </p>
-                          {guestRelationships.length > 0 ? (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {guestRelationships.map((relationship) => (
-                                <Badge
-                                  key={relationship.id}
-                                  variant="secondary"
-                                  className="text-[10px]"
-                                >
-                                  {relationship.name?.trim().length
-                                    ? relationship.name
-                                    : relationshipTypeLabel[relationship.type]}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : null}
+                        <div className="-space-x-2 flex shrink-0">
+                          <Avatar className="h-8 w-8 border border-zinc-200 bg-white">
+                            <AvatarFallback>{getInitials(firstGuest.name)}</AvatarFallback>
+                          </Avatar>
+                          <Avatar className="h-8 w-8 border border-zinc-200 bg-white">
+                            <AvatarFallback>{getInitials(secondGuest.name)}</AvatarFallback>
+                          </Avatar>
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="overflow-hidden text-sm font-medium leading-tight text-zinc-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                            {pairCombinedName}
+                          </p>
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <Badge
+                              variant="secondary"
+                              className={`max-w-full truncate text-[10px] ${getPairStatusBadgeClassName(row.status)}`}
+                            >
+                              {pairStatusLabel}
+                            </Badge>
+                          </div>
+                        </div>
+                        <ChevronRight
+                          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+                            isExpanded ? "rotate-90" : ""
+                          }`}
+                          aria-hidden="true"
+                        />
                       </button>
-                      {canStartLinking ? (
-                        <TooltipProvider delayDuration={250}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                className="size-8 shrink-0 p-0"
-                                aria-label={t("guestPanel.startLinking")}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onSelectGuest(null);
-                                  onGuestSelected?.(null);
-                                  setSelectedRelationshipGuestIds([guest.id]);
-                                }}
-                              >
-                                <Link2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{t("guestPanel.link")}</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      {isExpanded ? (
+                        <div className="ml-5 space-y-1 border-l border-zinc-200 pl-3">
+                          {renderGuestSingleRow(firstGuest, { compact: true })}
+                          {renderGuestSingleRow(secondGuest, { compact: true })}
+                        </div>
                       ) : null}
                     </div>
                   </li>

@@ -47,6 +47,8 @@ export function ConfirmDialog({
           className={cn(
             "fixed left-1/2 top-1/2 z-[71] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-zinc-200 bg-white p-4 shadow-xl",
           )}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           <DialogPrimitive.Title className="text-base font-semibold text-zinc-900">
             {title}
