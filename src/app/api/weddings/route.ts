@@ -31,6 +31,7 @@ export async function POST(request: Request) {
         name: payload.name,
         date: payload.date,
         timezone: payload.timezone,
+        location: payload.location,
         currency: payload.currency.toUpperCase(),
         notes: payload.notes,
       },

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 190 - Remove unused sidebar i18n keys (completed)
+Phase 191 - Wedding location editable from dashboard details (completed)
 
 ## Completed Phases
 
@@ -202,8 +202,43 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 - Phase 188 - Sidebar wedding identity simplification
 - Phase 189 - Remove sidebar wedding identity card
 - Phase 190 - Remove unused sidebar i18n keys
+- Phase 191 - Wedding location editable from dashboard details
 
 ## Completed Work
+
+- Implemented Phase 191 wedding location editable from dashboard details:
+  - added a wedding-level `location` field to the Prisma `Wedding` model
+  - wired location through wedding validation and API:
+    - `createWeddingSchema` and `updateWeddingSchema`
+    - `POST /api/weddings` and `PUT /api/weddings/[weddingId]`
+  - updated dashboard data mapping so overview venue uses persisted wedding location instead of a fixed mock value
+  - extended the wedding details dialog with editable location input (`Miejsce wesela` / `Wedding venue`) and save payload support
+  - updated EN/PL i18n copy for new location input label and placeholder
+  - added migration SQL:
+    - `prisma/migrations/20260513100000_add_wedding_location/migration.sql`
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260513100000_add_wedding_location/migration.sql`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/app/api/weddings/route.ts`
+    - `src/app/api/weddings/[weddingId]/route.ts`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma migrate dev --name add_wedding_location` (failed due pre-existing modified historical migrations)
+    - `corepack pnpm prisma generate`
+    - `corepack pnpm prisma db execute --file prisma/migrations/20260513100000_add_wedding_location/migration.sql`
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint`
+  - known issues:
+    - `corepack pnpm lint` passes with pre-existing warnings in unrelated files (`src/app/seating-plans/*`, `src/features/seating-editor/components/SeatingCanvas.tsx`, workspace `vendors` and `expenses` pages)
+    - `corepack pnpm i18n:audit` still fails on existing hardcoded text in `src/app/page.tsx` (`"Open weddings"`)
+    - `prisma migrate dev` remains blocked by previously modified historical migrations in this environment; used non-destructive `prisma db execute` for this column change
+  - next recommended step:
+    - Phase 192: replace hardcoded `Open weddings` text in `src/app/page.tsx` with translation keys so `corepack pnpm i18n:audit` passes again
 
 - Implemented Phase 190 remove unused sidebar i18n keys:
   - removed unused `dashboard.sidebar` translation keys in PL/EN:
@@ -3025,4 +3060,4 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 
 ## Next Recommended Step
 
-- Phase 191: replace hardcoded `Open weddings` text in `src/app/page.tsx` with translation keys so `corepack pnpm i18n:audit` passes again.
+- Phase 192: replace hardcoded `Open weddings` text in `src/app/page.tsx` with translation keys so `corepack pnpm i18n:audit` passes again.

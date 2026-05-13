@@ -1,0 +1,2 @@
+ALTER TABLE "Wedding"
+ADD COLUMN IF NOT EXISTS "location" TEXT;

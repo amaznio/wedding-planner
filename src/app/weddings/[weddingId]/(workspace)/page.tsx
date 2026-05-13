@@ -23,6 +23,7 @@ type WeddingDetailApiResponse = {
     name: string;
     date: string | null;
     timezone: string | null;
+    location: string | null;
     currency: string;
     notes: string | null;
     events: Array<{
@@ -60,6 +61,7 @@ type WeddingFormState = {
   name: string;
   date: string;
   timezone: string;
+  location: string;
   currency: string;
   notes: string;
 };
@@ -70,6 +72,7 @@ type WeddingUpdateApiResponse = {
     name: string;
     date: string | null;
     timezone: string | null;
+    location: string | null;
     currency: string;
     notes: string | null;
   };
@@ -119,6 +122,7 @@ export default function WeddingDashboardHomePage() {
           weddingId,
           weddingName: weddingJson.wedding.name,
           weddingDate: weddingJson.wedding.date ? new Date(weddingJson.wedding.date) : null,
+          venue: weddingJson.wedding.location ?? undefined,
           currency: dashboardJson.currency,
           guestCount: weddingJson.wedding._count.guests,
           budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
@@ -132,6 +136,7 @@ export default function WeddingDashboardHomePage() {
             name: weddingJson.wedding.name ?? "",
             date: weddingJson.wedding.date ? weddingJson.wedding.date.slice(0, 10) : "",
             timezone: weddingJson.wedding.timezone ?? "",
+            location: weddingJson.wedding.location ?? "",
             currency: weddingJson.wedding.currency ?? "PLN",
             notes: weddingJson.wedding.notes ?? "",
           });
@@ -206,6 +211,7 @@ export default function WeddingDashboardHomePage() {
         name: trimmedName,
         date: weddingForm.date.trim() ? weddingForm.date.trim() : null,
         timezone: weddingForm.timezone.trim() ? weddingForm.timezone.trim() : null,
+        location: weddingForm.location.trim() ? weddingForm.location.trim() : null,
         currency: trimmedCurrency,
         notes: weddingForm.notes.trim() ? weddingForm.notes.trim() : null,
       };
@@ -228,6 +234,7 @@ export default function WeddingDashboardHomePage() {
         name: json.wedding.name,
         date: json.wedding.date ? json.wedding.date.slice(0, 10) : "",
         timezone: json.wedding.timezone ?? "",
+        location: json.wedding.location ?? "",
         currency: json.wedding.currency ?? "PLN",
         notes: json.wedding.notes ?? "",
       });
@@ -242,6 +249,7 @@ export default function WeddingDashboardHomePage() {
             ...prev.overview,
             coupleNames: json.wedding.name,
             weddingDate: nextWeddingDate ?? prev.overview.weddingDate,
+            venue: json.wedding.location?.trim() || prev.overview.venue,
             currency: json.wedding.currency,
           },
         };
@@ -361,6 +369,18 @@ export default function WeddingDashboardHomePage() {
                 value={weddingForm?.timezone ?? ""}
                 onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, timezone: event.target.value } : prev))}
                 placeholder="Europe/Warsaw"
+                disabled={isWeddingSaving}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="wedding-location" className="text-sm font-medium text-zinc-800">
+                {t("dashboard.overview.edit.location")}
+              </label>
+              <Input
+                id="wedding-location"
+                value={weddingForm?.location ?? ""}
+                onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, location: event.target.value } : prev))}
+                placeholder={t("dashboard.overview.edit.locationPlaceholder")}
                 disabled={isWeddingSaving}
               />
             </div>

@@ -340,6 +340,8 @@
         "date": "Data ślubu",
         "currency": "Waluta",
         "timezone": "Strefa czasowa",
+        "location": "Miejsce wesela",
+        "locationPlaceholder": "Wpisz nazwę miejsca lub adres",
         "notes": "Notatki",
         "notesPlaceholder": "Opcjonalne notatki o ślubie",
         "errorInvalid": "Nazwa ślubu i 3-literowy kod waluty są wymagane.",

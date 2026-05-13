@@ -340,6 +340,8 @@
         "date": "Wedding date",
         "currency": "Currency",
         "timezone": "Timezone",
+        "location": "Wedding venue",
+        "locationPlaceholder": "Enter venue name or address",
         "notes": "Notes",
         "notesPlaceholder": "Optional notes about your wedding",
         "errorInvalid": "Wedding name and a 3-letter currency are required.",

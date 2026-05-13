@@ -9,6 +9,7 @@ type BuildDashboardDataInput = {
   weddingId: string;
   weddingName: string;
   weddingDate?: Date | null;
+  venue?: string;
   currency?: string;
   guestCount?: number;
   budgetMinor?: number;
@@ -92,7 +93,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
     overview: {
       coupleNames: input.weddingName,
       weddingDate,
-      venue: "Folwark W\u0105sowo",
+      venue: input.venue?.trim() || "Folwark W\u0105sowo",
       guestEstimate: guestCount,
       budgetMinor,
       spentMinor,

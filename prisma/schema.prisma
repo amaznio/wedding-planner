@@ -57,6 +57,7 @@ model Wedding {
   name      String
   date      DateTime?
   timezone  String?
+  location  String?
   currency  String   @default("PLN")
   notes     String?
   createdAt DateTime @default(now())

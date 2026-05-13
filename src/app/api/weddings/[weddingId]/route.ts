@@ -43,6 +43,7 @@ export async function PUT(request: Request, context: RouteContext) {
         name: payload.name,
         date: payload.date,
         timezone: payload.timezone,
+        location: payload.location,
         currency: payload.currency?.toUpperCase(),
         notes: payload.notes,
       },
