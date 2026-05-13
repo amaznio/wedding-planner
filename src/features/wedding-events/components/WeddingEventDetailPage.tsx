@@ -20,9 +20,6 @@ import {
   Users,
   UtensilsCrossed,
   Wallet,
-  CheckCircle2,
-  CircleDashed,
-  CircleAlert,
   ListTodo,
   Landmark,
   Rows3,
@@ -30,7 +27,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
@@ -489,76 +486,55 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               </Card>
 
               <Card className="gap-0">
-                <CardHeader className="items-center">
+                <CardHeader className="pb-3">
                   <div>
                     <CardTitle>{t("events.detail.cards.timeline.title")}</CardTitle>
                     <CardDescription>{t("events.detail.cards.timeline.description")}</CardDescription>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => undefined}>
-                    {t("events.detail.cards.timeline.edit")}
-                  </Button>
+                  <CardAction>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-zinc-600 hover:bg-zinc-100"
+                      onClick={() => undefined}
+                      aria-label={t("events.detail.cards.timeline.edit")}
+                    >
+                      <Edit3 className="size-4" />
+                    </Button>
+                  </CardAction>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {data.event.timeline.map((item) => (
-                    <div key={item.id} className="grid grid-cols-[64px_minmax(0,1fr)_32px] items-start gap-3">
-                      <p className="pt-0.5 text-sm font-medium text-zinc-900">{item.time}</p>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-zinc-900">{t(item.titleKey)}</p>
-                        <p className="text-xs text-zinc-600">{t(item.descriptionKey)}</p>
+                  <div className="space-y-0.5">
+                    {data.event.timeline.map((item, index) => (
+                      <div key={item.id} className="grid grid-cols-[64px_18px_minmax(0,1fr)_28px] items-start gap-2 py-2">
+                        <p className="pt-0.5 text-[18px] leading-none text-zinc-900">{item.time}</p>
+                        <div className="relative flex h-full justify-center">
+                          {index < data.event.timeline.length - 1 ? (
+                            <span className="absolute bottom-[-22px] top-3 z-0 w-px bg-rose-200" />
+                          ) : null}
+                          <span className="relative z-10 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-rose-500 shadow-[0_0_0_1px_rgba(251,113,133,0.35)]" />
+                        </div>
+                        <div>
+                          <p className="text-[16px] font-medium leading-tight text-zinc-900">{t(item.titleKey)}</p>
+                        </div>
+                        <div className="flex items-center justify-end pt-0.5">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-600 hover:bg-zinc-100">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>{t("events.detail.cards.timeline.menu.edit")}</DropdownMenuItem>
+                              <DropdownMenuItem>{t("events.detail.cards.timeline.menu.delete")}</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-end gap-1">
-                        <StatusDot status={item.status} />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>{t("events.detail.cards.timeline.menu.edit")}</DropdownMenuItem>
-                            <DropdownMenuItem>{t("events.detail.cards.timeline.menu.delete")}</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-                <CardFooter>
-                  <Button type="button" variant="outline" className="w-full" onClick={() => setActiveTab("timeline")}>
-                    {t("events.detail.cards.timeline.viewFull")}
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="gap-0">
-                <CardHeader>
-                  <CardTitle>{t("events.detail.cards.seating.title")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-zinc-700">
-                  <p className="text-2xl font-semibold text-zinc-900">
-                    {data.event.seating.seated} / {data.event.seating.total} {t("events.detail.cards.seating.seated")}
-                  </p>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <MetaItem label={t("events.detail.cards.seating.tables")} value={String(data.event.seating.tables)} />
-                    <MetaItem label={t("events.detail.cards.seating.unseated")} value={String(data.event.seating.unseated)} />
-                    <MetaItem label={t("events.detail.cards.seating.warnings")} value={String(data.event.seating.warnings)} />
+                    ))}
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button
-                    type="button"
-                    className="w-full bg-rose-500 hover:bg-rose-400"
-                    onClick={() => {
-                      if (seatingPlanHref) {
-                        router.push(seatingPlanHref);
-                        return;
-                      }
-                      setActiveTab("seating");
-                    }}
-                  >
-                    {t("events.detail.actions.openSeatingPlan")}
-                  </Button>
-                </CardFooter>
               </Card>
 
               <Card className="gap-0">
@@ -583,8 +559,8 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                 <CardHeader>
                   <CardTitle>{t("events.detail.cards.guests.title")}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
+                <CardContent className="space-y-4 pt-1 pb-2">
+                  <div className="grid grid-cols-[140px_minmax(0,1fr)] items-center gap-6">
                     <div
                       className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-center"
                       style={{
@@ -599,18 +575,18 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                         <span className="text-xs text-zinc-600">{t("events.detail.cards.guests.total")}</span>
                       </div>
                     </div>
-                    <div className="space-y-2 text-sm">
+                    <div className="self-center space-y-3 text-sm">
                       <LegendRow colorClass="text-green-500" label={t("events.detail.cards.guests.confirmed")} value={data.event.guests.confirmed} />
                       <LegendRow colorClass="text-amber-400" label={t("events.detail.cards.guests.pending")} value={data.event.guests.pending} />
                       <LegendRow colorClass="text-rose-500" label={t("events.detail.cards.guests.notAttending")} value={data.event.guests.notAttending} />
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="mt-2">
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="h-10 w-full"
                     onClick={() => router.push(`/weddings/${weddingId}/guests`)}
                   >
                     {t("events.detail.actions.manageEventGuests")}
@@ -698,7 +674,18 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                 <CardHeader>
                   <CardTitle>{t("events.detail.cards.quickActions.title")}</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-2 sm:grid-cols-2">
+                <CardContent className="space-y-3">
+                  <div className="rounded-lg border border-zinc-200 p-3">
+                    <p className="text-sm font-medium text-zinc-900">{t("events.detail.cards.seating.title")}</p>
+                    <p className="mt-1 text-xl font-semibold text-zinc-900">
+                      {data.event.seating.seated} / {data.event.seating.total} {t("events.detail.cards.seating.seated")}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-600">
+                      {data.event.seating.unseated} {t("events.detail.cards.seating.unseated")} · {data.event.seating.warnings} {t("events.detail.cards.seating.warnings")}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
                   <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addTimelineItem")}</Button>
                   <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addTask")}</Button>
                   <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addVendor")}</Button>
@@ -718,6 +705,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                     {t("events.detail.actions.openSeatingPlan")}
                     <ExternalLink className="size-4" />
                   </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -802,27 +790,24 @@ function MetaItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusDot({ status }: { status: WeddingEventDetail["timeline"][number]["status"] }) {
-  if (status === "done") {
-    return <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />;
-  }
-
-  if (status === "upcoming") {
-    return <CircleDashed className="size-4 text-amber-500" aria-hidden />;
-  }
-
-  return <CircleAlert className="size-4 text-zinc-400" aria-hidden />;
-}
-
-function LegendRow({ colorClass, label, value }: { colorClass: string; label: string; value: number }) {
+function LegendRow({
+  colorClass,
+  label,
+  value,
+}: {
+  colorClass: string;
+  label: string;
+  value: number;
+}) {
   return (
-    <div className="flex items-center gap-2 text-zinc-700">
+    <div className="flex items-center gap-2 text-zinc-700 leading-6">
       <Circle className={`size-3 fill-current ${colorClass}`} />
       <span>{label}</span>
       <span className="ml-auto font-medium text-zinc-900">{value}</span>
     </div>
   );
 }
+
 
 function VendorStatusBadge({
   status,

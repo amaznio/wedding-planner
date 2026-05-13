@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 170 - Event detail command center redesign (completed)
+Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
 
 ## Completed Phases
 
@@ -181,8 +181,71 @@ Phase 170 - Event detail command center redesign (completed)
 - Phase 168 - Linked guest search excludes already linked guests
 - Phase 169 - Linked guest search excludes relationship members too
 - Phase 170 - Event detail command center redesign
+- Phase 171 - Event detail visual polish + seating-card simplification
+- Phase 172 - Event timeline section style alignment
+- Phase 173 - Event attendance card spacing alignment
+- Phase 174 - Event attendance card spacing-only refinement
+- Phase 175 - Event attendance card spacing pass (layout rhythm)
+- Phase 176 - Event timeline single-line labels + tighter time spacing
 
 ## Completed Work
+
+- Implemented Phase 176 event timeline single-line labels + tighter time spacing:
+  - removed the secondary description line from each timeline row so only the main label is displayed
+  - tightened timeline row spacing by reducing the time column width (`72px` -> `64px`) and inter-column gap (`gap-3` -> `gap-2`) to bring time closer to the dot
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 175 event attendance card spacing pass (layout rhythm):
+  - applied spacing-focused refinements to `Guests for this event` card:
+    - content padding tuned (`pt-1 pb-2`)
+    - stable two-column layout (`140px` donut column + fluid legend column)
+    - legend block vertically centered
+    - legend row rhythm and readability tuned (`space-y-3`, `leading-6`)
+    - CTA spacing and size adjusted (`mt-2`, `h-10`)
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 174 event attendance card spacing-only refinement:
+  - reverted prior visual-heavy attendance-card changes and applied spacing-only adjustments:
+    - card content vertical padding tuned (`pt-1 pb-2`)
+    - stable two-column layout (`140px` donut column + fluid legend column)
+    - legend block vertically centered and row rhythm tightened (`space-y-3`, `leading-6`)
+    - CTA section moved slightly down and button height reduced to `h-10`
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 173 event attendance card spacing alignment:
+  - refined `Guests for this event` card layout to match reference hierarchy:
+    - cleaner donut + legend grid alignment
+    - legend rows changed to two-line structure (label + `count (percent)`)
+    - CTA styling updated to outlined button with rose text emphasis
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 172 event timeline section style alignment:
+  - redesigned `Plan dnia` card to better match provided reference:
+    - header spacing and subtitle rhythm
+    - full-width top action bar for `Edytuj harmonogram`
+    - timeline rows with left time column, pink vertical rail, pink dot markers, and right-side overflow action
+    - full-width bottom action button styling for `Zobacz pełny harmonogram`
+  - removed old timeline status-dot helper no longer used in this design variant
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 171 event detail visual polish + seating-card simplification:
+  - refined event overview layout to better match provided design hierarchy and visual rhythm
+  - replaced timeline rows with a vertical timeline line + dot indicators style
+  - removed standalone seating-status overview card that emphasized table-count completion
+  - moved seating status into compact quick-actions context and kept seating CTA path intact
+  - files changed:
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 170 event detail command center redesign:
   - replaced `/weddings/[weddingId]/events/[eventId]` page implementation with an event-specific command center using the existing wedding shell/sidebar
@@ -2095,6 +2158,22 @@ Phase 170 - Event detail command center redesign (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 176 event timeline single-line labels + tighter time spacing)
+
+- `corepack pnpm typecheck` (pass; Phase 175 event attendance card spacing pass)
+
+- `corepack pnpm typecheck` (pass; Phase 174 event attendance card spacing-only refinement)
+
+- `corepack pnpm typecheck` (pass; Phase 173 event attendance card spacing alignment)
+
+- `corepack pnpm typecheck` (pass; Phase 172 event timeline section style alignment)
+- `corepack pnpm lint` (pass with existing warnings; Phase 172 event timeline section style alignment)
+- `corepack pnpm build` (pass; Phase 172 event timeline section style alignment)
+
+- `corepack pnpm typecheck` (pass; Phase 171 event detail visual polish + seating-card simplification)
+- `corepack pnpm lint` (pass with existing warnings; Phase 171 event detail visual polish + seating-card simplification)
+- `corepack pnpm build` (pass; Phase 171 event detail visual polish + seating-card simplification)
+
 - `corepack pnpm typecheck` (pass; Phase 170 event detail command center redesign)
 - `corepack pnpm lint` (pass with existing warnings; Phase 170 event detail command center redesign)
 - `corepack pnpm build` (pass; Phase 170 event detail command center redesign)
@@ -2515,6 +2594,12 @@ Phase 170 - Event detail command center redesign (completed)
 
 ## Check Results
 
+- Phase 176 event timeline single-line labels + tighter time spacing: pass (`typecheck`).
+- Phase 175 event attendance card spacing pass: pass (`typecheck`).
+- Phase 174 event attendance card spacing-only refinement: pass (`typecheck`).
+- Phase 173 event attendance card spacing alignment: pass (`typecheck`).
+- Phase 172 event timeline section style alignment: pass (`typecheck`, `lint` with existing warnings only, `build`).
+- Phase 171 event detail visual polish + seating-card simplification: pass (`typecheck`, `lint` with existing warnings only, `build`).
 - Phase 170 event detail command center redesign: pass (`typecheck`, `lint` with existing warnings only, `build`).
 - Phase 169 linked guest search excludes relationship members too: pass (`typecheck`).
 - Phase 168 linked guest search excludes already linked guests: pass (`typecheck`).
@@ -2600,6 +2685,7 @@ Phase 170 - Event detail command center redesign (completed)
 
 ## Next Recommended Step
 
+- Add a compact top KPI strip (without table-completion KPI) to mirror design even more closely while keeping overview density controlled.
 - Implement real per-event modules for Timeline, Tasks, and Notes tabs (replace placeholders with CRUD and persistence).
 - Connect remaining Guests page quick actions (`import`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.
 - Add dedicated wedding-level relationship and child metadata persistence APIs, then wire `AddGuestDialog` TODO payload fields to backend storage.
