@@ -281,6 +281,167 @@
   "toasts": {
     "success": "Sukces",
     "info": "Informacja"
+  },
+  "dashboard": {
+    "states": {
+      "loading": "Ładowanie panelu ślubnego...",
+      "loadError": "Nie udało się załadować panelu ślubnego"
+    },
+    "header": {
+      "openSidebar": "Otwórz menu",
+      "greeting": "Witaj, {{name}}!",
+      "subtitle": "Czas na piękne wspomnienia.",
+      "notifications": "Powiadomienia",
+      "add": "Dodaj"
+    },
+    "sidebar": {
+      "appName": "WeddingPlan",
+      "mobileTitle": "Nawigacja ślubna",
+      "comingSoon": "Wkrótce",
+      "duoTitle": "Planowanie w duecie",
+      "duoAction": "Zaproś partnera",
+      "profileMenu": "Otwórz menu profilu",
+      "profile": "Profil",
+      "preferences": "Ustawienia",
+      "logout": "Wyloguj",
+      "nav": {
+        "home": "Strona główna",
+        "schedule": "Harmonogram",
+        "tasks": "Zadania",
+        "guests": "Goście",
+        "events": "Wydarzenia",
+        "budget": "Budżet",
+        "vendors": "Dostawcy",
+        "notes": "Notatki",
+        "documents": "Dokumenty",
+        "inspiration": "Inspiracje"
+      }
+    },
+    "actions": {
+      "task": "Dodaj zadanie",
+      "expense": "Dodaj wydatek",
+      "vendor": "Dodaj dostawcę",
+      "event": "Dodaj wydarzenie",
+      "note": "Dodaj notatkę"
+    },
+    "overview": {
+      "heroTag": "Przegląd ślubu",
+      "countdown": "{{count}} dni do ślubu",
+      "details": "Zobacz szczegóły",
+      "venue": "Miejsce wesela",
+      "guestEstimate": "Liczba gości (szac.)",
+      "guestsCount": "{{count}} gości",
+      "totalBudget": "Budżet całkowity",
+      "spent": "Wydano"
+    },
+    "events": {
+      "addEvent": "Dodaj wydarzenie"
+    },
+    "progress": {
+      "title": "Postępy w planowaniu",
+      "items": {
+        "guestList": {
+          "title": "Lista gości",
+          "description": "Zarządzaj gośćmi i zaproszeniami"
+        },
+        "eventGuests": {
+          "title": "Wydarzenia i goście",
+          "description": "Goście przypisani do konkretnych wydarzeń"
+        },
+        "budgetExpenses": {
+          "title": "Budżet i wydatki",
+          "description": "Kontroluj budżet i śledź wydatki"
+        },
+        "vendors": {
+          "title": "Dostawcy",
+          "description": "Zarządzaj dostawcami i umowami"
+        },
+        "schedule": {
+          "title": "Harmonogram",
+          "description": "Plan dnia i zadania organizacyjne"
+        },
+        "notesIdeas": {
+          "title": "Notatki i pomysły",
+          "description": "Notatki, inspiracje i pomysły"
+        },
+        "documents": {
+          "title": "Dokumenty",
+          "description": "Umowy i ważne pliki"
+        }
+      },
+      "detail": {
+        "currency": "{{spent}} / {{budget}}",
+        "notes": "{{count}} notatek",
+        "documents": "{{count}} plików",
+        "guestsSuffix": "gości",
+        "eventsSuffix": "wydarzenia",
+        "vendorsSuffix": "zarezerwowanych",
+        "tasksSuffix": "zadań",
+        "itemsSuffix": "pozycji"
+      }
+    },
+    "widgets": {
+      "viewAll": "Zobacz wszystkie",
+      "upcomingTasks": {
+        "title": "Nadchodzące zadania",
+        "badge": "Wkrótce",
+        "dueIn": "za {{count}} dni",
+        "items": {
+          "confirmMenu": "Potwierdź menu z cateringiem",
+          "chooseDecor": "Wybierz dekoracje sali",
+          "meetPhotographer": "Spotkanie z fotografem",
+          "dressFitting": "Przymiarka sukni ślubnej"
+        }
+      },
+      "recentExpenses": {
+        "title": "Ostatnie wydatki",
+        "total": "Łącznie wydatków",
+        "items": {
+          "catering": "Catering",
+          "photographer": "Fotograf",
+          "decorations": "Dekoracje",
+          "band": "Zespół muzyczny"
+        }
+      },
+      "quickActions": {
+        "title": "Szybkie akcje"
+      }
+    },
+    "tip": {
+      "title": "Wskazówka dnia",
+      "description": "Stwórz harmonogram dnia ślubu, aby wszyscy wiedzieli, co i kiedy się wydarzy.",
+      "cta": "Utwórz harmonogram",
+      "dismiss": "Ukryj wskazówkę"
+    },
+    "placeholders": {
+      "title": "Wkrótce",
+      "default": "Ta funkcja jest przygotowywana na kolejne wydanie.",
+      "items": {
+        "collaboration": "Narzędzia współpracy pojawią się wkrótce.",
+        "profile": "Zarządzanie profilem nie jest jeszcze dostępne.",
+        "preferences": "Ustawienia przestrzeni ślubnej pojawią się wkrótce.",
+        "logout": "Przepływ wylogowania nie jest podłączony w tym środowisku.",
+        "notifications": "Centrum powiadomień pojawi się wkrótce.",
+        "weddingDetails": "Panel szczegółów ślubu pojawi się wkrótce.",
+        "addEvent": "Dodawanie wydarzeń pojawi się wkrótce.",
+        "upcomingTasks": "Pełny moduł zadań pojawi się wkrótce.",
+        "recentExpenses": "Rozszerzona analityka wydatków pojawi się wkrótce.",
+        "tip": "Rozbudowane wskazówki planowania pojawią się wkrótce.",
+        "schedule": "Moduł harmonogramu pojawi się wkrótce.",
+        "tasks": "Moduł zadań pojawi się wkrótce.",
+        "notes": "Moduł notatek pojawi się wkrótce.",
+        "documents": "Moduł dokumentów pojawi się wkrótce.",
+        "inspiration": "Tablica inspiracji pojawi się wkrótce.",
+        "guestList": "Szczegóły listy gości są dostępne w sekcji Goście.",
+        "eventGuests": "Zaawansowane przypisania gości do wydarzeń pojawią się wkrótce.",
+        "budgetExpenses": "Szczegółowa analiza budżetu pojawi się wkrótce.",
+        "vendors": "Panel dostawców jest już dostępny w sekcji Dostawcy.",
+        "task": "Dodawanie zadań pojawi się wkrótce.",
+        "expense": "Wydatki możesz już dodawać w sekcji Wydatki.",
+        "vendor": "Dostawców możesz już dodawać w sekcji Dostawcy.",
+        "event": "Użyj paska wydarzeń, aby otworzyć przestrzeń wydarzenia.",
+        "note": "Moduł notatek pojawi się wkrótce."
+      }
+    }
   }
 }
-

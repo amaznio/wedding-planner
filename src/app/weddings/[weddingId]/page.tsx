@@ -1,133 +1,278 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useI18n } from "@/i18n/provider";
+import type { Locale } from "@/i18n/config";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { buildDashboardMockData } from "@/features/wedding-dashboard/dashboard.mock";
+import type { DashboardEventCard, DashboardQuickActionId, WeddingDashboardData } from "@/features/wedding-dashboard/types";
+import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
+import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/WeddingDashboardShell";
+import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
+import { WeddingDashboardHeader } from "@/features/wedding-dashboard/components/WeddingDashboardHeader";
+import { WeddingOverviewHero } from "@/features/wedding-dashboard/components/WeddingOverviewHero";
+import { WeddingEventsStrip } from "@/features/wedding-dashboard/components/WeddingEventsStrip";
+import { PlanningProgressSection } from "@/features/wedding-dashboard/components/PlanningProgressSection";
+import { DashboardWidgetsGrid } from "@/features/wedding-dashboard/components/DashboardWidgetsGrid";
+import { DashboardTipBanner } from "@/features/wedding-dashboard/components/DashboardTipBanner";
 
-type WeddingDetail = {
-  id: string;
-  name: string;
-  currency: string;
-  events: Array<{
+type WeddingDetailApiResponse = {
+  wedding: {
     id: string;
     name: string;
-    type: string;
-    startsAt: string | null;
-  }>;
-  _count: {
-    guests: number;
-    vendors: number;
-    expenses: number;
-    households: number;
-    guestGroups: number;
+    date: string | null;
+    currency: string;
+    events: Array<{
+      id: string;
+      name: string;
+      type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+      startsAt: string | null;
+    }>;
+    _count: {
+      guests: number;
+      vendors: number;
+      expenses: number;
+      households: number;
+      guestGroups: number;
+    };
   };
 };
 
-export default function WeddingDetailPage() {
+type WeddingDashboardApiResponse = {
+  currency: string;
+  expenseSummary: Array<{
+    status: string;
+    _sum: { amountMinor: number | null };
+    _count: { _all: number };
+  }>;
+  vendorSummary: {
+    totalCostMinor: number;
+    totalDepositMinor: number;
+    totalPaidMinor: number;
+    remainingMinor: number;
+  };
+};
+
+export default function WeddingDashboardHomePage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
-  const [wedding, setWedding] = useState<WeddingDetail | null>(null);
-  const [eventName, setEventName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const { t, locale } = useI18n();
 
-  const load = async () => {
-    const response = await fetch(`/api/weddings/${weddingId}`, { cache: "no-store" });
-    if (!response.ok) throw new Error("Failed to load wedding");
-    const data = (await response.json()) as { wedding: WeddingDetail };
-    setWedding(data.wedding);
-  };
+  const [data, setData] = useState<WeddingDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [placeholderKey, setPlaceholderKey] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    const run = async () => {
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
       try {
-        await load();
-      } catch (e) {
+        const [weddingResponse, dashboardResponse] = await Promise.all([
+          fetch(`/api/weddings/${weddingId}`, { cache: "no-store" }),
+          fetch(`/api/weddings/${weddingId}/dashboard`, { cache: "no-store" }),
+        ]);
+
+        if (!weddingResponse.ok) throw new Error("weddingLoadFailed");
+        if (!dashboardResponse.ok) throw new Error("dashboardLoadFailed");
+
+        const weddingJson = (await weddingResponse.json()) as WeddingDetailApiResponse;
+        const dashboardJson = (await dashboardResponse.json()) as WeddingDashboardApiResponse;
+
+        const mappedEvents = mapEvents(weddingId, weddingJson.wedding.events);
+        const expenseSpentMinor = dashboardJson.expenseSummary
+          .filter((row) => row.status !== "canceled")
+          .reduce((sum, row) => sum + (row._sum.amountMinor ?? 0), 0);
+
+        const built = buildDashboardMockData({
+          weddingId,
+          weddingName: weddingJson.wedding.name,
+          weddingDate: weddingJson.wedding.date ? new Date(weddingJson.wedding.date) : null,
+          currency: dashboardJson.currency,
+          guestCount: weddingJson.wedding._count.guests,
+          budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
+          spentMinor: dashboardJson.vendorSummary.totalPaidMinor || expenseSpentMinor || undefined,
+          events: mappedEvents,
+        });
+
         if (active) {
-          setError(e instanceof Error ? e.message : "Failed to load wedding");
+          setData(built);
+        }
+      } catch {
+        if (active) {
+          setError(t("dashboard.states.loadError"));
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
         }
       }
     };
-    void run();
+
+    void load();
+
     return () => {
       active = false;
     };
-  }, [weddingId]);
+  }, [weddingId, t]);
 
-  const onCreateEvent = async () => {
-    if (!eventName.trim()) return;
-    setIsSaving(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/weddings/${weddingId}/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: eventName.trim(), type: "other" }),
-      });
-      if (!response.ok) throw new Error("Failed to create event");
-      setEventName("");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create event");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const firstEventHref = useMemo(() => data?.events.find((event) => event.href)?.href, [data?.events]);
 
-  if (!wedding) {
-    return <main className="p-6 text-sm text-zinc-600">Loading...</main>;
+  const weddingDateLabel = useMemo(() => {
+    if (!data) return "";
+    return formatDate(data.weddingDate, locale as Locale);
+  }, [data, locale]);
+
+  if (isLoading || !data) {
+    return <main className="p-6 text-sm text-zinc-600">{t("dashboard.states.loading")}</main>;
   }
 
+  if (error) {
+    return <main className="p-6 text-sm text-red-600">{error}</main>;
+  }
+
+  const handlePlaceholderAction = (key: string) => {
+    setPlaceholderKey(key);
+  };
+
+  const handleQuickAction = (action: DashboardQuickActionId) => {
+    if (action === "expense") {
+      router.push(`/weddings/${weddingId}/expenses`);
+      return;
+    }
+
+    if (action === "vendor") {
+      router.push(`/weddings/${weddingId}/vendors`);
+      return;
+    }
+
+    if (action === "event" && firstEventHref) {
+      router.push(firstEventHref);
+      return;
+    }
+
+    handlePlaceholderAction(action);
+  };
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 bg-zinc-50 p-6">
-      <header className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h1 className="text-2xl font-semibold text-zinc-900">{wedding.name}</h1>
-        <p className="text-sm text-zinc-600">
-          {wedding.currency} • {wedding._count.guests} guests • {wedding._count.vendors} vendors • {wedding._count.expenses} expenses
-        </p>
-      </header>
-
-      <section className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href={`/weddings/${weddingId}/guests`} className="rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50">Guests</Link>
-        <Link href={`/weddings/${weddingId}/vendors`} className="rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50">Vendors</Link>
-        <Link href={`/weddings/${weddingId}/expenses`} className="rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50">Expenses</Link>
-        <Link href={`/weddings/${weddingId}/dashboard`} className="rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50">Dashboard</Link>
-      </section>
-
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-zinc-900">Events</h2>
-        <div className="mt-3 flex gap-2">
-          <input
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            placeholder="Event name"
-            className="h-10 flex-1 rounded-md border border-zinc-300 px-3 text-sm"
+    <>
+      <WeddingDashboardShell
+        sidebar={
+          <WeddingDashboardSidebar
+            weddingName={data.weddingName}
+            weddingDateLabel={weddingDateLabel}
+            currentPath={pathname}
+            navigation={data.navigation}
+            currentUser={data.currentUser}
+            onPlaceholderAction={handlePlaceholderAction}
           />
-          <button
-            type="button"
-            onClick={onCreateEvent}
-            disabled={isSaving || !eventName.trim()}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {isSaving ? "Creating..." : "Create event"}
-          </button>
+        }
+        mobileSidebar={
+          <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+            <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
+              <SheetTitle className="sr-only">{t("dashboard.sidebar.mobileTitle")}</SheetTitle>
+              <WeddingDashboardSidebar
+                weddingName={data.weddingName}
+                weddingDateLabel={weddingDateLabel}
+                currentPath={pathname}
+                navigation={data.navigation}
+                currentUser={data.currentUser}
+                onPlaceholderAction={(value) => {
+                  setIsMobileSidebarOpen(false);
+                  handlePlaceholderAction(value);
+                }}
+              />
+            </SheetContent>
+          </Sheet>
+        }
+        header={
+          <WeddingDashboardHeader
+            firstName={data.currentUser.name.split(" ")[0] ?? data.currentUser.name}
+            onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+            onQuickAction={handleQuickAction}
+            onPlaceholderAction={handlePlaceholderAction}
+          />
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <WeddingOverviewHero
+            overview={data.overview}
+            locale={locale as Locale}
+            onOpenDetails={() => handlePlaceholderAction("weddingDetails")}
+          />
+
+          <WeddingEventsStrip
+            events={data.events}
+            locale={locale as Locale}
+            onAddEvent={() => handlePlaceholderAction("addEvent")}
+          />
+
+          <PlanningProgressSection
+            rows={data.planningProgress}
+            overview={data.overview}
+            notesCount={data.notesCount}
+            documentsCount={data.documentsCount}
+            locale={locale as Locale}
+            onPlaceholderAction={handlePlaceholderAction}
+          />
+
+          <DashboardWidgetsGrid
+            tasks={data.upcomingTasks}
+            expenses={data.recentExpenses}
+            actions={data.quickActions}
+            currency={data.overview.currency}
+            totalSpentMinor={data.overview.spentMinor}
+            locale={locale as Locale}
+            onQuickAction={handleQuickAction}
+            onPlaceholderAction={handlePlaceholderAction}
+          />
+
+          <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")}/>
         </div>
-        {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-        <ul className="mt-4 space-y-2">
-          {wedding.events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/weddings/${weddingId}/events/${event.id}`}
-                className="block rounded-md border border-zinc-200 p-3 hover:bg-zinc-50"
-              >
-                <p className="text-sm font-semibold text-zinc-900">{event.name}</p>
-                <p className="text-xs text-zinc-600">{event.type}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </main>
+      </WeddingDashboardShell>
+
+      <Dialog open={placeholderKey !== null} onOpenChange={(open) => { if (!open) setPlaceholderKey(null); }}>
+        <DialogContent closeLabel={t("common.close")}>
+          <DialogHeader>
+            <DialogTitle>{t("dashboard.placeholders.title")}</DialogTitle>
+            <DialogDescription>
+              {placeholderKey ? t(`dashboard.placeholders.items.${placeholderKey}`) : t("dashboard.placeholders.default")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" onClick={() => setPlaceholderKey(null)}>
+              {t("common.close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
+}
+
+function mapEvents(
+  weddingId: string,
+  events: WeddingDetailApiResponse["wedding"]["events"],
+): DashboardEventCard[] {
+  if (!events.length) return [];
+
+  const activeEventId = events.find((event) => event.type === "wedding")?.id ?? events[0].id;
+
+  return events.map((event) => ({
+    id: event.id,
+    name: event.name,
+    date: event.startsAt ? new Date(event.startsAt) : new Date(),
+    href: `/weddings/${weddingId}/events/${event.id}`,
+    status: event.id === activeEventId ? "active" : "planned",
+    type: event.type,
+  }));
 }

@@ -281,6 +281,167 @@
   "toasts": {
     "success": "Success",
     "info": "Info"
+  },
+  "dashboard": {
+    "states": {
+      "loading": "Loading wedding dashboard...",
+      "loadError": "Failed to load wedding dashboard"
+    },
+    "header": {
+      "openSidebar": "Open menu",
+      "greeting": "Hello, {{name}}!",
+      "subtitle": "Time to create beautiful memories.",
+      "notifications": "Notifications",
+      "add": "Add"
+    },
+    "sidebar": {
+      "appName": "WeddingPlan",
+      "mobileTitle": "Wedding navigation",
+      "comingSoon": "Soon",
+      "duoTitle": "Plan together",
+      "duoAction": "Invite your partner",
+      "profileMenu": "Open profile menu",
+      "profile": "Profile",
+      "preferences": "Preferences",
+      "logout": "Sign out",
+      "nav": {
+        "home": "Dashboard",
+        "schedule": "Schedule",
+        "tasks": "Tasks",
+        "guests": "Guests",
+        "events": "Events",
+        "budget": "Budget",
+        "vendors": "Vendors",
+        "notes": "Notes",
+        "documents": "Documents",
+        "inspiration": "Inspiration"
+      }
+    },
+    "actions": {
+      "task": "Add task",
+      "expense": "Add expense",
+      "vendor": "Add vendor",
+      "event": "Add event",
+      "note": "Add note"
+    },
+    "overview": {
+      "heroTag": "Wedding overview",
+      "countdown": "{{count}} days to wedding",
+      "details": "View details",
+      "venue": "Venue",
+      "guestEstimate": "Guest estimate",
+      "guestsCount": "{{count}} guests",
+      "totalBudget": "Total budget",
+      "spent": "Spent"
+    },
+    "events": {
+      "addEvent": "Add event"
+    },
+    "progress": {
+      "title": "Planning progress",
+      "items": {
+        "guestList": {
+          "title": "Guest list",
+          "description": "Manage guests and invitations"
+        },
+        "eventGuests": {
+          "title": "Events & guest assignments",
+          "description": "Guests assigned to specific events"
+        },
+        "budgetExpenses": {
+          "title": "Budget & expenses",
+          "description": "Track wedding budget and spending"
+        },
+        "vendors": {
+          "title": "Vendors",
+          "description": "Manage vendors and contracts"
+        },
+        "schedule": {
+          "title": "Schedule",
+          "description": "Wedding timeline and planning tasks"
+        },
+        "notesIdeas": {
+          "title": "Notes & ideas",
+          "description": "Notes, ideas and inspirations"
+        },
+        "documents": {
+          "title": "Documents",
+          "description": "Contracts and important files"
+        }
+      },
+      "detail": {
+        "currency": "{{spent}} / {{budget}}",
+        "notes": "{{count}} notes",
+        "documents": "{{count}} files",
+        "guestsSuffix": "guests",
+        "eventsSuffix": "events",
+        "vendorsSuffix": "booked",
+        "tasksSuffix": "tasks",
+        "itemsSuffix": "items"
+      }
+    },
+    "widgets": {
+      "viewAll": "View all",
+      "upcomingTasks": {
+        "title": "Upcoming tasks",
+        "badge": "Soon",
+        "dueIn": "in {{count}} days",
+        "items": {
+          "confirmMenu": "Confirm catering menu",
+          "chooseDecor": "Choose venue decorations",
+          "meetPhotographer": "Meeting with photographer",
+          "dressFitting": "Dress fitting"
+        }
+      },
+      "recentExpenses": {
+        "title": "Recent expenses",
+        "total": "Total spent",
+        "items": {
+          "catering": "Catering",
+          "photographer": "Photographer",
+          "decorations": "Decorations",
+          "band": "Band"
+        }
+      },
+      "quickActions": {
+        "title": "Quick actions"
+      }
+    },
+    "tip": {
+      "title": "Tip of the day",
+      "description": "Create a wedding day timeline so everyone knows what happens and when.",
+      "cta": "Create schedule",
+      "dismiss": "Dismiss tip"
+    },
+    "placeholders": {
+      "title": "Coming soon",
+      "default": "This feature is being prepared for the next release.",
+      "items": {
+        "collaboration": "Collaboration tools are coming soon.",
+        "profile": "Profile management is not available yet.",
+        "preferences": "Wedding workspace preferences are coming soon.",
+        "logout": "Sign-out flow is not connected in this environment.",
+        "notifications": "Notifications center is coming soon.",
+        "weddingDetails": "Wedding details panel is coming soon.",
+        "addEvent": "Event creation flow is coming soon.",
+        "upcomingTasks": "Full tasks module is coming soon.",
+        "recentExpenses": "Extended expense analytics are coming soon.",
+        "tip": "Guided planning tips are coming soon.",
+        "schedule": "Schedule module is coming soon.",
+        "tasks": "Tasks module is coming soon.",
+        "notes": "Notes module is coming soon.",
+        "documents": "Documents module is coming soon.",
+        "inspiration": "Inspiration board is coming soon.",
+        "guestList": "Guest list details are available in the Guests section.",
+        "eventGuests": "Advanced event guest assignment is coming soon.",
+        "budgetExpenses": "Budget deep dive is coming soon.",
+        "vendors": "Vendor workspace is already available in the Vendors section.",
+        "task": "Task creation flow is coming soon.",
+        "expense": "You can already add expenses in the Expenses section.",
+        "vendor": "You can already add vendors in the Vendors section.",
+        "event": "Use the events strip to open an event workspace.",
+        "note": "Notes module is coming soon."
+      }
+    }
   }
 }
-

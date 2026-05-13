@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 156 - Hardening pass for wedding expansion (completed)
+Phase 157 - Wedding dashboard home experience (completed)
 
 ## Completed Phases
 
@@ -167,6 +167,7 @@ Phase 156 - Hardening pass for wedding expansion (completed)
 - Phase 154 - Wedding dashboard RSVP/budget summaries
 - Phase 155 - CSV import/export v2 (guests + expenses)
 - Phase 156 - Hardening pass for migrations/API contracts/build validation
+- Phase 157 - Wedding dashboard home experience
 
 ## Completed Work
 
@@ -233,6 +234,50 @@ Phase 156 - Hardening pass for wedding expansion (completed)
     - `src/features/seating-editor/components/GuestPanel.tsx`
     - `src/i18n/messages/en.json`
     - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 157 wedding dashboard home experience:
+  - replaced `/weddings/[weddingId]` detail screen with a new modular wedding dashboard shell:
+    - desktop: fixed left sidebar + top header + responsive overview/content cards
+    - mobile: sidebar moved into shadcn `Sheet`
+  - added feature module `src/features/wedding-dashboard` with typed mock/domain data and reusable components:
+    - `WeddingDashboardShell`
+    - `WeddingDashboardSidebar`
+    - `WeddingDashboardHeader`
+    - `WeddingOverviewHero`
+    - `WeddingEventsStrip`
+    - `PlanningProgressSection` + `PlanningProgressRow`
+    - `DashboardWidgetsGrid`
+    - `UpcomingTasksCard`
+    - `RecentExpensesCard`
+    - `QuickActionsCard`
+    - `DashboardTipBanner`
+  - wired dashboard data loading from existing wedding APIs:
+    - `GET /api/weddings/[weddingId]`
+    - `GET /api/weddings/[weddingId]/dashboard`
+    - merged API data with typed mocks for not-yet-built modules
+  - preserved existing event workspace routing:
+    - `/weddings/[weddingId]/events/[eventId]` unchanged
+    - `/weddings/[weddingId]/dashboard` now redirects to `/weddings/[weddingId]`
+  - added locale-aware formatting in the dashboard for:
+    - dates
+    - currency amounts
+    - countdown days
+  - added complete EN/PL i18n coverage for all new dashboard UI strings under `dashboard.*`
+  - confirmed shadcn/ui setup already existed and added missing primitives used by the dashboard:
+    - `Card`
+    - `Progress`
+    - `Dialog`
+  - files changed:
+    - `src/app/weddings/[weddingId]/page.tsx`
+    - `src/app/weddings/[weddingId]/dashboard/page.tsx`
+    - `src/features/wedding-dashboard/**`
+    - `src/components/ui/card.tsx`
+    - `src/components/ui/progress.tsx`
+    - `src/components/ui/dialog.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `pnpm-lock.yaml`
     - `PROGRESS.md`
 
 - Implemented Phases 145-156 Wedding Planner expansion:
@@ -1829,6 +1874,14 @@ Phase 156 - Hardening pass for wedding expansion (completed)
 
 ## Commands Run
 
+- `corepack pnpm dlx shadcn@latest docs card progress dialog` (pass)
+- `corepack pnpm dlx shadcn@latest add card progress dialog` (pass; created `card`, `progress`, `dialog` ui files)
+- `corepack pnpm typecheck` (initial fail due stale `.next/types` references to removed routes; resolved by cleaning `.next`)
+- `Remove-Item -Recurse -Force .next; corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with existing warnings only)
+- `corepack pnpm build` (pass)
+- `corepack pnpm i18n:audit` (fail; pre-existing hardcoded text in `src/app/page.tsx`: `Open weddings`)
+
 - `corepack pnpm lint` (pass with existing warnings; Phase 148-1 compact pair row overflow layout and group-accent update)
 
 - `corepack pnpm lint` (pass with existing warnings; Phase 147-1 remove link icon from compact pair row)
@@ -2302,9 +2355,12 @@ Phase 156 - Hardening pass for wedding expansion (completed)
 - `Guest.planId` remains required for legacy compatibility; wedding-level guest creation currently attaches to the earliest seating plan in the wedding if present.
 - Legacy plan-scoped group APIs (`/api/seating-plans/[planId]/groups`) still exist alongside wedding-scoped groups (`/api/weddings/[weddingId]/groups`).
 - Some new wedding pages still report non-blocking `react-hooks/exhaustive-deps` lint warnings.
+- `corepack pnpm i18n:audit` currently fails due a pre-existing hardcoded text (`Open weddings`) in `src/app/page.tsx`.
 
 ## Next Recommended Step
 
+- Connect dashboard quick actions (`task`, `note`, `schedule`) to real modules as those routes/pages are implemented.
+- Add dedicated `/weddings/[weddingId]/events` index page for richer multi-event management (create/edit/order) while keeping event workspace routes.
 - Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.
 - Add Playwright/manual QA pass for pair-row expansion UX on both desktop and mobile drawer variants.
 - Finalize full domain migration by removing legacy `Guest.planId` dependence and making wedding/event scoping primary everywhere.
