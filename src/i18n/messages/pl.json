@@ -443,5 +443,90 @@
         "note": "Moduł notatek pojawi się wkrótce."
       }
     }
+  },
+  "weddingGuestsPage": {
+    "breadcrumb": {
+      "current": "Goście"
+    },
+    "title": "Goście",
+    "subtitle": "Zarządzaj listą gości, zaproszeniami i miejscami przy stołach.",
+    "actions": {
+      "import": "Importuj listę",
+      "add": "Dodaj gościa"
+    },
+    "stats": {
+      "total": {
+        "title": "Wszyscy goście",
+        "subtitle": "+{{count}} od ostatniej aktualizacji"
+      },
+      "confirmed": {
+        "title": "Potwierdzeni",
+        "subtitle": "{{percent}}% wszystkich"
+      },
+      "pending": {
+        "title": "Oczekują na odpowiedź",
+        "subtitle": "{{percent}}% wszystkich"
+      },
+      "notAttending": {
+        "title": "Nieobecni",
+        "subtitle": "{{percent}}% wszystkich"
+      }
+    },
+    "filters": {
+      "all": "Wszyscy",
+      "confirmed": "Potwierdzeni",
+      "pending": "Oczekują",
+      "notAttending": "Nieobecni",
+      "searchPlaceholder": "Szukaj gości...",
+      "filters": "Filtry"
+    },
+    "status": {
+      "confirmed": "Potwierdzony",
+      "pending": "Oczekuje",
+      "not_attending": "Nieobecny",
+      "no_response": "Bez odpowiedzi"
+    },
+    "events": {
+      "wedding": "Ślub",
+      "afterparty": "Afterparty",
+      "bachelorette": "Wieczór panieński",
+      "bachelor": "Wieczór kawalerski"
+    },
+    "table": {
+      "columns": {
+        "guest": "Gość",
+        "status": "Status",
+        "events": "Wydarzenia",
+        "table": "Stół",
+        "plusOne": "+1",
+        "notes": "Notatki"
+      },
+      "rowActions": "Akcje wiersza",
+      "actions": {
+        "edit": "Edytuj gościa",
+        "details": "Zobacz szczegóły",
+        "remove": "Usuń gościa"
+      },
+      "empty": "Brak gości pasujących do filtrów.",
+      "showing": "Wyświetlanie {{from}}-{{to}} z {{total}} gości"
+    },
+    "insights": {
+      "summary": {
+        "title": "Podsumowanie",
+        "guestsLabel": "gości"
+      },
+      "quickActions": {
+        "title": "Szybkie akcje",
+        "sendInvitations": "Wyślij zaproszenia",
+        "reminder": "Przypomnienie do gości",
+        "export": "Eksportuj listę",
+        "seatingPlan": "Plan stołów"
+      },
+      "tip": {
+        "title": "Wskazówka",
+        "body": "Dodaj +1 do gościa, aby mógł przyjść z osobą towarzyszącą.",
+        "cta": "Dowiedz się więcej"
+      }
+    }
   }
 }

@@ -443,5 +443,90 @@
         "note": "Notes module is coming soon."
       }
     }
+  },
+  "weddingGuestsPage": {
+    "breadcrumb": {
+      "current": "Guests"
+    },
+    "title": "Guests",
+    "subtitle": "Manage your guest list, invitations, and table assignments.",
+    "actions": {
+      "import": "Import list",
+      "add": "Add guest"
+    },
+    "stats": {
+      "total": {
+        "title": "Total guests",
+        "subtitle": "+{{count}} since last update"
+      },
+      "confirmed": {
+        "title": "Confirmed",
+        "subtitle": "{{percent}}% of all"
+      },
+      "pending": {
+        "title": "Pending response",
+        "subtitle": "{{percent}}% of all"
+      },
+      "notAttending": {
+        "title": "Not attending",
+        "subtitle": "{{percent}}% of all"
+      }
+    },
+    "filters": {
+      "all": "All",
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "notAttending": "Not attending",
+      "searchPlaceholder": "Search guests...",
+      "filters": "Filters"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "not_attending": "Not attending",
+      "no_response": "No response"
+    },
+    "events": {
+      "wedding": "Wedding",
+      "afterparty": "Afterparty",
+      "bachelorette": "Bachelorette",
+      "bachelor": "Bachelor"
+    },
+    "table": {
+      "columns": {
+        "guest": "Guest",
+        "status": "Status",
+        "events": "Events",
+        "table": "Table",
+        "plusOne": "+1",
+        "notes": "Notes"
+      },
+      "rowActions": "Row actions",
+      "actions": {
+        "edit": "Edit guest",
+        "details": "View details",
+        "remove": "Remove guest"
+      },
+      "empty": "No guests match the current filters.",
+      "showing": "Showing {{from}}-{{to}} of {{total}} guests"
+    },
+    "insights": {
+      "summary": {
+        "title": "Summary",
+        "guestsLabel": "guests"
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "sendInvitations": "Send invitations",
+        "reminder": "Guest reminder",
+        "export": "Export list",
+        "seatingPlan": "Seating plan"
+      },
+      "tip": {
+        "title": "Tip",
+        "body": "Add a +1 to a guest so they can attend with a companion.",
+        "cta": "Learn more"
+      }
+    }
   }
 }

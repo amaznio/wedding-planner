@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 157 - Wedding dashboard home experience (completed)
+Phase 161 - Guests page counters show true values only (completed)
 
 ## Completed Phases
 
@@ -168,8 +168,82 @@ Phase 157 - Wedding dashboard home experience (completed)
 - Phase 155 - CSV import/export v2 (guests + expenses)
 - Phase 156 - Hardening pass for migrations/API contracts/build validation
 - Phase 157 - Wedding dashboard home experience
+- Phase 158 - Wedding guests dashboard view
+- Phase 159 - Card border style consistency fix
+- Phase 160 - Guest stats include +1 companions
+- Phase 161 - Guests page counters show true values only
 
 ## Completed Work
+
+- Implemented Phase 161 guests page counters show true values only:
+  - removed mock-stat fallback behavior from wedding guests page load flow
+  - removed hard minimum clamp (`Math.max(..., 120)`) from total guest count
+  - stats now always derive from API guest payload results
+  - while API is loading, stats/summary cards now render loading placeholders (`...`) instead of fake numeric values
+  - files changed:
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/features/wedding-guests/components/GuestStatsCards.tsx`
+    - `src/features/wedding-guests/components/GuestInsightsPanel.tsx`
+    - `src/features/wedding-guests/components/GuestSummaryCard.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 160 guest stats include +1 companions:
+  - updated wedding guests stats derivation so each `plusOne` host contributes one additional attendee to totals
+  - `totalGuests` and RSVP status buckets now include +1 companions
+  - files changed:
+    - `src/features/wedding-guests/guests.mock.ts`
+    - `PROGRESS.md`
+
+- Implemented Phase 159 card border style consistency fix:
+  - fixed shared `Card` primitive styling in `src/components/ui/card.tsx`:
+    - replaced invalid `oklch(...)` utility classes with existing project-consistent `zinc` classes
+    - this removed unintended default black card borders and unified card borders/background/text with other app containers
+  - files changed:
+    - `src/components/ui/card.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 158 wedding guests dashboard view:
+  - replaced `/weddings/[weddingId]/guests` basic CRUD screen with a polished dashboard-style guests workspace while preserving route compatibility
+  - added new modular feature package `src/features/wedding-guests`:
+    - `WeddingGuestsPage`
+    - `GuestsPageHeader`
+    - `GuestStatsCards`
+    - `GuestManagementTable`
+    - `GuestStatusBadge`
+    - `GuestEventChips`
+    - `GuestInsightsPanel`
+    - `GuestSummaryCard`
+    - `GuestQuickActionsCard`
+    - `GuestTipCard`
+    - `guests.mock.ts`
+    - `types.ts`
+  - reused existing dashboard shell/navigation:
+    - `WeddingDashboardShell`
+    - `WeddingDashboardSidebar`
+    - mobile sidebar via shadcn `Sheet`
+    - active guests nav highlighting preserved via pathname matching
+  - kept existing wedding/event/seating routes intact:
+    - `/weddings/[weddingId]/events/[eventId]` unchanged
+    - `/seating-plans/[planId]` unchanged
+  - integrated API + mock fallback strategy:
+    - attempts `GET /api/weddings/[weddingId]`
+    - attempts `GET /api/weddings/[weddingId]/guests`
+    - maps API guests to RSVP/status chips and uses typed mock data for missing capabilities/placeholders
+  - implemented client-side table behavior:
+    - search by guest name
+    - status filtering (`all`, `confirmed`, `pending`, `not_attending`)
+    - responsive desktop table + mobile cards
+    - placeholder row actions (`Edit guest`, `View details`, `Remove guest`)
+  - added EN/PL localization coverage for all new user-facing text under `weddingGuestsPage.*`
+  - added missing shadcn primitive used by the page:
+    - `Table` (`src/components/ui/table.tsx`)
+  - files changed:
+    - `src/app/weddings/[weddingId]/guests/page.tsx`
+    - `src/features/wedding-guests/**`
+    - `src/components/ui/table.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
 
 - Implemented Phase 148-1 compact pair row overflow layout and group-accent update:
   - changed compact pair row name rendering from single-line truncate to two-line clamp to improve readability in narrow panel widths
@@ -1874,6 +1948,18 @@ Phase 157 - Wedding dashboard home experience (completed)
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 161 guests page counters show true values only)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 161 guests page counters show true values only)
+
+- `corepack pnpm typecheck` (pass; Phase 160 guest stats include +1 companions)
+
+- `corepack pnpm typecheck` (pass; Phase 159 card border style consistency fix)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 159 card border style consistency fix)
+
+- `corepack pnpm typecheck` (pass; Phase 158 wedding guests dashboard view)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 158 wedding guests dashboard view)
+- `corepack pnpm build` (pass; Phase 158 wedding guests dashboard view)
+
 - `corepack pnpm dlx shadcn@latest docs card progress dialog` (pass)
 - `corepack pnpm dlx shadcn@latest add card progress dialog` (pass; created `card`, `progress`, `dialog` ui files)
 - `corepack pnpm typecheck` (initial fail due stale `.next/types` references to removed routes; resolved by cleaning `.next`)
@@ -2260,6 +2346,10 @@ Phase 157 - Wedding dashboard home experience (completed)
 
 ## Check Results
 
+- Phase 161 guests page counters show true values only: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 160 guest stats include +1 companions: pass (`typecheck`).
+- Phase 159 card border style consistency fix: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 158 wedding guests dashboard view: pass (`typecheck`, `lint` with existing warnings only, `build`).
 - TypeScript: fail (pre-existing repository issues in `.next/types/validator.ts` missing `weddings/*` files and existing Prisma `GuestInclude.assignment` typing errors in seating-plan API routes).
 - Lint: pass with existing warnings.
 - i18n audit: pass.
@@ -2272,78 +2362,42 @@ Phase 157 - Wedding dashboard home experience (completed)
 ## How To Test
 
 1. Run `corepack pnpm dev`.
-2. Open a plan editor (`/seating-plans/{id}`).
-3. Select a guest and verify new `Sex` field appears in inspector with values `Boy/Girl/Unknown`; save and refresh to confirm persistence.
-4. Drag a guest row from the desktop guest list onto a table body (not a seat):
-   - verify guest gets planned for that table
-   - verify seat assignment is unchanged
-5. Drag a guest onto a seat:
-   - verify exact seat assignment still works as before
-   - verify planned table syncs to seat table
-6. Click a seat and verify seat picker default list is limited to guests planned to that table (plus current occupant when relevant).
-7. In seat picker, click `Show all guests` and verify global pool is shown.
-8. Plan more guests to a table than its `seatCount` and verify soft visual warning/planned count appears on table.
-9. Select a table in inspector and click `Auto-seat table`:
-   - verify only unseated guests planned for that table are seated
-   - verify already seated guests are not moved
-   - verify success/info toasts and soft warnings are shown as applicable
-10. Validate warning scenarios:
+2. Open `/weddings`:
+   - create a wedding
+   - open wedding details
+3. In wedding details:
+   - create one or more events
+   - open an event workspace (`/weddings/{weddingId}/events/{eventId}`)
+4. In event workspace:
+   - create a seating plan for the event
+   - open the plan editor and verify seating still works
+5. In `/weddings/{weddingId}/guests`:
+   - verify the dashboard layout (header, stats cards, guest table, insights panel)
+   - switch locale EN/PL and confirm all new page labels translate
+   - verify search and status filters update visible guest rows
+   - verify mobile viewport stacks table content into cards and keeps sidebar in sheet/drawer behavior
+   - click `Plan stołów / Seating plan` quick action and confirm it routes to `/weddings/{weddingId}/events/{eventId}` when an event exists
+6. In `/weddings/{weddingId}/vendors`:
+   - create vendors and verify totals/status fields persist
+7. In `/weddings/{weddingId}/expenses`:
+   - create expenses and verify dashboard totals
+8. Open `/weddings/{weddingId}/dashboard`:
+   - verify RSVP aggregates per event and budget summaries
+9. Validate CSV v2 endpoints:
+   - `GET /api/weddings/{weddingId}/guests/export-v2`
+   - `POST /api/weddings/{weddingId}/guests/import-v2`
+   - `GET /api/weddings/{weddingId}/expenses/export-v2`
+   - `POST /api/weddings/{weddingId}/expenses/import-v2`
+10. Re-run checks:
 
-- imbalance between boy/girl
-- unknown sex used
-- not enough empty seats
-
-11. Save/reload plan and verify:
-
-- `sex` persists
-- `plannedTableId` persists
-- assignments remain consistent
-
-12. Re-run keyboard shortcuts and seat swap/unassign flows to confirm no regressions.
-13. Open Plan Settings:
-
-- desktop: toolbar `Settings` button
-- mobile: `More -> Settings`
-
-14. Change pair-side preference to `Boy left` / `Girl left`, then drag a linked mixed-sex adjacent pair and verify placement follows selected plan preference.
-15. Change preference to `Auto` and verify pair placement returns to default ordering behavior.
-16. On desktop guest panel, verify add-guest row is collapsed by default.
-17. Click `Dodaj gościa`, verify input + add button expand.
-18. Add a guest and verify creation flow still works.
-19. Click `Dodaj gościa` again and verify panel collapses back to save vertical space.
-20. On desktop guest panel, verify a `+` action button appears next to `More`.
-21. Click `+` and verify `Add guest` modal opens with Name, Group, and Notes fields.
-22. Submit with only Name and verify guest is created.
-23. Submit with Name + Group + Notes and verify created guest has group assignment and notes persisted.
-24. Click `More` and verify dropdown sections/actions:
-    - `Import CSV`
-    - `Export CSV`
-    - `Groups`
-    - `Legend`
-    - `Settings`
-25. Click `Settings` from `More` and verify plan settings sheet opens.
-26. Verify desktop header action buttons are compact square icon buttons.
-27. Verify `More` trigger no longer shows text and still opens the same dropdown.
-28. Verify guests heading appears smaller than previous iteration.
-29. Verify `+` and `More` icon buttons are visibly smaller and tighter than previous iteration.
-30. Verify guests heading is smaller again than the prior revision.
-31. Verify `+` and `More` buttons match the filter-button height in `Lista gości`.
-32. Verify guest panel header and dropdown icons are visually smaller than previous revision.
-33. Verify guest add modal close control uses Lucide style matching other panel icons.
-34. On desktop canvas, hover a table with seated guests and verify full-name labels appear near occupied seats.
-35. Verify labels disappear when pointer leaves that table.
-36. Rotate a table and verify hover labels remain readable (upright text).
-37. Verify hover name labels are rotated perpendicular to seat direction around the table.
-38. Verify hover labels render directly next to seats without wide gaps.
-39. Verify hover labels are fixed vertical and positioned directly above/below seats with minimal offset.
-40. Verify each vertical label is centered against its seat and no longer drifts sideways from transform order.
-41. Verify top-side labels anchor directly above seat edges and bottom-side labels anchor directly below seat edges.
-42. Verify labels sit at circle edge with ~1px gap and no overlap into seat fill.
-43. Verify hover seat-name labels render above all nearby table/canvas layers.
-44. Verify standard tooltips render above overlays/sheets where applicable.
+- `corepack pnpm prisma:validate`
+- `corepack pnpm typecheck`
+- `corepack pnpm lint`
+- `corepack pnpm build`
 
 ## Known Issues
 
+- New wedding guests dashboard actions are placeholder/no-op where backend flows are not yet wired (`import`, `add guest`, reminders/export, row action mutations).
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
 - TypeScript currently fails from pre-existing repository/type artifacts unrelated to Phase 144 (`.next/types/validator.ts` `weddings/*` references and Prisma include typing mismatches on `assignment` in guest API routes).
 - New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
@@ -2359,6 +2413,7 @@ Phase 157 - Wedding dashboard home experience (completed)
 
 ## Next Recommended Step
 
+- Connect Guests page quick actions (`import`, `add guest`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.
 - Connect dashboard quick actions (`task`, `note`, `schedule`) to real modules as those routes/pages are implemented.
 - Add dedicated `/weddings/[weddingId]/events` index page for richer multi-event management (create/edit/order) while keeping event workspace routes.
 - Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.
