@@ -10,6 +10,7 @@ import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/W
 import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
 import type { GuestRsvpStatus, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
+import { AddGuestDialog } from "./AddGuestDialog";
 import { GuestInsightsPanel } from "./GuestInsightsPanel";
 import { GuestManagementTable } from "./GuestManagementTable";
 import { GuestsPageHeader } from "./GuestsPageHeader";
@@ -34,6 +35,9 @@ type WeddingGuestsApiGuest = {
   name: string;
   notes: string | null;
   plusOneHostGuestId: string | null;
+  relationshipMembers: Array<{
+    relationshipId: string;
+  }>;
   eventGuests: Array<{
     rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
     notes: string | null;
@@ -50,6 +54,8 @@ type WeddingGuestsApiResponse = {
 type WeddingGuestsPageProps = {
   weddingId: string;
 };
+
+type WeddingEventType = "wedding" | "afterparty" | "bachelorette" | "bachelor" | "other";
 
 export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const { t, locale } = useI18n();
@@ -71,6 +77,10 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAddGuestDialogOpen, setIsAddGuestDialogOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [availableEvents, setAvailableEvents] = useState<Array<{ id: string; name: string; type: WeddingEventType }>>([]);
+  const [linkableGuests, setLinkableGuests] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     let active = true;
@@ -98,8 +108,13 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
 
         const firstEventId = weddingJson.wedding.events[0]?.id;
         const stats = deriveGuestStats(mappedGuests);
-
         if (active) {
+          const linkedHostIds = new Set(
+            guestsJson.guests
+              .map((guest) => guest.plusOneHostGuestId)
+              .filter((value): value is string => typeof value === "string"),
+          );
+
           setData({
             ...baseData,
             weddingName: weddingJson.wedding.name,
@@ -108,9 +123,29 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
             stats,
             seatingPlanHref: firstEventId ? `/weddings/${weddingId}/events/${firstEventId}` : baseData.seatingPlanHref,
           });
+          setAvailableEvents(
+            weddingJson.wedding.events.map((event) => ({
+              id: event.id,
+              name: event.name,
+              type: event.type,
+            })),
+          );
+          setLinkableGuests(
+            guestsJson.guests
+              .filter((guest) => {
+                const hasRelationshipMembership = guest.relationshipMembers.length > 0;
+                return guest.plusOneHostGuestId === null && !linkedHostIds.has(guest.id) && !hasRelationshipMembership;
+              })
+              .map((guest) => ({
+                id: guest.id,
+                name: guest.name,
+              })),
+          );
         }
       } catch {
         if (active) {
+          setAvailableEvents([]);
+          setLinkableGuests([]);
           setData((prev) => ({
             ...prev,
             guests: [],
@@ -136,7 +171,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     return () => {
       active = false;
     };
-  }, [weddingId, locale, baseData]);
+  }, [weddingId, locale, baseData, reloadKey]);
 
   const rsvpShare = useMemo(() => {
     const total = data.stats.totalGuests || 1;
@@ -153,65 +188,83 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   };
 
   const handleQuickAction = (action: "import" | "add" | "send" | "reminder" | "export" | "plan" | "learn") => {
+    if (action === "add") {
+      setIsAddGuestDialogOpen(true);
+      return;
+    }
+
     if (action === "plan" && data.seatingPlanHref) {
       router.push(data.seatingPlanHref);
     }
   };
 
   return (
-    <WeddingDashboardShell
-      sidebar={(
-        <WeddingDashboardSidebar
-          weddingName={data.weddingName}
-          weddingDateLabel={data.weddingDateLabel}
-          currentPath={pathname}
-          navigation={data.navigation}
-          currentUser={data.currentUser}
-          onPlaceholderAction={handlePlaceholderAction}
-        />
-      )}
-      mobileSidebar={(
-        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-          <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
-            <SheetTitle className="sr-only">{t("dashboard.sidebar.mobileTitle")}</SheetTitle>
-            <WeddingDashboardSidebar
-              weddingName={data.weddingName}
-              weddingDateLabel={data.weddingDateLabel}
-              currentPath={pathname}
-              navigation={data.navigation}
-              currentUser={data.currentUser}
-              onPlaceholderAction={() => {
-                setIsMobileSidebarOpen(false);
-              }}
-            />
-          </SheetContent>
-        </Sheet>
-      )}
-      header={(
-        <GuestsPageHeader
-          notificationCount={data.notificationCount}
-          onOpenSidebar={() => setIsMobileSidebarOpen(true)}
-          onAction={handleQuickAction}
-        />
-      )}
-    >
-      <div className="flex flex-col gap-5">
-        <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={isLoading} />
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <GuestManagementTable
-            guests={data.guests}
-            totalGuests={data.stats.totalGuests}
-            isLoading={isLoading}
+    <>
+      <WeddingDashboardShell
+        sidebar={(
+          <WeddingDashboardSidebar
+            weddingName={data.weddingName}
+            weddingDateLabel={data.weddingDateLabel}
+            currentPath={pathname}
+            navigation={data.navigation}
+            currentUser={data.currentUser}
+            onPlaceholderAction={handlePlaceholderAction}
           />
-          <GuestInsightsPanel
-            stats={data.stats}
-            shares={rsvpShare}
-            isLoading={isLoading}
+        )}
+        mobileSidebar={(
+          <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+            <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
+              <SheetTitle className="sr-only">{t("dashboard.sidebar.mobileTitle")}</SheetTitle>
+              <WeddingDashboardSidebar
+                weddingName={data.weddingName}
+                weddingDateLabel={data.weddingDateLabel}
+                currentPath={pathname}
+                navigation={data.navigation}
+                currentUser={data.currentUser}
+                onPlaceholderAction={() => {
+                  setIsMobileSidebarOpen(false);
+                }}
+              />
+            </SheetContent>
+          </Sheet>
+        )}
+        header={(
+          <GuestsPageHeader
+            notificationCount={data.notificationCount}
+            onOpenSidebar={() => setIsMobileSidebarOpen(true)}
             onAction={handleQuickAction}
           />
+        )}
+      >
+        <div className="flex flex-col gap-5">
+          <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={isLoading} />
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <GuestManagementTable
+              guests={data.guests}
+              totalGuests={data.stats.totalGuests}
+              isLoading={isLoading}
+            />
+            <GuestInsightsPanel
+              stats={data.stats}
+              shares={rsvpShare}
+              isLoading={isLoading}
+              onAction={handleQuickAction}
+            />
+          </div>
         </div>
-      </div>
-    </WeddingDashboardShell>
+      </WeddingDashboardShell>
+
+      {isAddGuestDialogOpen ? (
+        <AddGuestDialog
+          weddingId={weddingId}
+          open={isAddGuestDialogOpen}
+          onOpenChange={setIsAddGuestDialogOpen}
+          existingGuests={linkableGuests}
+          availableEvents={availableEvents}
+          onCreated={() => setReloadKey((prev) => prev + 1)}
+        />
+      ) : null}
+    </>
   );
 }
 

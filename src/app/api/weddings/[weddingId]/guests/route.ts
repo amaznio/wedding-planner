@@ -31,6 +31,11 @@ export async function GET(_: Request, context: RouteContext) {
           },
         },
       },
+      relationshipMembers: {
+        select: {
+          relationshipId: true,
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });

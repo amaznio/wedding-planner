@@ -454,6 +454,74 @@
       "import": "Importuj listę",
       "add": "Dodaj gościa"
     },
+    "addGuest": {
+      "title": "Dodaj gościa",
+      "description": "Dodaj nowego gościa, partnera lub członków rodziny.",
+      "basicDetails": "Dane podstawowe",
+      "firstName": "Imię",
+      "lastName": "Nazwisko",
+      "firstNamePlaceholder": "Wpisz imię",
+      "lastNamePlaceholder": "Wpisz nazwisko",
+      "gender": "Płeć",
+      "genderPlaceholder": "Wybierz płeć",
+      "genders": {
+        "female": "Kobieta",
+        "male": "Mężczyzna",
+        "other": "Inna",
+        "preferNotToSay": "Wolę nie podawać"
+      },
+      "relationship": {
+        "title": "Powiązanie",
+        "question": "Czy gość przychodzi z osobą towarzyszącą lub jest powiązany z innym gościem?",
+        "none": "Bez powiązania",
+        "withPartner": "Z osobą towarzyszącą (+1) lub partnerem",
+        "typeLabel": "Typ powiązania",
+        "types": {
+          "partner": "Partner",
+          "plusOne": "Osoba towarzysząca"
+        },
+        "searchExisting": "Wybierz istniejącego gościa",
+        "addNew": "Dodaj nową osobę",
+        "searchExistingPlaceholder": "Wyszukaj istniejącego gościa",
+        "searchHint": "Zacznij pisać, aby wyszukać gościa.",
+        "noGuestMatch": "Brak pasujących gości."
+      },
+      "children": {
+        "title": "Dzieci",
+        "description": "Dodaj dzieci gościa. Zaznacz, czy dziecko potrzebuje osobnego miejsca przy stole.",
+        "addChild": "Dodaj dziecko",
+        "empty": "Nie dodano dzieci.",
+        "childBadge": "Dziecko",
+        "needsSeat": "Potrzebuje miejsca",
+        "remove": "Usuń dziecko"
+      },
+      "events": {
+        "title": "Wydarzenia",
+        "description": "Wybierz wydarzenia, w których gość weźmie udział."
+      },
+      "preview": {
+        "title": "Podgląd gościa",
+        "noName": "Brak imienia i nazwiska",
+        "relationshipLabel": "Powiązanie",
+        "partner": "Partner",
+        "childrenLabel": "Dzieci",
+        "childrenCount": "{{count}} dziecko · {{seats}} miejsce",
+        "noChildren": "Brak dzieci",
+        "eventsLabel": "Wydarzenia",
+        "noEvents": "Brak wybranych wydarzeń"
+      },
+      "actions": {
+        "cancel": "Anuluj",
+        "submit": "Dodaj gościa"
+      },
+      "validation": {
+        "firstNameRequired": "Imię jest wymagane.",
+        "lastNameRequired": "Nazwisko jest wymagane.",
+        "relationshipGuestRequired": "Wybierz istniejącego powiązanego gościa."
+      },
+      "submitSuccess": "Gość został dodany.",
+      "submitError": "Nie udało się dodać gościa."
+    },
     "stats": {
       "total": {
         "title": "Wszyscy goście",
@@ -526,6 +594,172 @@
         "title": "Wskazówka",
         "body": "Dodaj +1 do gościa, aby mógł przyjść z osobą towarzyszącą.",
         "cta": "Dowiedz się więcej"
+      }
+    }
+  },
+  "events": {
+    "detail": {
+      "states": {
+        "loading": "Ładowanie centrum wydarzenia...",
+        "loadError": "Nie udało się załadować szczegółów wydarzenia",
+        "createPlanError": "Nie udało się utworzyć planu stołów"
+      },
+      "badges": {
+        "mainEvent": "Główne wydarzenie"
+      },
+      "actions": {
+        "guestPreview": "Podgląd gości",
+        "editEvent": "Edytuj wydarzenie",
+        "openSeatingPlan": "Otwórz plan stołów",
+        "manageEventGuests": "Zarządzaj gośćmi wydarzenia",
+        "viewVendors": "Zobacz dostawców",
+        "viewBudget": "Zobacz budżet",
+        "viewAllTasks": "Zobacz wszystkie zadania",
+        "addTimelineItem": "Dodaj punkt harmonogramu",
+        "addTask": "Dodaj zadanie",
+        "addVendor": "Dodaj dostawcę",
+        "addExpense": "Dodaj wydatek"
+      },
+      "tabs": {
+        "overview": "Przegląd",
+        "timeline": "Harmonogram",
+        "guests": "Goście",
+        "seating": "Plan stołów",
+        "vendors": "Dostawcy",
+        "budget": "Budżet",
+        "tasks": "Zadania",
+        "notes": "Notatki",
+        "settings": "Ustawienia",
+        "placeholderTitle": "Sekcja w przygotowaniu",
+        "placeholderDescription": "Sekcja {{tab}} zostanie rozbudowana w następnym etapie.",
+        "backToOverview": "Wróć do przeglądu"
+      },
+      "eventType": {
+        "wedding": "Wesele",
+        "afterparty": "Afterparty",
+        "bachelorette": "Wieczór panieński",
+        "bachelor": "Wieczór kawalerski",
+        "custom": "Własne"
+      },
+      "cards": {
+        "snapshot": {
+          "title": "Informacje o wydarzeniu",
+          "description": "Kontekst operacyjny dla tego wydarzenia.",
+          "fields": {
+            "date": "Data",
+            "time": "Godzina",
+            "venue": "Miejsce",
+            "address": "Adres",
+            "type": "Typ wydarzenia",
+            "theme": "Styl"
+          }
+        },
+        "timeline": {
+          "title": "Plan dnia",
+          "description": "Co ma się wydarzyć podczas tego dnia.",
+          "edit": "Edytuj harmonogram",
+          "viewFull": "Zobacz pełny harmonogram",
+          "menu": {
+            "edit": "Edytuj punkt",
+            "delete": "Usuń punkt"
+          }
+        },
+        "seating": {
+          "title": "Plan stołów",
+          "seated": "usadzonych",
+          "tables": "stołów",
+          "unseated": "nieusadzonych",
+          "warnings": "ostrzeżeń"
+        },
+        "guests": {
+          "title": "Goście wydarzenia",
+          "total": "gości",
+          "confirmed": "Potwierdzeni",
+          "pending": "Oczekują",
+          "notAttending": "Nieobecni"
+        },
+        "vendors": {
+          "title": "Dostawcy wydarzenia"
+        },
+        "budget": {
+          "title": "Budżet wydarzenia",
+          "total": "Budżet całkowity",
+          "spent": "Wydano",
+          "remaining": "Pozostało",
+          "used": "Wykorzystano {{percent}}%"
+        },
+        "tasks": {
+          "title": "Zadania wydarzenia"
+        },
+        "notes": {
+          "title": "Notatki wydarzenia"
+        },
+        "quickActions": {
+          "title": "Szybkie akcje"
+        }
+      },
+      "vendors": {
+        "category": {
+          "venue": "Sala weselna",
+          "catering": "Catering",
+          "photographer": "Fotograf",
+          "band": "Zespół muzyczny",
+          "vendor": "Dostawca"
+        },
+        "status": {
+          "confirmed": "Potwierdzony",
+          "pending": "Oczekuje"
+        }
+      },
+      "tasks": {
+        "confirmMenu": "Potwierdź menu z cateringiem",
+        "finishSeating": "Dokończ plan stołów",
+        "confirmPhotoList": "Potwierdź listę ujęć z fotografem",
+        "dueIn": "za {{days}} dni"
+      },
+      "notes": {
+        "items": [
+          "Pamiętaj o najlepszym świetle plenerowym podczas sesji zdjęciowej.",
+          "Preferowana piosenka na pierwszy taniec: Perfect - Ed Sheeran."
+        ]
+      },
+      "timelineItems": {
+        "welcome": {
+          "title": "Powitanie gości",
+          "description": "Serwis drinka powitalnego"
+        },
+        "ceremony": {
+          "title": "Ceremonia",
+          "description": "Ceremonia główna"
+        },
+        "cocktail": {
+          "title": "Cocktail i zdjęcia",
+          "description": "Cocktail i sesja zdjęciowa"
+        },
+        "dinner": {
+          "title": "Kolacja",
+          "description": "Uroczysta kolacja weselna"
+        },
+        "firstDance": {
+          "title": "Pierwszy taniec",
+          "description": "Rozpoczęcie części tanecznej"
+        },
+        "cake": {
+          "title": "Tort weselny",
+          "description": "Krojenie tortu"
+        },
+        "end": {
+          "title": "Zakończenie",
+          "description": "Zamknięcie wydarzenia"
+        }
+      },
+      "seatingTab": {
+        "title": "Plany stołów",
+        "description": "Twórz i otwieraj plany stołów powiązane z tym wydarzeniem.",
+        "planNamePlaceholder": "Nazwa planu stołów",
+        "create": "Utwórz plan",
+        "creating": "Tworzenie...",
+        "empty": "Brak planów stołów."
       }
     }
   }

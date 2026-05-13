@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 161 - Guests page counters show true values only (completed)
+Phase 170 - Event detail command center redesign (completed)
 
 ## Completed Phases
 
@@ -172,8 +172,124 @@ Phase 161 - Guests page counters show true values only (completed)
 - Phase 159 - Card border style consistency fix
 - Phase 160 - Guest stats include +1 companions
 - Phase 161 - Guests page counters show true values only
+- Phase 162 - Wedding guests Add Guest modal
+- Phase 163 - Add Guest modal divider styling fix
+- Phase 164 - Add Guest events row uses real wedding events only
+- Phase 165 - Add Guest modal section/divider + linked list scroll/search UX
+- Phase 166 - Add Guest preview shows selected relationship type
+- Phase 167 - Hide linked guest results box until search query
+- Phase 168 - Linked guest search excludes already linked guests
+- Phase 169 - Linked guest search excludes relationship members too
+- Phase 170 - Event detail command center redesign
 
 ## Completed Work
+
+- Implemented Phase 170 event detail command center redesign:
+  - replaced `/weddings/[weddingId]/events/[eventId]` page implementation with an event-specific command center using the existing wedding shell/sidebar
+  - kept seating planner access intact by preserving event-scoped seating-plan create/open workflow inside a dedicated `Seating plan` tab and overview CTAs
+  - added full `Overview` tab implementation with event snapshot, timeline, seating status, guest attendance summary, vendors, budget, tasks, notes, and quick actions
+  - added placeholder tabs for timeline/guests/vendors/budget/tasks/notes/settings while keeping routing stable
+  - added typed event detail model + mock data module under `src/features/wedding-events`
+  - added EN/PL i18n keys under `events.detail.*`
+  - files changed:
+    - `src/app/weddings/[weddingId]/events/[eventId]/page.tsx`
+    - `src/features/wedding-events/types.ts`
+    - `src/features/wedding-events/event-detail.mock.ts`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 169 linked guest search excludes relationship members too:
+  - expanded wedding guests API payload to include `relationshipMembers`
+  - updated Add Guest existing-guest candidate filter to exclude guests already in any relationship membership, in addition to +1 link exclusions
+  - files changed:
+    - `src/app/api/weddings/[weddingId]/guests/route.ts`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 168 linked guest search excludes already linked guests:
+  - filtered Add Guest existing-guest search candidates to unlinked guests only
+  - excluded:
+    - guests already linked as companion/partner (`plusOneHostGuestId` set)
+    - guests already hosting a linked companion/partner (their `id` referenced by another guest's `plusOneHostGuestId`)
+  - file changed:
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 167 hide linked guest results box until search query:
+  - updated Add Guest relationship existing-guest search UX:
+    - no empty bordered results container is shown for empty search
+    - only helper hint text is shown until user types
+    - results container appears only when query is non-empty
+  - file changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 166 Add Guest preview shows selected relationship type:
+  - updated Add Guest preview relationship summary to show selected relationship type (`Partner` or `+1` / `Osoba towarzysząca`) instead of generic toggle text
+  - when a linked person is selected/typed, preview now shows `<selected relationship type>: <name>`
+  - file changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 165 Add Guest modal section/divider + linked list scroll/search UX:
+  - replaced outer section "card" treatment in Add Guest modal with flat stacked sections separated by dividers
+  - preserved inner contextual panels (e.g. relationship detail panel, child rows) for stronger visual hierarchy
+  - changed linked existing-guest results container to fixed-height native `overflow-y-auto` with `overscroll-contain` so it scrolls independently from modal body
+  - changed linked existing-guest list behavior to empty by default and only show results when search query is non-empty
+  - added localized search hint text for empty query state
+  - files changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 164 Add Guest events row uses real wedding events only:
+  - removed fixed event chip ordering and virtual fallback events from Add Guest modal
+  - events row now renders strictly from wedding-context API events (`id`, `name`, `type`)
+  - selected event labels now use real event names
+  - event submit payload now includes only real event IDs
+  - files changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 163 Add Guest modal divider styling fix:
+  - fixed harsh/dark divider rendering in Add Guest modal by setting explicit border color classes on modal header/footer separators
+  - file changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 162 wedding guests Add Guest modal:
+  - wired Guests page header `Add guest / Dodaj gościa` action to open a dedicated modal dialog (desktop) and full-height drawer (mobile)
+  - added new `AddGuestDialog` with required sections:
+    - basic details (`firstName`, `lastName`, `gender`)
+    - relationship (`none` vs companion/partner, existing guest search, or inline new linked guest)
+    - children rows (`isChild: true` in payload + `needsSeat` checkbox)
+    - events checkbox row with wedding selected by default
+  - implemented desktop preview panel showing:
+    - guest initials/name
+    - relationship status
+    - children count + seat requirement summary
+    - selected events
+  - implemented structured frontend payload shape (`mainGuest`, `relationship`, `children`)
+  - submit flow implemented against existing APIs:
+    - create main guest via `POST /api/weddings/[weddingId]/guests`
+    - optionally create linked guest
+    - create child guests
+    - upsert event participation via `POST /api/weddings/[weddingId]/events/[eventId]/guests` with `requiresSeat` for children
+    - rollback newly created guests on submit failure to reduce partial-write outcomes
+  - added TODO notes in code where current wedding guest APIs do not yet persist:
+    - explicit relationship metadata (`partner` vs `plus_one`)
+    - explicit guest child flag (`isChild`) beyond event-level `requiresSeat`
+  - added full EN/PL i18n coverage for modal content and validation strings under `weddingGuestsPage.addGuest.*`
+  - files changed:
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
 
 - Implemented Phase 161 guests page counters show true values only:
   - removed mock-stat fallback behavior from wedding guests page load flow
@@ -1668,6 +1784,37 @@ Phase 161 - Guests page counters show true values only (completed)
 
 ## Files Changed
 
+- `src/app/api/weddings/[weddingId]/guests/route.ts`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `PROGRESS.md`
+
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
 - `src/app/api/seating-plans/[planId]/relationships/route.ts`
 - `PROGRESS.md`
 
@@ -1947,6 +2094,28 @@ Phase 161 - Guests page counters show true values only (completed)
 - `src/features/seating-editor/components/InspectorPanel.tsx`
 
 ## Commands Run
+
+- `corepack pnpm typecheck` (pass; Phase 170 event detail command center redesign)
+- `corepack pnpm lint` (pass with existing warnings; Phase 170 event detail command center redesign)
+- `corepack pnpm build` (pass; Phase 170 event detail command center redesign)
+
+- `corepack pnpm typecheck` (pass; Phase 169 linked guest search excludes relationship members too)
+
+- `corepack pnpm typecheck` (pass; Phase 168 linked guest search excludes already linked guests)
+
+- `corepack pnpm typecheck` (pass; Phase 167 hide linked guest results box until search query)
+
+- `corepack pnpm typecheck` (pass; Phase 166 Add Guest preview shows selected relationship type)
+
+- `corepack pnpm typecheck` (pass; Phase 165 Add Guest modal section/divider + linked list scroll/search UX)
+
+- `corepack pnpm typecheck` (pass; Phase 164 Add Guest events row uses real wedding events only)
+
+- `corepack pnpm typecheck` (pass; Phase 163 Add Guest modal divider styling fix)
+
+- `corepack pnpm typecheck` (pass; Phase 162 wedding guests Add Guest modal)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 162 wedding guests Add Guest modal)
+- `corepack pnpm build` (pass; Phase 162 wedding guests Add Guest modal)
 
 - `corepack pnpm typecheck` (pass; Phase 161 guests page counters show true values only)
 - `corepack pnpm lint` (pass with existing warnings only; Phase 161 guests page counters show true values only)
@@ -2346,6 +2515,15 @@ Phase 161 - Guests page counters show true values only (completed)
 
 ## Check Results
 
+- Phase 170 event detail command center redesign: pass (`typecheck`, `lint` with existing warnings only, `build`).
+- Phase 169 linked guest search excludes relationship members too: pass (`typecheck`).
+- Phase 168 linked guest search excludes already linked guests: pass (`typecheck`).
+- Phase 167 hide linked guest results box until search query: pass (`typecheck`).
+- Phase 166 Add Guest preview shows selected relationship type: pass (`typecheck`).
+- Phase 165 Add Guest modal section/divider + linked list scroll/search UX: pass (`typecheck`).
+- Phase 164 Add Guest events row uses real wedding events only: pass (`typecheck`).
+- Phase 163 Add Guest modal divider styling fix: pass (`typecheck`).
+- Phase 162 wedding guests Add Guest modal: pass (`typecheck`, `lint` with existing warnings only, `build`).
 - Phase 161 guests page counters show true values only: pass (`typecheck`, `lint` with existing warnings only).
 - Phase 160 guest stats include +1 companions: pass (`typecheck`).
 - Phase 159 card border style consistency fix: pass (`typecheck`, `lint` with existing warnings only).
@@ -2373,9 +2551,16 @@ Phase 161 - Guests page counters show true values only (completed)
    - open the plan editor and verify seating still works
 5. In `/weddings/{weddingId}/guests`:
    - verify the dashboard layout (header, stats cards, guest table, insights panel)
+   - click `Add guest / Dodaj gościa` and verify modal opens
+   - submit with missing required names and verify validation errors
+   - submit main guest only and confirm guest list refreshes
+   - submit main guest + existing linked guest and confirm both are added to selected events
+   - submit main guest + new linked partner/+1 and confirm both guests are created
+   - add children and verify `needsSeat` toggles are respected in event guest `requiresSeat`
    - switch locale EN/PL and confirm all new page labels translate
    - verify search and status filters update visible guest rows
    - verify mobile viewport stacks table content into cards and keeps sidebar in sheet/drawer behavior
+   - verify Add Guest opens mobile full-height drawer on narrow viewport
    - click `Plan stołów / Seating plan` quick action and confirm it routes to `/weddings/{weddingId}/events/{eventId}` when an event exists
 6. In `/weddings/{weddingId}/vendors`:
    - create vendors and verify totals/status fields persist
@@ -2397,7 +2582,9 @@ Phase 161 - Guests page counters show true values only (completed)
 
 ## Known Issues
 
-- New wedding guests dashboard actions are placeholder/no-op where backend flows are not yet wired (`import`, `add guest`, reminders/export, row action mutations).
+- Event detail tabs other than `Overview` and `Seating plan` are currently placeholders (by design for this phase).
+- New wedding guests dashboard actions are still placeholder/no-op where backend flows are not yet wired (`import`, reminders/export, row action mutations).
+- Add Guest modal currently persists children as regular guests + event `requiresSeat`; explicit `isChild` persistence and wedding-level relationship metadata (`partner`/`plus_one`) remain TODO until dedicated API/schema support is added.
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
 - TypeScript currently fails from pre-existing repository/type artifacts unrelated to Phase 144 (`.next/types/validator.ts` `weddings/*` references and Prisma include typing mismatches on `assignment` in guest API routes).
 - New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
@@ -2413,7 +2600,9 @@ Phase 161 - Guests page counters show true values only (completed)
 
 ## Next Recommended Step
 
-- Connect Guests page quick actions (`import`, `add guest`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.
+- Implement real per-event modules for Timeline, Tasks, and Notes tabs (replace placeholders with CRUD and persistence).
+- Connect remaining Guests page quick actions (`import`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.
+- Add dedicated wedding-level relationship and child metadata persistence APIs, then wire `AddGuestDialog` TODO payload fields to backend storage.
 - Connect dashboard quick actions (`task`, `note`, `schedule`) to real modules as those routes/pages are implemented.
 - Add dedicated `/weddings/[weddingId]/events` index page for richer multi-event management (create/edit/order) while keeping event workspace routes.
 - Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.

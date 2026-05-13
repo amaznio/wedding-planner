@@ -454,6 +454,74 @@
       "import": "Import list",
       "add": "Add guest"
     },
+    "addGuest": {
+      "title": "Add guest",
+      "description": "Add a guest, partner or family members.",
+      "basicDetails": "Basic details",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "firstNamePlaceholder": "Enter first name",
+      "lastNamePlaceholder": "Enter last name",
+      "gender": "Gender",
+      "genderPlaceholder": "Select gender",
+      "genders": {
+        "female": "Female",
+        "male": "Male",
+        "other": "Other",
+        "preferNotToSay": "Prefer not to say"
+      },
+      "relationship": {
+        "title": "Relationship",
+        "question": "Is this guest attending with a companion or linked to another guest?",
+        "none": "No relationship",
+        "withPartner": "With companion (+1) or partner",
+        "typeLabel": "Relationship type",
+        "types": {
+          "partner": "Partner",
+          "plusOne": "+1"
+        },
+        "searchExisting": "Search existing guest",
+        "addNew": "Add new linked guest",
+        "searchExistingPlaceholder": "Search existing guest",
+        "searchHint": "Start typing to find a guest.",
+        "noGuestMatch": "No guests match this search."
+      },
+      "children": {
+        "title": "Children",
+        "description": "Add the guest's children. Mark whether each child needs their own seat.",
+        "addChild": "Add child",
+        "empty": "No children added.",
+        "childBadge": "Child",
+        "needsSeat": "Needs seat",
+        "remove": "Remove child"
+      },
+      "events": {
+        "title": "Events",
+        "description": "Select the events this guest will attend."
+      },
+      "preview": {
+        "title": "Guest preview",
+        "noName": "No name yet",
+        "relationshipLabel": "Relationship",
+        "partner": "Partner",
+        "childrenLabel": "Children",
+        "childrenCount": "{{count}} child · {{seats}} seat",
+        "noChildren": "No children",
+        "eventsLabel": "Events",
+        "noEvents": "No events selected"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "submit": "Add guest"
+      },
+      "validation": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "relationshipGuestRequired": "Select an existing linked guest."
+      },
+      "submitSuccess": "Guest created successfully.",
+      "submitError": "Failed to create guest."
+    },
     "stats": {
       "total": {
         "title": "Total guests",
@@ -526,6 +594,172 @@
         "title": "Tip",
         "body": "Add a +1 to a guest so they can attend with a companion.",
         "cta": "Learn more"
+      }
+    }
+  },
+  "events": {
+    "detail": {
+      "states": {
+        "loading": "Loading event command center...",
+        "loadError": "Failed to load event details",
+        "createPlanError": "Failed to create seating plan"
+      },
+      "badges": {
+        "mainEvent": "Main event"
+      },
+      "actions": {
+        "guestPreview": "Guest preview",
+        "editEvent": "Edit event",
+        "openSeatingPlan": "Open seating plan",
+        "manageEventGuests": "Manage event guests",
+        "viewVendors": "View vendors",
+        "viewBudget": "View budget",
+        "viewAllTasks": "View all tasks",
+        "addTimelineItem": "Add timeline item",
+        "addTask": "Add task",
+        "addVendor": "Add vendor",
+        "addExpense": "Add expense"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "timeline": "Timeline",
+        "guests": "Guests",
+        "seating": "Seating plan",
+        "vendors": "Vendors",
+        "budget": "Budget",
+        "tasks": "Tasks",
+        "notes": "Notes",
+        "settings": "Settings",
+        "placeholderTitle": "Section coming soon",
+        "placeholderDescription": "{{tab}} will be expanded in the next phase.",
+        "backToOverview": "Back to overview"
+      },
+      "eventType": {
+        "wedding": "Wedding",
+        "afterparty": "Afterparty",
+        "bachelorette": "Bachelorette",
+        "bachelor": "Bachelor",
+        "custom": "Custom"
+      },
+      "cards": {
+        "snapshot": {
+          "title": "Event details",
+          "description": "Operational context for this event.",
+          "fields": {
+            "date": "Date",
+            "time": "Time",
+            "venue": "Venue",
+            "address": "Address",
+            "type": "Event type",
+            "theme": "Theme"
+          }
+        },
+        "timeline": {
+          "title": "Day timeline",
+          "description": "What needs to happen on this event day.",
+          "edit": "Edit timeline",
+          "viewFull": "View full timeline",
+          "menu": {
+            "edit": "Edit item",
+            "delete": "Delete item"
+          }
+        },
+        "seating": {
+          "title": "Seating plan",
+          "seated": "seated",
+          "tables": "tables",
+          "unseated": "unseated",
+          "warnings": "warnings"
+        },
+        "guests": {
+          "title": "Guests for this event",
+          "total": "guests",
+          "confirmed": "Confirmed",
+          "pending": "Pending",
+          "notAttending": "Not attending"
+        },
+        "vendors": {
+          "title": "Vendors for this event"
+        },
+        "budget": {
+          "title": "Event budget",
+          "total": "Total budget",
+          "spent": "Spent",
+          "remaining": "Remaining",
+          "used": "{{percent}}% used"
+        },
+        "tasks": {
+          "title": "Event tasks"
+        },
+        "notes": {
+          "title": "Event notes"
+        },
+        "quickActions": {
+          "title": "Quick actions"
+        }
+      },
+      "vendors": {
+        "category": {
+          "venue": "Venue",
+          "catering": "Catering",
+          "photographer": "Photographer",
+          "band": "Band",
+          "vendor": "Vendor"
+        },
+        "status": {
+          "confirmed": "Confirmed",
+          "pending": "Pending"
+        }
+      },
+      "tasks": {
+        "confirmMenu": "Confirm catering menu",
+        "finishSeating": "Finish seating plan",
+        "confirmPhotoList": "Confirm photographer shot list",
+        "dueIn": "in {{days}} days"
+      },
+      "notes": {
+        "items": [
+          "Remember the best outdoor light for the photo session.",
+          "Preferred first dance song: Perfect - Ed Sheeran."
+        ]
+      },
+      "timelineItems": {
+        "welcome": {
+          "title": "Guest welcome",
+          "description": "Welcome drink service"
+        },
+        "ceremony": {
+          "title": "Ceremony",
+          "description": "Main ceremony"
+        },
+        "cocktail": {
+          "title": "Cocktail & Photos",
+          "description": "Cocktail and photo session"
+        },
+        "dinner": {
+          "title": "Dinner",
+          "description": "Formal wedding dinner"
+        },
+        "firstDance": {
+          "title": "First dance",
+          "description": "Start of the dance section"
+        },
+        "cake": {
+          "title": "Wedding cake",
+          "description": "Cake cutting"
+        },
+        "end": {
+          "title": "End",
+          "description": "Event closing"
+        }
+      },
+      "seatingTab": {
+        "title": "Seating plans",
+        "description": "Create and open seating plans linked to this event.",
+        "planNamePlaceholder": "Seating plan name",
+        "create": "Create plan",
+        "creating": "Creating...",
+        "empty": "No seating plans yet."
       }
     }
   }
