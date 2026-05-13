@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { getGroupColorByIndex, normalizeGroupName } from "@/features/seating-editor/lib/guest-groups";
 import { createGuestGroupSchema } from "@/features/seating-editor/schemas/guest-group.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -20,6 +21,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function GET(_: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   const groups = await prisma.seatingGuestGroup.findMany({
@@ -44,6 +48,9 @@ export async function GET(_: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   try {

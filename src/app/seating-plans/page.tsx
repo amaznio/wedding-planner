@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { useI18n } from "@/i18n/provider";
 
 type PlanListItem = {
@@ -88,20 +89,24 @@ export default function SeatingPlansListPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 bg-zinc-50 p-6">
-      <header className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">{t("plans.title")}</h1>
-          <p className="text-sm text-zinc-600">{t("plans.subtitle")}</p>
+      <header className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900">{t("plans.title")}</h1>
+            <p className="text-sm text-zinc-600">{t("plans.subtitle")}</p>
+          </div>
+          <UserMenu />
         </div>
-
-        <button
-          type="button"
-          onClick={handleCreatePlan}
-          disabled={isCreating}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isCreating ? t("plans.creating") : t("plans.create")}
-        </button>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={handleCreatePlan}
+            disabled={isCreating}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isCreating ? t("plans.creating") : t("plans.create")}
+          </button>
+        </div>
       </header>
 
       {error ? (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { UserMenu } from "@/components/auth/UserMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
+import { authClient } from "@/lib/auth-client";
 
 type SeatingToolbarProps = {
   planName: string;
@@ -36,8 +38,10 @@ export function SeatingToolbar({
 }: SeatingToolbarProps) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
+  const { data: session } = authClient.useSession();
   const [isMobileEditingTitle, setIsMobileEditingTitle] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
     saveState === "saving"
@@ -49,6 +53,15 @@ export function SeatingToolbar({
           : lastSavedLabel
             ? t("toolbar.statusSavedAt", { time: lastSavedLabel })
             : t("toolbar.statusSaved");
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    await authClient.signOut();
+    setIsMobileNavOpen(false);
+    router.push("/sign-in");
+    router.refresh();
+  };
 
   return (
     <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
@@ -108,6 +121,7 @@ export function SeatingToolbar({
               <SelectItem value="pl">{t("common.polish")}</SelectItem>
             </SelectContent>
           </Select>
+          <UserMenu />
         </div>
       </div>
 
@@ -202,6 +216,28 @@ export function SeatingToolbar({
               </Button>
             </div>
             <div className="mt-4 space-y-2">
+              {session ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setIsMobileNavOpen(false);
+                      router.push("/account");
+                    }}
+                  >
+                    {t("userMenu.account")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => void handleSignOut()}
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
+                  </Button>
+                </>
+              ) : null}
               <p className="text-xs font-medium text-zinc-600">{t("common.language")}</p>
               <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
                 <SelectTrigger className="w-full" aria-label={t("common.language")}>

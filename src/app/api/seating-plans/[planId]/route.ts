@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { updateSeatingPlanSchema } from "@/features/seating-editor/schemas/seating-plan.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -19,6 +20,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function GET(_: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   const plan = await prisma.seatingPlan.findUnique({
@@ -38,6 +42,9 @@ export async function GET(_: Request, context: RouteContext) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   try {
@@ -162,6 +169,9 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   const existingPlan = await prisma.seatingPlan.findUnique({

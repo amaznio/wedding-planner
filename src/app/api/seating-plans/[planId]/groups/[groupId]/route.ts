@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { normalizeGroupName } from "@/features/seating-editor/lib/guest-groups";
 import { updateGuestGroupSchema } from "@/features/seating-editor/schemas/guest-group.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string; groupId: string }>;
@@ -20,6 +21,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId, groupId } = await context.params;
 
   try {
@@ -84,6 +88,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId, groupId } = await context.params;
 
   const existing = await prisma.seatingGuestGroup.findFirst({

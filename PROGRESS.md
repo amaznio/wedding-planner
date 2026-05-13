@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 191 - Wedding location editable from dashboard details (completed)
+Phase 192 - Better Auth foundation + login/logout + user menu + API/UI protection (completed)
 
 ## Completed Phases
 
@@ -203,8 +203,52 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 - Phase 189 - Remove sidebar wedding identity card
 - Phase 190 - Remove unused sidebar i18n keys
 - Phase 191 - Wedding location editable from dashboard details
+- Phase 149 - Better Auth foundation + login/logout + user menu + API/UI protection
 
 ## Completed Work
+
+- Implemented Phase 192 Better Auth foundation + login/logout + user menu + API/UI protection:
+  - added Better Auth integration with Prisma adapter and Next handler:
+    - new auth config/client/session helpers
+    - new auth API route at `/api/auth/[...all]`
+    - added auth env vars in `.env.example`
+  - added auth data models to Prisma schema and created migration file:
+    - `User`, `Session`, `Account`, `Verification`
+    - migration: `prisma/migrations/20260513081000_add_better_auth_core/migration.sql`
+  - added sign-in/sign-up/account flows:
+    - `/sign-in` and `/sign-up` forms with client validation and localized EN/PL errors
+    - server-side redirect to `/seating-plans` when already authenticated
+    - `/account` page with server-backed session guard and profile display
+  - added route protection:
+    - Next 16 `proxy.ts` guard for `/seating-plans/:path*` redirecting unauthenticated users to `/sign-in`
+    - hard server-side `401 Unauthorized` guard added to all `/api/seating-plans/**` route handlers
+  - added reusable top-nav user menu:
+    - desktop dropdown in editor toolbar + plans list
+    - mobile sign out/account actions in toolbar sheet
+  - added localization keys for auth/user-menu/account UI in EN/PL message catalogs
+  - files changed:
+    - `proxy.ts`
+    - `src/lib/auth.ts`
+    - `src/lib/auth-client.ts`
+    - `src/lib/auth-session.ts`
+    - `src/app/api/auth/[...all]/route.ts`
+    - `src/features/auth/components/SignInForm.tsx`
+    - `src/features/auth/components/SignUpForm.tsx`
+    - `src/features/auth/components/AccountView.tsx`
+    - `src/app/sign-in/page.tsx`
+    - `src/app/sign-up/page.tsx`
+    - `src/app/account/page.tsx`
+    - `src/components/auth/UserMenu.tsx`
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `src/app/seating-plans/page.tsx`
+    - `src/app/api/seating-plans/**/route.ts` (all seating route handlers)
+    - `.env.example`
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260513081000_add_better_auth_core/migration.sql`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `package.json`, `pnpm-lock.yaml`
+    - `PROGRESS.md`
 
 - Implemented Phase 191 wedding location editable from dashboard details:
   - added a wedding-level `location` field to the Prisma `Wedding` model
@@ -2487,6 +2531,26 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 
 ## Commands Run
 
+- `corepack pnpm add better-auth @better-auth/prisma-adapter` (pass)
+- `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/schema.prisma` (initial fail: `BETTER_AUTH_SECRET` missing and overwrite prompt)
+- `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/better-auth.schema.prisma --yes` (pass; used to derive auth schema models)
+- `corepack pnpm prisma migrate dev --name add-better-auth` (fail: existing DB drift / missing local migration files unrelated to this phase, so migration SQL was added manually)
+- `corepack pnpm prisma generate` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm typecheck` (fail; pre-existing `.next/types/validator.ts` missing `weddings/*` modules)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm build` (pass)
+
+- `corepack pnpm add better-auth @better-auth/prisma-adapter` (pass)
+- `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/schema.prisma` (initial fail: `BETTER_AUTH_SECRET` missing and overwrite prompt)
+- `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/better-auth.schema.prisma --yes` (pass; used to derive auth schema models)
+- `corepack pnpm prisma migrate dev --name add-better-auth` (fail: existing DB drift / missing local migration files unrelated to this phase, so migration SQL was added manually)
+- `corepack pnpm prisma generate` (pass)
+- `corepack pnpm prisma:validate` (pass)
+- `corepack pnpm typecheck` (fail; pre-existing `.next/types/validator.ts` missing `weddings/*` modules)
+- `corepack pnpm lint` (pass with existing warnings)
+- `corepack pnpm build` (pass)
+
 - `corepack pnpm typecheck` (pass; Phase 186 workspace topbar left-offset tightening)
 
 - `corepack pnpm typecheck` (pass; Phase 185 collapsed icon-rail spacing symmetry refinement)
@@ -2964,6 +3028,10 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 
 ## Check Results
 
+- Prisma validate: pass.
+- TypeScript: fail (pre-existing repository issues in `.next/types/validator.ts` missing `weddings/*` files; no new auth-phase-specific TS failures).
+- Lint: pass with existing warnings.
+- Build: pass.
 - Phase 186 workspace topbar left-offset tightening: pass (`typecheck`).
 - Phase 185 collapsed icon-rail spacing symmetry refinement: pass (`typecheck`, `lint` with existing warnings only).
 - Phase 184 collapsed sidebar usability polish + smaller topbar toggle: pass (`typecheck`, `lint` with existing warnings only).
@@ -2998,6 +3066,31 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 - i18n audit: fail on existing hardcoded text in `src/app/page.tsx` (`Open weddings`).
 
 ## How To Test
+
+Phase 192 targeted checks:
+
+1. Run `corepack pnpm dev`.
+2. Open `/sign-up`, create a new account, and verify redirect to `/seating-plans`.
+3. Open `/sign-in`, verify invalid credentials show localized error message.
+4. Verify authenticated access:
+   - `/seating-plans` loads normally
+   - `/seating-plans/{id}` loads normally
+5. Verify unauthenticated access:
+   - sign out from toolbar user menu
+   - opening `/seating-plans` redirects to `/sign-in`
+6. Verify API hard guards:
+   - call `GET /api/seating-plans` without auth and verify `401`
+   - call `GET /api/seating-plans` with auth and verify normal response
+7. Verify top navbar user menu behavior:
+   - desktop editor toolbar shows user name menu
+   - plans list header shows user name menu
+   - menu has `Account` and `Sign out` actions
+8. Verify mobile menu behavior in editor:
+   - open toolbar navigation sheet
+   - verify `Account` and `Sign out` actions
+9. Open `/account` and verify session-backed profile data and back-to-plans navigation.
+
+Legacy regression checks:
 
 1. Run `corepack pnpm dev`.
 2. Open `/weddings`:
@@ -3046,6 +3139,8 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 - New wedding guests dashboard actions are still placeholder/no-op where backend flows are not yet wired (`import`, reminders/export, row action mutations).
 - Add Guest modal currently persists children as regular guests + event `requiresSeat`; explicit `isChild` persistence and wedding-level relationship metadata (`partner`/`plus_one`) remain TODO until dedicated API/schema support is added.
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
+- TypeScript currently fails from pre-existing repository/type artifacts unrelated to Phase 149 (`.next/types/validator.ts` `weddings/*` references).
+- `prisma migrate dev` could not be executed against the current DB because of pre-existing migration drift (remote DB has migrations missing locally); auth migration SQL was added manually as a repo migration file.
 - New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
 - Auto-seat warning messages are currently returned as backend strings and surfaced directly in info toasts.
 - Drag-to-table planned assignment is desktop-only (touch/mobile drag not added in this phase).
@@ -3060,4 +3155,10 @@ Phase 191 - Wedding location editable from dashboard details (completed)
 
 ## Next Recommended Step
 
-- Phase 192: replace hardcoded `Open weddings` text in `src/app/page.tsx` with translation keys so `corepack pnpm i18n:audit` passes again.
+- Attach plans to users:
+  - add `ownerId` on `SeatingPlan` linked to `User.id`
+  - set owner on plan creation and scope plan read/update/delete queries to owner
+- Introduce sharing foundation:
+  - add `PlanMembership` with `owner|editor|viewer` roles
+  - implement authorization checks in seating APIs based on membership role
+- Resolve pre-existing TypeScript `.next/types/validator.ts` `weddings/*` artifacts so `corepack pnpm typecheck` is green again.

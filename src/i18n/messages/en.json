@@ -17,6 +17,55 @@
     "title": "Wedding Seating Planner MVP",
     "openEditor": "Open Seating Editor"
   },
+  "auth": {
+    "fields": {
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password"
+    },
+    "placeholders": {
+      "name": "Jane Doe",
+      "email": "you@example.com",
+      "password": "At least 8 characters"
+    },
+    "errors": {
+      "invalidPayload": "Please review the form fields.",
+      "invalidEmail": "Enter a valid email address.",
+      "passwordMinLength": "Password must be at least 8 characters.",
+      "nameMinLength": "Name must be at least 2 characters.",
+      "invalidCredentials": "Invalid email or password.",
+      "signUpFailed": "Failed to create account. Try a different email."
+    },
+    "signIn": {
+      "title": "Sign in",
+      "subtitle": "Access your wedding seating plans.",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one"
+    },
+    "signUp": {
+      "title": "Create account",
+      "subtitle": "Start building your seating plans.",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    }
+  },
+  "userMenu": {
+    "fallbackName": "User",
+    "account": "Account",
+    "signOut": "Sign out",
+    "signingOut": "Signing out..."
+  },
+  "account": {
+    "title": "Account",
+    "subtitle": "Your profile details.",
+    "name": "Name",
+    "email": "Email",
+    "backToPlans": "Back to plans"
+  },
   "plans": {
     "title": "Seating Plans",
     "subtitle": "Create a plan or open an existing one.",

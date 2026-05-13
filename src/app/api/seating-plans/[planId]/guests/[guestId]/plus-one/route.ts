@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { createPlusOneSchema } from "@/features/seating-editor/schemas/guest-assignment.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string; guestId: string }>;
@@ -51,6 +52,9 @@ function toApiRelationship(relationship: DbRelationship) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId, guestId } = await context.params;
 
   try {
@@ -187,6 +191,9 @@ export async function POST(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId, guestId } = await context.params;
 
   const hostGuest = await prisma.guest.findFirst({

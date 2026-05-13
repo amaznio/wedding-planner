@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { importGuestRowsSchema } from "@/features/seating-editor/schemas/guest-assignment.schema";
 import { isPlusOneMarker } from "@/features/seating-editor/constants/plus-one";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -52,6 +53,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   try {

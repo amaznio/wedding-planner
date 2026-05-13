@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 
 import { batchMoveAssignmentsSchema } from "@/features/seating-editor/schemas/guest-assignment.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -24,6 +25,9 @@ function conflictResponse(message: string) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId } = await context.params;
 
   try {

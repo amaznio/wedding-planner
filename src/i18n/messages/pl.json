@@ -17,6 +17,55 @@
     "title": "Wedding Seating Planner MVP",
     "openEditor": "Otwórz edytor ustawienia stołów"
   },
+  "auth": {
+    "fields": {
+      "name": "Imię i nazwisko",
+      "email": "Email",
+      "password": "Hasło"
+    },
+    "placeholders": {
+      "name": "Jan Kowalski",
+      "email": "ty@example.com",
+      "password": "Co najmniej 8 znaków"
+    },
+    "errors": {
+      "invalidPayload": "Sprawdź poprawność pól formularza.",
+      "invalidEmail": "Podaj poprawny adres email.",
+      "passwordMinLength": "Hasło musi mieć co najmniej 8 znaków.",
+      "nameMinLength": "Nazwa musi mieć co najmniej 2 znaki.",
+      "invalidCredentials": "Niepoprawny email lub hasło.",
+      "signUpFailed": "Nie udało się utworzyć konta. Spróbuj innego emaila."
+    },
+    "signIn": {
+      "title": "Zaloguj się",
+      "subtitle": "Uzyskaj dostęp do planów ustawienia stołów.",
+      "submit": "Zaloguj się",
+      "submitting": "Logowanie...",
+      "noAccount": "Nie masz konta?",
+      "createAccount": "Utwórz konto"
+    },
+    "signUp": {
+      "title": "Utwórz konto",
+      "subtitle": "Zacznij tworzyć plany ustawienia stołów.",
+      "submit": "Utwórz konto",
+      "submitting": "Tworzenie konta...",
+      "haveAccount": "Masz już konto?",
+      "signIn": "Zaloguj się"
+    }
+  },
+  "userMenu": {
+    "fallbackName": "Użytkownik",
+    "account": "Konto",
+    "signOut": "Wyloguj",
+    "signingOut": "Wylogowywanie..."
+  },
+  "account": {
+    "title": "Konto",
+    "subtitle": "Szczegóły Twojego profilu.",
+    "name": "Nazwa",
+    "email": "Email",
+    "backToPlans": "Powrót do planów"
+  },
   "plans": {
     "title": "Plany ustawienia",
     "subtitle": "Utwórz plan lub otwórz istniejący.",

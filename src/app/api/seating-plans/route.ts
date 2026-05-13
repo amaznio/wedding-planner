@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { createSeatingPlanSchema } from "@/features/seating-editor/schemas/seating-plan.schema";
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 function validationErrorResponse(error: ZodError) {
   return NextResponse.json(
@@ -15,6 +16,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function GET(request: Request) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
 
@@ -32,6 +36,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await request.json();
     const payload = createSeatingPlanSchema.parse(body);
@@ -42,7 +49,10 @@ export async function POST(request: Request) {
         select: { id: true },
       });
       if (!event) {
-        return NextResponse.json({ error: "Wedding event not found" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Wedding event not found" },
+          { status: 400 },
+        );
       }
     }
 

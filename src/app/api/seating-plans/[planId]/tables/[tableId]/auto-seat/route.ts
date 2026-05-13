@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { requireAuthSession } from "@/lib/auth-session";
 
 type RouteContext = {
   params: Promise<{ planId: string; tableId: string }>;
@@ -73,6 +74,9 @@ function buildAlternatingOrder(guests: AutoSeatGuest[]) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const { unauthorized } = await requireAuthSession();
+  if (unauthorized) return unauthorized;
+
   const { planId, tableId } = await context.params;
 
   try {
