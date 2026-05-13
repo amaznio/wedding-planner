@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -12,8 +13,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarHeader,
+  SidebarSeparator,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import {
   CalendarDays,
   CheckSquare,
@@ -32,8 +45,6 @@ import {
 import type { DashboardNavItem, DashboardNavItemId } from "../types";
 
 type WeddingDashboardSidebarProps = {
-  weddingName: string;
-  weddingDateLabel: string;
   currentPath: string;
   navigation: DashboardNavItem[];
   currentUser: {
@@ -57,8 +68,6 @@ const navIconById: Record<DashboardNavItemId, LucideIcon> = {
 };
 
 export function WeddingDashboardSidebar({
-  weddingName,
-  weddingDateLabel,
   currentPath,
   navigation,
   currentUser,
@@ -66,74 +75,99 @@ export function WeddingDashboardSidebar({
 }: WeddingDashboardSidebarProps) {
   const { t } = useI18n();
   const normalizedPath = normalizePath(currentPath);
+  const { isMobile } = useSidebar();
 
   return (
-    <div className="flex h-screen flex-col border-r border-zinc-200 bg-white">
-      <div className="px-4 pb-4 pt-5">
-        <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-full bg-violet-100 text-violet-600">
-            <HeartIcon className="size-4" />
-          </div>
-          <p className="text-lg font-semibold text-zinc-900">{t("dashboard.sidebar.appName")}</p>
-        </div>
-        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/70 px-3 py-2.5">
-          <p className="text-sm font-medium text-zinc-900">{weddingName}</p>
-          <p className="text-xs text-zinc-600">{weddingDateLabel}</p>
-        </div>
-      </div>
+    <Sidebar
+      side="left"
+      variant="sidebar"
+      collapsible="icon"
+      className="border-r border-zinc-200 bg-white"
+      style={{ "--sidebar-width": "260px", "--sidebar-width-mobile": "320px" } as CSSProperties}
+    >
+      <SidebarHeader className="px-3 pb-3 pt-3 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:pb-2 group-data-[collapsible=icon]:pt-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="h-auto rounded-xl px-3 py-2.5 group-data-[collapsible=icon]:mx-auto">
+              <div className="flex size-9 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                <HeartIcon className="size-[18px]" />
+              </div>
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-lg font-semibold text-zinc-900">{t("dashboard.sidebar.appName")}</span>
+                <span className="truncate text-sm text-zinc-600">{t("dashboard.sidebar.appTagline")}</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      <Separator />
+      <SidebarSeparator className="mx-0" />
 
-      <ScrollArea className="min-h-0 flex-1 px-3 py-4">
-        <nav className="flex flex-col gap-1">
-          {navigation.map((item) => {
-            const Icon = navIconById[item.id];
-            const isActive = item.href
-              ? isNavigationItemActive({
-                  itemId: item.id,
-                  currentPath: normalizedPath,
-                  href: item.href,
-                })
-              : false;
-            const label = t(`dashboard.sidebar.nav.${item.id}`);
+      <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
+        <SidebarGroup className="p-0">
+          <SidebarGroupContent>
+            <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+              {navigation.map((item) => {
+                const Icon = navIconById[item.id];
+                const isActive = item.href
+                  ? isNavigationItemActive({
+                      itemId: item.id,
+                      currentPath: normalizedPath,
+                      href: item.href,
+                    })
+                  : false;
+                const label = t(`dashboard.sidebar.nav.${item.id}`);
 
-            if (item.href && !item.disabled) {
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900",
-                    isActive && "bg-violet-50 text-violet-700",
-                  )}
-                >
-                  <Icon className="size-4" />
-                  <span className="truncate">{label}</span>
-                  {item.counter ? <Badge className="ml-auto bg-rose-100 text-rose-700">{item.counter}</Badge> : null}
-                </Link>
-              );
-            }
+                if (item.href && !item.disabled) {
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={label}
+                        className={cn(
+                          "h-10 gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 group-data-[collapsible=icon]:mx-auto",
+                          isActive && "bg-violet-50 text-violet-700 hover:bg-violet-50 hover:text-violet-700",
+                        )}
+                      >
+                        <Link href={item.href}>
+                          <Icon className="size-4" />
+                          <span className="truncate">{label}</span>
+                          {item.counter ? (
+                            <Badge className="ml-auto bg-rose-100 text-rose-700 group-data-[collapsible=icon]:hidden">
+                              {item.counter}
+                            </Badge>
+                          ) : null}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onPlaceholderAction(item.id)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100"
-              >
-                <Icon className="size-4" />
-                <span className="truncate">{label}</span>
-                <span className="ml-auto text-[10px] uppercase tracking-wide text-zinc-500">
-                  {t("dashboard.sidebar.comingSoon")}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      </ScrollArea>
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      type="button"
+                      onClick={() => onPlaceholderAction(item.id)}
+                      tooltip={label}
+                      className="h-10 gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-600 hover:bg-zinc-100 group-data-[collapsible=icon]:mx-auto"
+                    >
+                      <Icon className="size-4" />
+                      <span className="truncate">{label}</span>
+                      <span className="ml-auto text-[10px] uppercase tracking-wide text-zinc-500 group-data-[collapsible=icon]:hidden">
+                        {t("dashboard.sidebar.comingSoon")}
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-      <div className="space-y-3 border-t border-zinc-200 p-3">
-        <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3">
+      <SidebarFooter className="border-t border-zinc-200 p-3 group-data-[collapsible=icon]:p-2">
+        <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 group-data-[collapsible=icon]:hidden">
           <p className="text-sm font-medium text-violet-900">{t("dashboard.sidebar.duoTitle")}</p>
           <Button
             type="button"
@@ -145,31 +179,46 @@ export function WeddingDashboardSidebar({
           </Button>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-2.5">
-          <div className="flex items-center gap-2.5">
-            <Avatar className="size-9">
-              <AvatarFallback>{currentUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-zinc-900">{currentUser.name}</p>
-              <p className="truncate text-xs text-zinc-600">{currentUser.email}</p>
-            </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" aria-label={t("dashboard.sidebar.profileMenu")}> 
-                  <PiggyBank className="size-4" />
-                </Button>
+                <SidebarMenuButton
+                  size="lg"
+                  className="rounded-xl border border-zinc-200 bg-white p-2.5 data-[state=open]:bg-zinc-100 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
+                >
+                  <Avatar className="size-9 rounded-lg">
+                    <AvatarFallback className="rounded-lg">{currentUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate font-medium text-zinc-900">{currentUser.name}</span>
+                    <span className="truncate text-xs text-zinc-600">{currentUser.email}</span>
+                  </div>
+                  <PiggyBank className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("profile")}>{t("dashboard.sidebar.profile")}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("preferences")}>{t("dashboard.sidebar.preferences")}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("logout")}>{t("dashboard.sidebar.logout")}</DropdownMenuItem>
+              <DropdownMenuContent
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                side={isMobile ? "bottom" : "right"}
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuItem onSelect={() => onPlaceholderAction("profile")}>
+                  {t("dashboard.sidebar.profile")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onPlaceholderAction("preferences")}>
+                  {t("dashboard.sidebar.preferences")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onPlaceholderAction("logout")}>
+                  {t("dashboard.sidebar.logout")}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </div>
-      </div>
-    </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   );
 }
 

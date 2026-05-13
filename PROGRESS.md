@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 177 - Shared wedding workspace route-group layout + persistent shell (completed)
+Phase 190 - Remove unused sidebar i18n keys (completed)
 
 ## Completed Phases
 
@@ -188,8 +188,263 @@ Phase 177 - Shared wedding workspace route-group layout + persistent shell (comp
 - Phase 175 - Event attendance card spacing pass (layout rhythm)
 - Phase 176 - Event timeline single-line labels + tighter time spacing
 - Phase 177 - Shared wedding workspace route-group layout + persistent shell
+- Phase 178 - Wedding workspace sidebar migrated to shadcn Sidebar
+- Phase 179 - Wedding workspace sidebar visual polish pass
+- Phase 180 - Sidebar typography hierarchy alignment with dashboard scale
+- Phase 181 - Sidebar-07 composition adaptation with existing wedding content
+- Phase 182 - Workspace shell breadcrumbs + centered wide-screen content
+- Phase 183 - Left-aligned workspace breadcrumb bar with centered page content
+- Phase 184 - Collapsed sidebar usability polish + smaller topbar toggle
+- Phase 185 - Collapsed icon-rail spacing symmetry refinement
+- Phase 186 - Workspace topbar left-offset tightening
+- Phase 187 - Wedding details edit view from dashboard card
+- Phase 188 - Sidebar wedding identity simplification
+- Phase 189 - Remove sidebar wedding identity card
+- Phase 190 - Remove unused sidebar i18n keys
 
 ## Completed Work
+
+- Implemented Phase 190 remove unused sidebar i18n keys:
+  - removed unused `dashboard.sidebar` translation keys in PL/EN:
+    - `guestsCount`
+    - `confirmedGuestsCount`
+    - `mobileTitle`
+    - `profileMenu`
+  - verified remaining sidebar keys are still referenced by the current UI
+  - files changed:
+    - `src/i18n/messages/pl.json`
+    - `src/i18n/messages/en.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint`
+    - `corepack pnpm i18n:audit`
+  - known issues:
+    - `corepack pnpm lint` passes with pre-existing warnings in unrelated files (`src/app/seating-plans/*`, `src/features/seating-editor/components/SeatingCanvas.tsx`, workspace `vendors` and `expenses` pages)
+    - `corepack pnpm i18n:audit` still fails on existing hardcoded text in `src/app/page.tsx` (`"Open weddings"`)
+  - next recommended step:
+    - Phase 191: fix the existing i18n audit failure by replacing hardcoded text in `src/app/page.tsx` with translation keys
+
+- Implemented Phase 189 remove sidebar wedding identity card:
+  - removed the wedding identity card block from the sidebar header (avatar, wedding name, guest/confirmed counts)
+  - kept only the compact app identity row at the top of the sidebar
+  - removed now-unused data plumbing related to the removed card:
+    - removed extra sidebar props from workspace shell and sidebar component contracts
+    - removed layout-side fetching/derivation for venue, guest counts, confirmed RSVP counts, and formatted wedding date used only by that card
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint`
+  - known issues:
+    - `corepack pnpm lint` passes with pre-existing warnings in unrelated files (`src/app/seating-plans/*`, `src/features/seating-editor/components/SeatingCanvas.tsx`, workspace `vendors` and `expenses` pages)
+  - next recommended step:
+    - Phase 190: remove now-unused sidebar i18n keys introduced for the removed card (`dashboard.sidebar.guestsCount`, `dashboard.sidebar.confirmedGuestsCount`) if they are no longer needed elsewhere
+
+- Implemented Phase 188 sidebar wedding identity simplification:
+  - refactored the sidebar top area into a tighter identity block focused on:
+    - app identity (`WeddingPlan` + tagline)
+    - wedding identity (name, date, venue)
+    - key wedding counts (total guests and confirmed guests)
+  - removed placeholder dash rendering for missing wedding date in the workspace layout (`""` instead of `—`)
+  - removed event-count style metadata from the sidebar top identity area and kept only guest/confirmed metrics
+  - replaced decorative wedding badge behavior with clear initials-based avatar (`AG` style)
+  - added data plumbing from workspace layout to sidebar:
+    - wedding venue (first non-empty event location)
+    - total wedding guests (`wedding._count.guests`)
+    - confirmed RSVP guest count (deduped by `guestId` across wedding events)
+  - added/updated i18n labels for the new sidebar copy in PL/EN
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/i18n/messages/pl.json`
+    - `src/i18n/messages/en.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint`
+    - `corepack pnpm i18n:audit`
+  - known issues:
+    - `corepack pnpm lint` passes with pre-existing warnings in unrelated files (`src/app/seating-plans/*`, `src/features/seating-editor/components/SeatingCanvas.tsx`, workspace `vendors` and `expenses` pages)
+    - `corepack pnpm i18n:audit` still fails on existing hardcoded text in `src/app/page.tsx` (`"Open weddings"`)
+    - venue in sidebar currently uses the first event with a non-empty `location`; wedding-level venue persistence is still not modeled separately
+  - next recommended step:
+    - Phase 189: persist explicit wedding-level venue + guest estimate fields and source sidebar identity data directly from wedding fields instead of deriving venue from events
+
+- Implemented Phase 187 wedding details edit view from the dashboard overview card:
+  - replaced the `weddingDetails` placeholder action with a real edit dialog opened from `Zobacz szczegóły`
+  - added editable wedding fields in the dialog: `name`, `date`, `currency`, `timezone`, and `notes`
+  - wired save to `PUT /api/weddings/[weddingId]` and updated local dashboard state immediately after successful save
+  - added `router.refresh()` after save so server-rendered workspace shell data (wedding name/date in layout) refreshes
+  - expanded `WeddingDetailApiResponse` typing and added update response typing for the dashboard page
+  - updated wedding update validation schema to support nullable values for `date`, `timezone`, and `notes` so these fields can be cleared from the UI
+  - added new i18n keys for the wedding edit dialog in English and Polish
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck`
+    - `pnpm lint`
+    - `pnpm i18n:audit`
+  - known issues:
+    - `pnpm lint` completes with pre-existing warnings in unrelated files (`src/app/seating-plans/*`, `src/features/seating-editor/components/SeatingCanvas.tsx`, `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`, `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`)
+    - `pnpm i18n:audit` fails on existing hardcoded JSX text in `src/app/page.tsx` (`"Open weddings"`)
+    - dashboard card `venue`, `guestEstimate`, and `totalBudget` are still derived/hardcoded from existing data flow and are not edited by this phase
+  - next recommended step:
+    - Phase 188: move overview card fields (`venue`, `guestEstimate`, `budget target`) to explicit wedding-level persisted fields and wire them into this same dialog
+
+- Implemented Phase 186 workspace topbar left-offset tightening:
+  - moved breadcrumb bar content closer to the left edge by reducing topbar horizontal padding
+  - tightened trigger-to-breadcrumb spacing by reducing the separator right margin
+  - file changed:
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 185 collapsed icon-rail spacing symmetry refinement:
+  - normalized collapsed-mode paddings in sidebar header/content/footer to enforce equal rail spacing around icon buttons
+  - centered icon-mode sidebar buttons with `group-data-[collapsible=icon]:mx-auto` across:
+    - brand button
+    - navigation buttons
+    - footer user button
+  - ensured icon-rail nav stack aligns centrally in collapsed mode (`SidebarMenu` icon-mode centering)
+  - file changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 184 collapsed sidebar usability polish + smaller topbar toggle:
+  - reduced workspace topbar sidebar trigger visual weight:
+    - `SidebarTrigger` size reduced (`size-8` -> `size-7`)
+    - icon size constrained (`[&>svg]:size-4`)
+  - improved collapsed (`icon`) sidebar behavior:
+    - hid overflowing wedding info card in collapsed mode
+    - hid header text block in collapsed mode (kept brand icon)
+    - hid secondary row metadata in collapsed mode (`coming soon` labels + counters)
+    - cleaned user footer row in collapsed mode (avatar-only; no text/piggybank)
+  - added hover tooltips for icon-rail navigation items using `SidebarMenuButton tooltip={label}`
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 183 breadcrumb-bar alignment adjustment:
+  - kept page content centered on wide screens
+  - removed max-width centering wrapper around the shared workspace top bar so breadcrumbs are left-aligned across the full workspace content area
+  - file changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardShell.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 182 workspace shell breadcrumbs + centered wide-screen content:
+  - added shadcn breadcrumb primitive:
+    - `src/components/ui/breadcrumb.tsx`
+  - added a shared workspace top bar in shell with:
+    - `SidebarTrigger`
+    - vertical separator
+    - route-aware breadcrumbs
+  - centralized breadcrumb generation in `WeddingWorkspaceShell` based on `usePathname()`:
+    - `/weddings/[weddingId]` and `/dashboard` -> `Home`
+    - `/guests` -> `Home > Guests`
+    - `/vendors` -> `Home > Vendors`
+    - `/expenses` -> `Home > Budget`
+    - `/events/[eventId]` -> `Home > Events > {eventName}`
+  - extended workspace shell context with breadcrumb override API for future page-specific breadcrumb customization:
+    - `setBreadcrumbOverride(...)`
+    - `clearBreadcrumbOverride()`
+  - updated workspace layout data to provide event names for breadcrumb labels:
+    - changed wedding event include from `{ id }` to `{ id, name }`
+    - passed `weddingId` and `eventNamesById` into shell
+  - centered page content for large/4k screens by moving max-width constraints into shell:
+    - top bar content constrained to `max-w-[1400px]`
+    - main content constrained to `max-w-[1400px]`
+  - removed duplicated local breadcrumb row from event detail page so workspace shell breadcrumbs are the single source of truth there
+  - files changed:
+    - `src/components/ui/breadcrumb.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 181 sidebar-07 composition adaptation with existing wedding content:
+  - used shadcn `sidebar-07` as the structural reference while preserving app data and behavior
+  - adapted sidebar composition to `sidebar-07` patterns:
+    - header switched to `SidebarMenu` + `SidebarMenuButton` block pattern
+    - footer switched to `SidebarMenu` + dropdown trigger row pattern
+    - added `SidebarRail`
+    - switched sidebar collapsible mode to `icon` (as in `sidebar-07`)
+  - preserved current wedding content and logic:
+    - existing wedding app branding + plan info
+    - existing navigation items, active route matching, and coming-soon behavior
+    - existing profile dropdown actions
+  - kept typography hierarchy aligned to current dashboard scale (no large ad-hoc font jumps)
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 180 sidebar typography hierarchy alignment with dashboard scale:
+  - normalized sidebar text styles to match existing dashboard hierarchy conventions:
+    - brand heading uses dashboard-level heading scale (`text-xl` + `sm:text-3xl`)
+    - selected plan title uses section-title scale (`text-lg` + `font-semibold`)
+    - plan metadata uses body-secondary scale (`text-sm`)
+    - navigation remains body/action scale (`text-sm`)
+    - small metadata labels remain micro scale (`text-xs`)
+  - adjusted logo mark container/icon sizing to visually balance with updated heading scale
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 179 wedding workspace sidebar visual polish pass:
+  - tuned shadcn sidebar spacing and rhythm to better match provided reference:
+    - increased header/logo breathing room
+    - adjusted wedding card sizing, radius, and date hierarchy
+    - increased nav item height and menu spacing for cleaner scan rhythm
+    - refined active row color treatment to stronger soft-violet highlight
+    - tightened icon and label alignment across active/inactive rows
+  - polished footer blocks:
+    - duo invitation card spacing/shape/contrast
+    - profile card spacing, avatar size, and text hierarchy
+  - preserved existing behavior and logic:
+    - route active-state matching
+    - placeholder actions / coming-soon labels
+    - profile dropdown actions
+    - mobile sidebar open/close flow via workspace shell
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 178 wedding workspace sidebar migration to shadcn Sidebar:
+  - added shadcn sidebar primitives and required helpers:
+    - `src/components/ui/sidebar.tsx`
+    - `src/components/ui/skeleton.tsx`
+    - `src/hooks/use-mobile.ts`
+  - added sidebar theme CSS variables to global styles:
+    - `src/app/globals.css`
+  - extended existing `Sheet` primitive to export missing shadcn-compatible pieces used by the sidebar primitive:
+    - added `SheetDescription` and `SheetHeader` in `src/components/ui/sheet.tsx`
+  - refactored wedding workspace sidebar UI to shadcn sidebar composition (`Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarMenu`, `SidebarFooter`) while preserving:
+    - existing navigation labels and active-route logic
+    - coming-soon behavior for disabled items
+    - wedding info, duo section, and profile menu content
+  - rewired workspace shell/sidebar state to shadcn provider:
+    - removed custom mobile `Sheet` wrapper in favor of `SidebarProvider` + `useSidebar().setOpenMobile(...)`
+    - kept existing `openSidebar` / `closeSidebar` context API for page headers
+  - updated main wedding shell layout to use `SidebarInset` with the new sidebar structure
+  - files changed:
+    - `src/app/globals.css`
+    - `src/components/ui/sheet.tsx`
+    - `src/components/ui/sidebar.tsx`
+    - `src/components/ui/skeleton.tsx`
+    - `src/hooks/use-mobile.ts`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 177 shared wedding workspace route-group layout + persistent shell:
   - moved wedding workspace routes into a dedicated route group:
@@ -2196,6 +2451,43 @@ Phase 177 - Shared wedding workspace route-group layout + persistent shell (comp
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 186 workspace topbar left-offset tightening)
+
+- `corepack pnpm typecheck` (pass; Phase 185 collapsed icon-rail spacing symmetry refinement)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 185 collapsed icon-rail spacing symmetry refinement)
+
+- `corepack pnpm typecheck` (pass; Phase 184 collapsed sidebar usability polish + smaller topbar toggle)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 184 collapsed sidebar usability polish + smaller topbar toggle)
+
+- `corepack pnpm typecheck` (pass; Phase 183 breadcrumb bar left-alignment)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 183 breadcrumb bar left-alignment)
+
+- `corepack pnpm dlx shadcn@latest add @shadcn/breadcrumb --dry-run` (pass; confirmed isolated create-only add)
+- `corepack pnpm dlx shadcn@latest add @shadcn/breadcrumb` (pass; created `src/components/ui/breadcrumb.tsx`)
+- `corepack pnpm typecheck` (pass; Phase 182 workspace shell breadcrumbs + centered content)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 182 workspace shell breadcrumbs + centered content)
+
+- `corepack pnpm dlx shadcn@latest add @shadcn/sidebar-07 --dry-run` (pass; inspected block structure and avoided destructive primitive overwrites)
+- `corepack pnpm typecheck` (pass; Phase 181 sidebar-07 composition adaptation)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 181 sidebar-07 composition adaptation)
+
+- `corepack pnpm typecheck` (pass; Phase 180 sidebar typography hierarchy alignment)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 180 sidebar typography hierarchy alignment)
+
+- `corepack pnpm typecheck` (pass; Phase 179 sidebar visual polish pass)
+- `corepack pnpm lint` (pass with existing warnings only; Phase 179 sidebar visual polish pass)
+
+- `corepack pnpm dlx shadcn@latest info --json` (pass; verified shadcn project context before sidebar migration)
+- `corepack pnpm dlx shadcn@latest docs sidebar` (pass; fetched sidebar docs/examples URL)
+- `corepack pnpm dlx shadcn@latest add @shadcn/sidebar --dry-run` (pass; inspected file/dependency impact)
+- `corepack pnpm dlx shadcn@latest add @shadcn/sidebar --view src/components/ui/sidebar.tsx` (pass; fetched component source for manual integration without overwriting existing UI primitives)
+- `corepack pnpm dlx shadcn@latest add @shadcn/sidebar --view src/components/ui/skeleton.tsx` (pass)
+- `corepack pnpm dlx shadcn@latest add @shadcn/sidebar --view src/hooks/use-mobile.ts` (pass)
+- `corepack pnpm typecheck` (pass; Phase 178 shadcn sidebar migration)
+- `corepack pnpm lint` (initial fail from new sidebar/use-mobile lint violations; fixed)
+- `corepack pnpm typecheck` (pass; after lint fixes)
+- `corepack pnpm lint` (pass with existing warnings only; after lint fixes)
+
 - `corepack pnpm exec next typegen` (pass; regenerated route types after route-group move in Phase 177)
 - `corepack pnpm typecheck` (initial fail on stale `.next` validators before typegen; pass after typegen; Phase 177 shared workspace layout)
 - `corepack pnpm lint` (pass with existing warnings, including pre-existing hook dependency warnings; Phase 177 shared workspace layout)
@@ -2636,6 +2928,15 @@ Phase 177 - Shared wedding workspace route-group layout + persistent shell (comp
 
 ## Check Results
 
+- Phase 186 workspace topbar left-offset tightening: pass (`typecheck`).
+- Phase 185 collapsed icon-rail spacing symmetry refinement: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 184 collapsed sidebar usability polish + smaller topbar toggle: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 183 left-aligned workspace breadcrumb bar with centered page content: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 182 workspace shell breadcrumbs + centered wide-screen content: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 181 sidebar-07 composition adaptation with existing wedding content: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 180 sidebar typography hierarchy alignment with dashboard scale: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 179 wedding workspace sidebar visual polish pass: pass (`typecheck`, `lint` with existing warnings only).
+- Phase 178 wedding workspace sidebar migrated to shadcn Sidebar: pass (`typecheck`, `lint` with existing warnings only).
 - Phase 177 shared wedding workspace route-group layout + persistent shell: pass (`next typegen`, `typecheck`, `lint` with existing warnings only).
 - Phase 176 event timeline single-line labels + tighter time spacing: pass (`typecheck`).
 - Phase 175 event attendance card spacing pass: pass (`typecheck`).
@@ -2729,6 +3030,7 @@ Phase 177 - Shared wedding workspace route-group layout + persistent shell (comp
 
 ## Next Recommended Step
 
+- Run browser QA specifically for collapsed icon-rail behavior (tooltips, active state contrast, footer avatar row, and trigger sizing) across desktop breakpoints.
 - Move wedding workspace top headers into a shared route-group header contract to remove remaining per-page header duplication while keeping mobile sidebar trigger support.
 - Add a compact top KPI strip (without table-completion KPI) to mirror design even more closely while keeping overview density controlled.
 - Implement real per-event modules for Timeline, Tasks, and Notes tabs (replace placeholders with CRUD and persistence).

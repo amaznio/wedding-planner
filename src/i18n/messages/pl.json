@@ -296,11 +296,10 @@
     },
     "sidebar": {
       "appName": "WeddingPlan",
-      "mobileTitle": "Nawigacja ślubna",
+      "appTagline": "Twój plan. Wasz dzień.",
       "comingSoon": "Wkrótce",
       "duoTitle": "Planowanie w duecie",
       "duoAction": "Zaproś partnera",
-      "profileMenu": "Otwórz menu profilu",
       "profile": "Profil",
       "preferences": "Ustawienia",
       "logout": "Wyloguj",
@@ -332,7 +331,20 @@
       "guestEstimate": "Liczba gości (szac.)",
       "guestsCount": "{{count}} gości",
       "totalBudget": "Budżet całkowity",
-      "spent": "Wydano"
+      "spent": "Wydano",
+      "edit": {
+        "title": "Edytuj dane ślubu",
+        "description": "Zaktualizuj główne informacje o ślubie używane w całej przestrzeni.",
+        "name": "Nazwa ślubu",
+        "namePlaceholder": "Wpisz nazwę ślubu",
+        "date": "Data ślubu",
+        "currency": "Waluta",
+        "timezone": "Strefa czasowa",
+        "notes": "Notatki",
+        "notesPlaceholder": "Opcjonalne notatki o ślubie",
+        "errorInvalid": "Nazwa ślubu i 3-literowy kod waluty są wymagane.",
+        "errorSave": "Nie udało się zapisać danych ślubu."
+      }
     },
     "events": {
       "addEvent": "Dodaj wydarzenie"

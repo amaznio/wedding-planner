@@ -9,6 +9,7 @@ export const SheetTrigger = DialogPrimitive.Trigger;
 export const SheetClose = DialogPrimitive.Close;
 export const SheetPortal = DialogPrimitive.Portal;
 export const SheetTitle = DialogPrimitive.Title;
+export const SheetDescription = DialogPrimitive.Description;
 
 export function SheetOverlay({
   className,
@@ -63,4 +64,11 @@ export function SheetContent({
       </DialogPrimitive.Content>
     </SheetPortal>
   );
+}
+
+export function SheetHeader({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return <div className={cn("flex flex-col gap-2 text-center sm:text-left", className)} {...props} />;
 }

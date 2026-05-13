@@ -296,11 +296,10 @@
     },
     "sidebar": {
       "appName": "WeddingPlan",
-      "mobileTitle": "Wedding navigation",
+      "appTagline": "Your plan. Your day.",
       "comingSoon": "Soon",
       "duoTitle": "Plan together",
       "duoAction": "Invite your partner",
-      "profileMenu": "Open profile menu",
       "profile": "Profile",
       "preferences": "Preferences",
       "logout": "Sign out",
@@ -332,7 +331,20 @@
       "guestEstimate": "Guest estimate",
       "guestsCount": "{{count}} guests",
       "totalBudget": "Total budget",
-      "spent": "Spent"
+      "spent": "Spent",
+      "edit": {
+        "title": "Edit wedding details",
+        "description": "Update the core wedding information used across the workspace.",
+        "name": "Wedding name",
+        "namePlaceholder": "Enter wedding name",
+        "date": "Wedding date",
+        "currency": "Currency",
+        "timezone": "Timezone",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional notes about your wedding",
+        "errorInvalid": "Wedding name and a 3-letter currency are required.",
+        "errorSave": "Failed to save wedding details."
+      }
     },
     "events": {
       "addEvent": "Add event"

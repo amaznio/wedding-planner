@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import type { Locale } from "@/i18n/config";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { buildDashboardMockData } from "@/features/wedding-dashboard/dashboard.mock";
 import type { DashboardEventCard, DashboardQuickActionId, WeddingDashboardData } from "@/features/wedding-dashboard/types";
 import { WeddingDashboardHeader } from "@/features/wedding-dashboard/components/WeddingDashboardHeader";
@@ -21,7 +22,9 @@ type WeddingDetailApiResponse = {
     id: string;
     name: string;
     date: string | null;
+    timezone: string | null;
     currency: string;
+    notes: string | null;
     events: Array<{
       id: string;
       name: string;
@@ -53,6 +56,25 @@ type WeddingDashboardApiResponse = {
   };
 };
 
+type WeddingFormState = {
+  name: string;
+  date: string;
+  timezone: string;
+  currency: string;
+  notes: string;
+};
+
+type WeddingUpdateApiResponse = {
+  wedding: {
+    id: string;
+    name: string;
+    date: string | null;
+    timezone: string | null;
+    currency: string;
+    notes: string | null;
+  };
+};
+
 export default function WeddingDashboardHomePage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
@@ -64,6 +86,10 @@ export default function WeddingDashboardHomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [placeholderKey, setPlaceholderKey] = useState<string | null>(null);
+  const [isWeddingDetailsOpen, setIsWeddingDetailsOpen] = useState(false);
+  const [weddingForm, setWeddingForm] = useState<WeddingFormState | null>(null);
+  const [isWeddingSaving, setIsWeddingSaving] = useState(false);
+  const [weddingSaveError, setWeddingSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -102,6 +128,13 @@ export default function WeddingDashboardHomePage() {
 
         if (active) {
           setData(built);
+          setWeddingForm({
+            name: weddingJson.wedding.name ?? "",
+            date: weddingJson.wedding.date ? weddingJson.wedding.date.slice(0, 10) : "",
+            timezone: weddingJson.wedding.timezone ?? "",
+            currency: weddingJson.wedding.currency ?? "PLN",
+            notes: weddingJson.wedding.notes ?? "",
+          });
         }
       } catch {
         if (active) {
@@ -154,6 +187,75 @@ export default function WeddingDashboardHomePage() {
     handlePlaceholderAction(action);
   };
 
+  const handleWeddingSave = async () => {
+    if (!weddingForm) return;
+
+    const trimmedName = weddingForm.name.trim();
+    const trimmedCurrency = weddingForm.currency.trim().toUpperCase();
+
+    if (!trimmedName || trimmedCurrency.length !== 3) {
+      setWeddingSaveError(t("dashboard.overview.edit.errorInvalid"));
+      return;
+    }
+
+    setIsWeddingSaving(true);
+    setWeddingSaveError(null);
+
+    try {
+      const payload = {
+        name: trimmedName,
+        date: weddingForm.date.trim() ? weddingForm.date.trim() : null,
+        timezone: weddingForm.timezone.trim() ? weddingForm.timezone.trim() : null,
+        currency: trimmedCurrency,
+        notes: weddingForm.notes.trim() ? weddingForm.notes.trim() : null,
+      };
+
+      const response = await fetch(`/api/weddings/${weddingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const json = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(json?.error ?? "Failed to update wedding");
+      }
+
+      const json = (await response.json()) as WeddingUpdateApiResponse;
+      const nextWeddingDate = json.wedding.date ? new Date(json.wedding.date) : null;
+
+      setWeddingForm({
+        name: json.wedding.name,
+        date: json.wedding.date ? json.wedding.date.slice(0, 10) : "",
+        timezone: json.wedding.timezone ?? "",
+        currency: json.wedding.currency ?? "PLN",
+        notes: json.wedding.notes ?? "",
+      });
+
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          weddingName: json.wedding.name,
+          weddingDate: nextWeddingDate ?? prev.weddingDate,
+          overview: {
+            ...prev.overview,
+            coupleNames: json.wedding.name,
+            weddingDate: nextWeddingDate ?? prev.overview.weddingDate,
+            currency: json.wedding.currency,
+          },
+        };
+      });
+
+      setIsWeddingDetailsOpen(false);
+      router.refresh();
+    } catch (saveError) {
+      setWeddingSaveError(saveError instanceof Error ? saveError.message : t("dashboard.overview.edit.errorSave"));
+    } finally {
+      setIsWeddingSaving(false);
+    }
+  };
+
   return (
     <>
       <WeddingDashboardHeader
@@ -166,7 +268,10 @@ export default function WeddingDashboardHomePage() {
         <WeddingOverviewHero
           overview={data.overview}
           locale={locale as Locale}
-          onOpenDetails={() => handlePlaceholderAction("weddingDetails")}
+          onOpenDetails={() => {
+            setWeddingSaveError(null);
+            setIsWeddingDetailsOpen(true);
+          }}
         />
 
         <WeddingEventsStrip
@@ -197,6 +302,93 @@ export default function WeddingDashboardHomePage() {
 
         <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")} />
       </div>
+
+      <Dialog open={isWeddingDetailsOpen} onOpenChange={(open) => {
+        setIsWeddingDetailsOpen(open);
+        if (!open) setWeddingSaveError(null);
+      }}>
+        <DialogContent closeLabel={t("common.close")}>
+          <DialogHeader>
+            <DialogTitle>{t("dashboard.overview.edit.title")}</DialogTitle>
+            <DialogDescription>{t("dashboard.overview.edit.description")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="wedding-name" className="text-sm font-medium text-zinc-800">
+                {t("dashboard.overview.edit.name")}
+              </label>
+              <Input
+                id="wedding-name"
+                value={weddingForm?.name ?? ""}
+                onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, name: event.target.value } : prev))}
+                placeholder={t("dashboard.overview.edit.namePlaceholder")}
+                disabled={isWeddingSaving}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="wedding-date" className="text-sm font-medium text-zinc-800">
+                  {t("dashboard.overview.edit.date")}
+                </label>
+                <Input
+                  id="wedding-date"
+                  type="date"
+                  value={weddingForm?.date ?? ""}
+                  onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, date: event.target.value } : prev))}
+                  disabled={isWeddingSaving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="wedding-currency" className="text-sm font-medium text-zinc-800">
+                  {t("dashboard.overview.edit.currency")}
+                </label>
+                <Input
+                  id="wedding-currency"
+                  value={weddingForm?.currency ?? ""}
+                  onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, currency: event.target.value.toUpperCase() } : prev))}
+                  placeholder="PLN"
+                  maxLength={3}
+                  disabled={isWeddingSaving}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="wedding-timezone" className="text-sm font-medium text-zinc-800">
+                {t("dashboard.overview.edit.timezone")}
+              </label>
+              <Input
+                id="wedding-timezone"
+                value={weddingForm?.timezone ?? ""}
+                onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, timezone: event.target.value } : prev))}
+                placeholder="Europe/Warsaw"
+                disabled={isWeddingSaving}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="wedding-notes" className="text-sm font-medium text-zinc-800">
+                {t("dashboard.overview.edit.notes")}
+              </label>
+              <textarea
+                id="wedding-notes"
+                value={weddingForm?.notes ?? ""}
+                onChange={(event) => setWeddingForm((prev) => (prev ? { ...prev, notes: event.target.value } : prev))}
+                className="min-h-24 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-300"
+                placeholder={t("dashboard.overview.edit.notesPlaceholder")}
+                disabled={isWeddingSaving}
+              />
+            </div>
+            {weddingSaveError ? <p className="text-sm text-red-600">{weddingSaveError}</p> : null}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsWeddingDetailsOpen(false)} disabled={isWeddingSaving}>
+                {t("common.cancel")}
+              </Button>
+              <Button type="button" onClick={() => void handleWeddingSave()} disabled={isWeddingSaving}>
+                {isWeddingSaving ? t("common.saving") : t("common.save")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={placeholderKey !== null} onOpenChange={(open) => { if (!open) setPlaceholderKey(null); }}>
         <DialogContent closeLabel={t("common.close")}>

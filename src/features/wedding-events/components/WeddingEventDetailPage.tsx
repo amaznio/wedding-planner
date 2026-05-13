@@ -7,13 +7,11 @@ import {
   Bell,
   CalendarClock,
   CalendarDays,
-  ChevronRight,
   Circle,
   Clock3,
   Edit3,
   ExternalLink,
   MapPin,
-  Menu,
   MoreHorizontal,
   NotebookPen,
   Settings,
@@ -35,7 +33,6 @@ import { Separator } from "@/components/ui/separator";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
-import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 import { buildEventDetailMockData } from "@/features/wedding-events/event-detail.mock";
 import type {
   EventCommandCenterData,
@@ -144,7 +141,6 @@ const categoryKeys = [
 export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetailPageProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { openSidebar } = useWeddingWorkspaceShell();
 
   const mockData = useMemo(
     () =>
@@ -352,37 +348,17 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   return (
     <>
       <header className="flex flex-col gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={openSidebar}
-                aria-label={t("dashboard.header.openSidebar")}
-              >
-                <Menu className="size-4" />
-              </Button>
-              <span>{t("common.home")}</span>
-              <ChevronRight className="size-4" />
-              <span>{t("dashboard.sidebar.nav.events")}</span>
-              <ChevronRight className="size-4" />
-              <span className="font-semibold text-zinc-800">{data.event.name}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="icon" aria-label={t("dashboard.header.notifications")}>
-                <Bell className="size-4" />
-              </Button>
-              <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
-                {t("events.detail.actions.guestPreview")}
-              </Button>
-              <Button type="button" className="bg-rose-500 hover:bg-rose-400" onClick={() => undefined}>
-                <Edit3 className="size-4" />
-                {t("events.detail.actions.editEvent")}
-              </Button>
-            </div>
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="outline" size="icon" aria-label={t("dashboard.header.notifications")}>
+            <Bell className="size-4" />
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
+            {t("events.detail.actions.guestPreview")}
+          </Button>
+          <Button type="button" className="bg-rose-500 hover:bg-rose-400" onClick={() => undefined}>
+            <Edit3 className="size-4" />
+            {t("events.detail.actions.editEvent")}
+          </Button>
           </div>
 
           <div className="flex flex-col gap-2">

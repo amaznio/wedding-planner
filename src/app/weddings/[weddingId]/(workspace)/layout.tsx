@@ -1,6 +1,4 @@
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { LOCALE_COOKIE_KEY, normalizeLocale } from "@/i18n/config";
 import { prisma } from "@/lib/prisma";
 import { WeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 import type { DashboardNavItem } from "@/features/wedding-dashboard/types";
@@ -20,7 +18,7 @@ export default async function WeddingWorkspaceLayout({
     include: {
       events: {
         orderBy: { createdAt: "asc" },
-        select: { id: true },
+        select: { id: true, name: true },
       },
     },
   });
@@ -29,9 +27,8 @@ export default async function WeddingWorkspaceLayout({
     notFound();
   }
 
-  const cookieStore = await cookies();
-  const locale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_KEY)?.value);
   const firstEventId = wedding.events[0]?.id;
+  const eventNamesById = Object.fromEntries(wedding.events.map((event) => [event.id, event.name]));
 
   const navigation: DashboardNavItem[] = [
     { id: "home", href: `/weddings/${weddingId}` },
@@ -50,21 +47,12 @@ export default async function WeddingWorkspaceLayout({
 
   return (
     <WeddingWorkspaceShell
-      weddingName={wedding.name}
-      weddingDateLabel={formatWeddingDate(wedding.date, locale)}
+      weddingId={weddingId}
       navigation={navigation}
+      eventNamesById={eventNamesById}
       currentUser={{ name: "Klaudia", email: "klaudia@example.com" }}
     >
       {children}
     </WeddingWorkspaceShell>
   );
-}
-
-function formatWeddingDate(value: Date | null, locale: string): string {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(value);
 }
