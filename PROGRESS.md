@@ -120,6 +120,7 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 - Phase 111 - Add-members list restricted to ungrouped guests only
 - Phase 112 - Non-blocking background post-save refresh for guests/relationships
 - Phase 113 - Optimistic guest add-to-group membership update
+- Phase 114 - Guest-list group color indicators with plus-one inheritance
 - Phase 115 - Table-first planning + sex-aware auto-seating
 - Phase 116 - Pair drag sex-side toggle
 - Phase 117 - Plan settings for pair-side preference
@@ -2957,14 +2958,9 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 - Phase 160 guest stats include +1 companions: pass (`typecheck`).
 - Phase 159 card border style consistency fix: pass (`typecheck`, `lint` with existing warnings only).
 - Phase 158 wedding guests dashboard view: pass (`typecheck`, `lint` with existing warnings only, `build`).
-- TypeScript: fail (pre-existing repository issues in `.next/types/validator.ts` missing `weddings/*` files and existing Prisma `GuestInclude.assignment` typing errors in seating-plan API routes).
-- Lint: pass with existing warnings.
-- i18n audit: pass.
-- Prisma migrations: pass (Phases 145-156 migrations applied, including backfills and new domain tables).
-- Prisma client generation: pass.
 - TypeScript: pass.
-- Lint: pass with warnings only (existing historical warnings + new non-blocking `exhaustive-deps` warnings in wedding pages).
-- Build: pass.
+- Lint: pass with existing warnings only.
+- i18n audit: fail on existing hardcoded text in `src/app/page.tsx` (`Open weddings`).
 
 ## How To Test
 
@@ -3015,7 +3011,6 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 - New wedding guests dashboard actions are still placeholder/no-op where backend flows are not yet wired (`import`, reminders/export, row action mutations).
 - Add Guest modal currently persists children as regular guests + event `requiresSeat`; explicit `isChild` persistence and wedding-level relationship metadata (`partner`/`plus_one`) remain TODO until dedicated API/schema support is added.
 - Existing lint warnings remain (pre-existing hook dependency warnings and `totalSeatCount` unused warning in `page.tsx`).
-- TypeScript currently fails from pre-existing repository/type artifacts unrelated to Phase 144 (`.next/types/validator.ts` `weddings/*` references and Prisma include typing mismatches on `assignment` in guest API routes).
 - New table filter in guest list currently targets assigned seat table (`assignment.tableId`), not planned table (`plannedTableId`).
 - Auto-seat warning messages are currently returned as backend strings and surfaced directly in info toasts.
 - Drag-to-table planned assignment is desktop-only (touch/mobile drag not added in this phase).
@@ -3030,16 +3025,4 @@ Phase 190 - Remove unused sidebar i18n keys (completed)
 
 ## Next Recommended Step
 
-- Run browser QA specifically for collapsed icon-rail behavior (tooltips, active state contrast, footer avatar row, and trigger sizing) across desktop breakpoints.
-- Move wedding workspace top headers into a shared route-group header contract to remove remaining per-page header duplication while keeping mobile sidebar trigger support.
-- Add a compact top KPI strip (without table-completion KPI) to mirror design even more closely while keeping overview density controlled.
-- Implement real per-event modules for Timeline, Tasks, and Notes tabs (replace placeholders with CRUD and persistence).
-- Connect remaining Guests page quick actions (`import`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.
-- Add dedicated wedding-level relationship and child metadata persistence APIs, then wire `AddGuestDialog` TODO payload fields to backend storage.
-- Connect dashboard quick actions (`task`, `note`, `schedule`) to real modules as those routes/pages are implemented.
-- Add dedicated `/weddings/[weddingId]/events` index page for richer multi-event management (create/edit/order) while keeping event workspace routes.
-- Resolve pre-existing TypeScript failures in `.next/types/validator.ts` and guest API `assignment` include typing so `corepack pnpm typecheck` returns green again.
-- Add Playwright/manual QA pass for pair-row expansion UX on both desktop and mobile drawer variants.
-- Finalize full domain migration by removing legacy `Guest.planId` dependence and making wedding/event scoping primary everywhere.
-- Add integration/API tests for wedding endpoints (RSVP, household, groups, vendor-event linking, expenses).
-- Incrementally migrate seating UI to consume wedding-scoped group data only and deprecate plan-scoped group endpoints.
+- Phase 191: replace hardcoded `Open weddings` text in `src/app/page.tsx` with translation keys so `corepack pnpm i18n:audit` passes again.
