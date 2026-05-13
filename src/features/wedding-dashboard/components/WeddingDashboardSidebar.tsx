@@ -65,6 +65,7 @@ export function WeddingDashboardSidebar({
   onPlaceholderAction,
 }: WeddingDashboardSidebarProps) {
   const { t } = useI18n();
+  const normalizedPath = normalizePath(currentPath);
 
   return (
     <div className="flex h-screen flex-col border-r border-zinc-200 bg-white">
@@ -87,7 +88,13 @@ export function WeddingDashboardSidebar({
         <nav className="flex flex-col gap-1">
           {navigation.map((item) => {
             const Icon = navIconById[item.id];
-            const isActive = item.href ? currentPath === item.href || currentPath.startsWith(`${item.href}/`) : false;
+            const isActive = item.href
+              ? isNavigationItemActive({
+                  itemId: item.id,
+                  currentPath: normalizedPath,
+                  href: item.href,
+                })
+              : false;
             const label = t(`dashboard.sidebar.nav.${item.id}`);
 
             if (item.href && !item.disabled) {
@@ -164,4 +171,34 @@ export function WeddingDashboardSidebar({
       </div>
     </div>
   );
+}
+
+function normalizePath(path: string): string {
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+}
+
+function isNavigationItemActive({
+  itemId,
+  currentPath,
+  href,
+}: {
+  itemId: DashboardNavItemId;
+  currentPath: string;
+  href: string;
+}): boolean {
+  const normalizedHref = normalizePath(href);
+  if (itemId === "home") {
+    return currentPath === normalizedHref;
+  }
+
+  if (itemId === "events") {
+    const eventIndex = normalizedHref.indexOf("/events/");
+    const eventsBase = eventIndex >= 0 ? normalizedHref.slice(0, eventIndex + "/events".length) : normalizedHref;
+    return currentPath === eventsBase || currentPath.startsWith(`${eventsBase}/`);
+  }
+
+  return currentPath === normalizedHref || currentPath.startsWith(`${normalizedHref}/`);
 }

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
+Phase 177 - Shared wedding workspace route-group layout + persistent shell (completed)
 
 ## Completed Phases
 
@@ -187,8 +187,46 @@ Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
 - Phase 174 - Event attendance card spacing-only refinement
 - Phase 175 - Event attendance card spacing pass (layout rhythm)
 - Phase 176 - Event timeline single-line labels + tighter time spacing
+- Phase 177 - Shared wedding workspace route-group layout + persistent shell
 
 ## Completed Work
+
+- Implemented Phase 177 shared wedding workspace route-group layout + persistent shell:
+  - moved wedding workspace routes into a dedicated route group:
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/dashboard/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/guests/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/events/[eventId]/page.tsx`
+  - added shared route-group layout and loading fallback:
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/loading.tsx`
+  - added reusable client shell wrapper:
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - centralizes sidebar + mobile sheet state once per route group
+    - exposes `openSidebar` hook for page-level headers
+  - refactored wedding pages to render content-only (removed duplicated sidebar/shell wrappers) while preserving page-specific headers/content
+  - updated `WeddingDashboardShell` to support optional `header` so the shared layout can own shell state
+  - fixed left-menu active-link behavior in `WeddingDashboardSidebar`:
+    - home is active only on `/weddings/[weddingId]`
+    - events stays active for all `/weddings/[weddingId]/events/*` routes
+    - guests/budget/vendors match by route prefix without false positives
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/loading.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/dashboard/page.tsx` (moved)
+    - `src/app/weddings/[weddingId]/(workspace)/guests/page.tsx` (moved)
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx` (moved)
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx` (moved)
+    - `src/app/weddings/[weddingId]/(workspace)/events/[eventId]/page.tsx` (moved)
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardShell.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 176 event timeline single-line labels + tighter time spacing:
   - removed the secondary description line from each timeline row so only the main label is displayed
@@ -2158,6 +2196,10 @@ Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
 
 ## Commands Run
 
+- `corepack pnpm exec next typegen` (pass; regenerated route types after route-group move in Phase 177)
+- `corepack pnpm typecheck` (initial fail on stale `.next` validators before typegen; pass after typegen; Phase 177 shared workspace layout)
+- `corepack pnpm lint` (pass with existing warnings, including pre-existing hook dependency warnings; Phase 177 shared workspace layout)
+
 - `corepack pnpm typecheck` (pass; Phase 176 event timeline single-line labels + tighter time spacing)
 
 - `corepack pnpm typecheck` (pass; Phase 175 event attendance card spacing pass)
@@ -2594,6 +2636,7 @@ Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
 
 ## Check Results
 
+- Phase 177 shared wedding workspace route-group layout + persistent shell: pass (`next typegen`, `typecheck`, `lint` with existing warnings only).
 - Phase 176 event timeline single-line labels + tighter time spacing: pass (`typecheck`).
 - Phase 175 event attendance card spacing pass: pass (`typecheck`).
 - Phase 174 event attendance card spacing-only refinement: pass (`typecheck`).
@@ -2680,11 +2723,13 @@ Phase 176 - Event timeline single-line labels + tighter time spacing (completed)
 - Existing historical i18n keys for the removed drag-time pair toggle remain in `canvas.*` and can be cleaned up in a later i18n tidy phase.
 - `Guest.planId` remains required for legacy compatibility; wedding-level guest creation currently attaches to the earliest seating plan in the wedding if present.
 - Legacy plan-scoped group APIs (`/api/seating-plans/[planId]/groups`) still exist alongside wedding-scoped groups (`/api/weddings/[weddingId]/groups`).
+- Wedding workspace top headers are currently rendered per-page inside content rather than centralized in the shared route-group layout (sidebar shell is shared and persistent).
 - Some new wedding pages still report non-blocking `react-hooks/exhaustive-deps` lint warnings.
 - `corepack pnpm i18n:audit` currently fails due a pre-existing hardcoded text (`Open weddings`) in `src/app/page.tsx`.
 
 ## Next Recommended Step
 
+- Move wedding workspace top headers into a shared route-group header contract to remove remaining per-page header duplication while keeping mobile sidebar trigger support.
 - Add a compact top KPI strip (without table-completion KPI) to mirror design even more closely while keeping overview density controlled.
 - Implement real per-event modules for Timeline, Tasks, and Notes tabs (replace placeholders with CRUD and persistence).
 - Connect remaining Guests page quick actions (`import`, row actions, reminders/export) to real wedding guest APIs and mutation dialogs.

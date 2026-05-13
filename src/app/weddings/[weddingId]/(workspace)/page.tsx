@@ -1,23 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/provider";
 import type { Locale } from "@/i18n/config";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { buildDashboardMockData } from "@/features/wedding-dashboard/dashboard.mock";
 import type { DashboardEventCard, DashboardQuickActionId, WeddingDashboardData } from "@/features/wedding-dashboard/types";
-import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
-import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/WeddingDashboardShell";
-import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
 import { WeddingDashboardHeader } from "@/features/wedding-dashboard/components/WeddingDashboardHeader";
 import { WeddingOverviewHero } from "@/features/wedding-dashboard/components/WeddingOverviewHero";
 import { WeddingEventsStrip } from "@/features/wedding-dashboard/components/WeddingEventsStrip";
 import { PlanningProgressSection } from "@/features/wedding-dashboard/components/PlanningProgressSection";
 import { DashboardWidgetsGrid } from "@/features/wedding-dashboard/components/DashboardWidgetsGrid";
 import { DashboardTipBanner } from "@/features/wedding-dashboard/components/DashboardTipBanner";
+import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 
 type WeddingDetailApiResponse = {
   wedding: {
@@ -59,14 +56,13 @@ type WeddingDashboardApiResponse = {
 export default function WeddingDashboardHomePage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
-  const pathname = usePathname();
   const router = useRouter();
   const { t, locale } = useI18n();
+  const { openSidebar } = useWeddingWorkspaceShell();
 
   const [data, setData] = useState<WeddingDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [placeholderKey, setPlaceholderKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -127,11 +123,6 @@ export default function WeddingDashboardHomePage() {
 
   const firstEventHref = useMemo(() => data?.events.find((event) => event.href)?.href, [data?.events]);
 
-  const weddingDateLabel = useMemo(() => {
-    if (!data) return "";
-    return formatDate(data.weddingDate, locale as Locale);
-  }, [data, locale]);
-
   if (isLoading || !data) {
     return <main className="p-6 text-sm text-zinc-600">{t("dashboard.states.loading")}</main>;
   }
@@ -165,80 +156,47 @@ export default function WeddingDashboardHomePage() {
 
   return (
     <>
-      <WeddingDashboardShell
-        sidebar={
-          <WeddingDashboardSidebar
-            weddingName={data.weddingName}
-            weddingDateLabel={weddingDateLabel}
-            currentPath={pathname}
-            navigation={data.navigation}
-            currentUser={data.currentUser}
-            onPlaceholderAction={handlePlaceholderAction}
-          />
-        }
-        mobileSidebar={
-          <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-            <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
-              <SheetTitle className="sr-only">{t("dashboard.sidebar.mobileTitle")}</SheetTitle>
-              <WeddingDashboardSidebar
-                weddingName={data.weddingName}
-                weddingDateLabel={weddingDateLabel}
-                currentPath={pathname}
-                navigation={data.navigation}
-                currentUser={data.currentUser}
-                onPlaceholderAction={(value) => {
-                  setIsMobileSidebarOpen(false);
-                  handlePlaceholderAction(value);
-                }}
-              />
-            </SheetContent>
-          </Sheet>
-        }
-        header={
-          <WeddingDashboardHeader
-            firstName={data.currentUser.name.split(" ")[0] ?? data.currentUser.name}
-            onOpenSidebar={() => setIsMobileSidebarOpen(true)}
-            onQuickAction={handleQuickAction}
-            onPlaceholderAction={handlePlaceholderAction}
-          />
-        }
-      >
-        <div className="flex flex-col gap-5">
-          <WeddingOverviewHero
-            overview={data.overview}
-            locale={locale as Locale}
-            onOpenDetails={() => handlePlaceholderAction("weddingDetails")}
-          />
+      <WeddingDashboardHeader
+        firstName={data.currentUser.name.split(" ")[0] ?? data.currentUser.name}
+        onOpenSidebar={openSidebar}
+        onQuickAction={handleQuickAction}
+        onPlaceholderAction={handlePlaceholderAction}
+      />
+      <div className="mt-5 flex flex-col gap-5">
+        <WeddingOverviewHero
+          overview={data.overview}
+          locale={locale as Locale}
+          onOpenDetails={() => handlePlaceholderAction("weddingDetails")}
+        />
 
-          <WeddingEventsStrip
-            events={data.events}
-            locale={locale as Locale}
-            onAddEvent={() => handlePlaceholderAction("addEvent")}
-          />
+        <WeddingEventsStrip
+          events={data.events}
+          locale={locale as Locale}
+          onAddEvent={() => handlePlaceholderAction("addEvent")}
+        />
 
-          <PlanningProgressSection
-            rows={data.planningProgress}
-            overview={data.overview}
-            notesCount={data.notesCount}
-            documentsCount={data.documentsCount}
-            locale={locale as Locale}
-            onPlaceholderAction={handlePlaceholderAction}
-          />
+        <PlanningProgressSection
+          rows={data.planningProgress}
+          overview={data.overview}
+          notesCount={data.notesCount}
+          documentsCount={data.documentsCount}
+          locale={locale as Locale}
+          onPlaceholderAction={handlePlaceholderAction}
+        />
 
-          <DashboardWidgetsGrid
-            tasks={data.upcomingTasks}
-            expenses={data.recentExpenses}
-            actions={data.quickActions}
-            currency={data.overview.currency}
-            totalSpentMinor={data.overview.spentMinor}
-            locale={locale as Locale}
-            onQuickAction={handleQuickAction}
-            onPlaceholderAction={handlePlaceholderAction}
-          />
+        <DashboardWidgetsGrid
+          tasks={data.upcomingTasks}
+          expenses={data.recentExpenses}
+          actions={data.quickActions}
+          currency={data.overview.currency}
+          totalSpentMinor={data.overview.spentMinor}
+          locale={locale as Locale}
+          onQuickAction={handleQuickAction}
+          onPlaceholderAction={handlePlaceholderAction}
+        />
 
-          <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")}/>
-        </div>
-      </WeddingDashboardShell>
+        <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")} />
+      </div>
 
       <Dialog open={placeholderKey !== null} onOpenChange={(open) => { if (!open) setPlaceholderKey(null); }}>
         <DialogContent closeLabel={t("common.close")}>

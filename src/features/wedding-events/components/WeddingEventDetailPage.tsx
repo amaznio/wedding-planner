@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   CalendarClock,
@@ -32,12 +32,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
-import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/WeddingDashboardShell";
-import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
+import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 import { buildEventDetailMockData } from "@/features/wedding-events/event-detail.mock";
 import type {
   EventCommandCenterData,
@@ -145,8 +143,8 @@ const categoryKeys = [
 
 export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetailPageProps) {
   const { t, locale } = useI18n();
-  const pathname = usePathname();
   const router = useRouter();
+  const { openSidebar } = useWeddingWorkspaceShell();
 
   const mockData = useMemo(
     () =>
@@ -170,7 +168,6 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<EventTabId>("overview");
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [planName, setPlanName] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
 
@@ -349,40 +346,12 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
     data.event.guests.total > 0 ? Math.round((data.event.guests.confirmed / data.event.guests.total) * 100) : 0;
 
   if (isLoading) {
-    return <main className="p-6 text-sm text-zinc-600">{t("events.detail.states.loading")}</main>;
+    return <div className="p-6 text-sm text-zinc-600">{t("events.detail.states.loading")}</div>;
   }
 
   return (
-    <WeddingDashboardShell
-      sidebar={(
-        <WeddingDashboardSidebar
-          weddingName={data.weddingName}
-          weddingDateLabel={data.weddingDateLabel}
-          currentPath={pathname}
-          navigation={data.navigation}
-          currentUser={data.currentUser}
-          onPlaceholderAction={() => undefined}
-        />
-      )}
-      mobileSidebar={(
-        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-          <SheetContent side="left" className="w-[88vw] max-w-[320px] p-0">
-            <SheetTitle className="sr-only">{t("dashboard.sidebar.mobileTitle")}</SheetTitle>
-            <WeddingDashboardSidebar
-              weddingName={data.weddingName}
-              weddingDateLabel={data.weddingDateLabel}
-              currentPath={pathname}
-              navigation={data.navigation}
-              currentUser={data.currentUser}
-              onPlaceholderAction={() => {
-                setIsMobileSidebarOpen(false);
-              }}
-            />
-          </SheetContent>
-        </Sheet>
-      )}
-      header={(
-        <header className="flex flex-col gap-4 px-4 py-4 sm:px-6">
+    <>
+      <header className="flex flex-col gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm text-zinc-500">
               <Button
@@ -390,7 +359,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                 variant="ghost"
                 size="icon"
                 className="lg:hidden"
-                onClick={() => setIsMobileSidebarOpen(true)}
+                onClick={openSidebar}
                 aria-label={t("dashboard.header.openSidebar")}
               >
                 <Menu className="size-4" />
@@ -442,10 +411,8 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               </span>
             </div>
           </div>
-        </header>
-      )}
-    >
-      <div className="flex flex-col gap-5">
+      </header>
+      <div className="mt-5 flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-1">
           {eventTabs.map((tab) => {
             const Icon = tab.icon;
@@ -777,7 +744,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           </Card>
         ) : null}
       </div>
-    </WeddingDashboardShell>
+    </>
   );
 }
 

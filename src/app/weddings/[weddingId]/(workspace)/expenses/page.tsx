@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 
 type Expense = {
   id: string;
@@ -15,6 +18,7 @@ type Expense = {
 export default function WeddingExpensesPage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
+  const { openSidebar } = useWeddingWorkspaceShell();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -83,8 +87,19 @@ export default function WeddingExpensesPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 bg-zinc-50 p-6">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       <header className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="mb-3 lg:hidden">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={openSidebar}
+            aria-label="Open sidebar"
+          >
+            <Menu className="size-4" />
+          </Button>
+        </div>
         <h1 className="text-2xl font-semibold text-zinc-900">Expenses</h1>
         <p className="text-sm text-zinc-600">Total tracked: {totalMinor}</p>
       </header>
