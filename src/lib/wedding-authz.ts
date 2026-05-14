@@ -2,7 +2,7 @@ import type { WeddingMemberRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import type { AuthSession } from "@/lib/auth";
-import { requireAuthSession } from "@/lib/auth-session";
+import { getAuthSession, requireAuthSession } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 
 const ROLE_RANK: Record<WeddingMemberRole, number> = {
@@ -37,6 +37,9 @@ export type EventRoleAuthResult = WeddingRoleAuthResult & {
 export type SeatingPlanRoleAuthResult = WeddingRoleAuthResult & {
   planId: string | null;
   isStandalonePlan: boolean;
+  isPublicRead: boolean;
+  isPublicAccess: boolean;
+  canEdit: boolean;
 };
 
 function forbiddenResponse() {
@@ -199,10 +202,11 @@ export async function requireSeatingPlanRole(
   planId: string,
   minRole: WeddingMemberRole,
 ): Promise<SeatingPlanRoleAuthResult> {
-  const { session, unauthorized } = await requireAuthSession();
-  if (unauthorized || !session) {
+  const session = await getAuthSession();
+
+  if (!session && minRole !== "viewer") {
     return {
-      response: unauthorized,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
       session: null,
       userId: null,
       planId: null,
@@ -210,6 +214,9 @@ export async function requireSeatingPlanRole(
       role: null,
       access: null,
       isStandalonePlan: false,
+      isPublicRead: false,
+      isPublicAccess: false,
+      canEdit: false,
     };
   }
 
@@ -217,6 +224,7 @@ export async function requireSeatingPlanRole(
     where: { id: planId },
     select: {
       id: true,
+      isPublicRead: true,
       event: {
         select: {
           weddingId: true,
@@ -228,17 +236,53 @@ export async function requireSeatingPlanRole(
   if (!plan) {
     return {
       response: notFoundResponse("Seating plan not found"),
-      session,
-      userId: session.user.id,
+      session: session ?? null,
+      userId: session?.user.id ?? null,
       planId: null,
       weddingId: null,
       role: null,
       access: null,
       isStandalonePlan: false,
+      isPublicRead: false,
+      isPublicAccess: false,
+      canEdit: false,
     };
   }
 
   const weddingId = plan.event?.weddingId ?? null;
+  const isPublicRead = plan.isPublicRead;
+
+  if (!session) {
+    if (minRole === "viewer" && weddingId && isPublicRead) {
+      return {
+        response: null,
+        session: null,
+        userId: null,
+        planId: plan.id,
+        weddingId,
+        role: null,
+        access: null,
+        isStandalonePlan: false,
+        isPublicRead: true,
+        isPublicAccess: true,
+        canEdit: false,
+      };
+    }
+
+    return {
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      session: null,
+      userId: null,
+      planId: null,
+      weddingId: null,
+      role: null,
+      access: null,
+      isStandalonePlan: false,
+      isPublicRead,
+      isPublicAccess: false,
+      canEdit: false,
+    };
+  }
 
   if (!weddingId) {
     return {
@@ -250,11 +294,30 @@ export async function requireSeatingPlanRole(
       role: null,
       access: null,
       isStandalonePlan: true,
+      isPublicRead,
+      isPublicAccess: false,
+      canEdit: true,
     };
   }
 
   const role = await resolveWeddingMembershipRole(weddingId, session.user.id);
   if (!role) {
+    if (minRole === "viewer" && isPublicRead) {
+      return {
+        response: null,
+        session,
+        userId: session.user.id,
+        planId: plan.id,
+        weddingId,
+        role: null,
+        access: null,
+        isStandalonePlan: false,
+        isPublicRead,
+        isPublicAccess: true,
+        canEdit: false,
+      };
+    }
+
     return {
       response: forbiddenResponse(),
       session,
@@ -264,6 +327,9 @@ export async function requireSeatingPlanRole(
       role: null,
       access: null,
       isStandalonePlan: false,
+      isPublicRead,
+      isPublicAccess: false,
+      canEdit: false,
     };
   }
 
@@ -277,6 +343,9 @@ export async function requireSeatingPlanRole(
       role,
       access: buildWeddingAccess(role),
       isStandalonePlan: false,
+      isPublicRead,
+      isPublicAccess: false,
+      canEdit: role === "owner" || role === "editor",
     };
   }
 
@@ -289,5 +358,8 @@ export async function requireSeatingPlanRole(
     role,
     access: buildWeddingAccess(role),
     isStandalonePlan: false,
+    isPublicRead,
+    isPublicAccess: false,
+    canEdit: role === "owner" || role === "editor",
   };
 }

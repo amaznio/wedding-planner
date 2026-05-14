@@ -37,7 +37,18 @@ export async function GET(_: Request, context: RouteContext) {
     return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ plan, access: authz.access });
+  return NextResponse.json({
+    plan,
+    access: {
+      role: authz.role,
+      canEdit: authz.canEdit,
+      isPublicRead: authz.isPublicRead,
+      isPublicViewer: authz.isPublicAccess,
+      isStandalonePlan: authz.isStandalonePlan,
+      canManageMembers: authz.access?.canManageMembers ?? false,
+      canDeleteWedding: authz.access?.canDeleteWedding ?? false,
+    },
+  });
 }
 
 export async function PUT(request: Request, context: RouteContext) {

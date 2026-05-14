@@ -87,6 +87,7 @@ type SeatingCanvasProps = {
   onGuestDropToTable?: (tableId: string, guestId: string) => Promise<void> | void;
   pairSidePreference?: PairSidePreference;
   relationshipsByGuestId?: Record<string, SeatingRelationship[]>;
+  readOnly?: boolean;
 };
 
 export type SeatingCanvasHandle = {
@@ -124,6 +125,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onGuestDropToTable,
   pairSidePreference,
   relationshipsByGuestId = {},
+  readOnly = false,
 }, ref) {
   const { t } = useI18n();
   const relationshipTypeLabel: Record<SeatingRelationship["type"], string> = {
@@ -617,6 +619,12 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           {seatMenuError}
         </div>
       ) : null}
+      {readOnly ? (
+        <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600">
+          {menuSeatAssignment ? t("editor.occupied") : t("editor.empty")}
+        </div>
+      ) : (
+        <>
       <div className="mb-2 flex items-center gap-1">
         <Button
           type="button"
@@ -769,6 +777,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
       >
         {t("canvas.unassignSeat")}
       </button>
+        </>
+      )}
     </>
   ) : null;
   const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
@@ -841,6 +851,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
           backgroundSize: "24px 24px",
         }}
       >
+        {!readOnly && onAddTable ? (
         <div
           className="absolute right-3 top-3 z-20 hidden lg:block"
           onPointerDown={(event) => event.stopPropagation()}
@@ -865,6 +876,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        ) : null}
         {!mobileMode ? (
           <div className="absolute left-1/2 top-3 z-20 hidden -translate-x-1/2 lg:block">
             <span className="inline-flex h-8 items-center rounded-full border border-zinc-200/90 bg-white/95 px-3 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur">
@@ -982,7 +994,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             </Popover>
           </div>
         ) : null}
-        {mobileMode ? (
+        {mobileMode && !readOnly ? (
           <div
             className="absolute left-3 right-3 top-3 z-20 flex items-center justify-between"
             onPointerDown={(event) => event.stopPropagation()}

@@ -25,6 +25,7 @@ type SeatingToolbarProps = {
   onPlanNameChange: (name: string) => void;
   onSave: () => void;
   onOpenPlanSettings?: () => void;
+  readOnly?: boolean;
 };
 
 export function SeatingToolbar({
@@ -35,6 +36,7 @@ export function SeatingToolbar({
   onPlanNameChange,
   onSave,
   onOpenPlanSettings,
+  readOnly = false,
 }: SeatingToolbarProps) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
@@ -67,42 +69,48 @@ export function SeatingToolbar({
     <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
       <div className="hidden h-12 items-center md:flex">
         <div className="flex min-w-0 items-center gap-2">
-          <Input
-            value={planName}
-            onChange={(event) => onPlanNameChange(event.target.value)}
-            className="h-9 border-transparent bg-zinc-50 text-base font-semibold"
-            style={{ width: `${titleWidthCh}ch` }}
-            aria-label={t("toolbar.planName")}
-          />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-9 px-3 text-xs"
-                onClick={onSave}
-                disabled={saveState === "saving"}
-                aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
-              >
-                <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                  <path d="M17 21v-8H7v8" />
-                  <path d="M7 3v5h8" />
-                </svg>
-                {t("common.save")}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {saveState === "saving" ? t("common.saving") : t("common.save")}
-            </TooltipContent>
-          </Tooltip>
-          <Badge variant="secondary" className="h-6 px-2 text-[11px]">
-            {statusText}
-          </Badge>
+          {readOnly ? (
+            <p className="truncate text-base font-semibold text-zinc-900">{planName}</p>
+          ) : (
+            <>
+              <Input
+                value={planName}
+                onChange={(event) => onPlanNameChange(event.target.value)}
+                className="h-9 border-transparent bg-zinc-50 text-base font-semibold"
+                style={{ width: `${titleWidthCh}ch` }}
+                aria-label={t("toolbar.planName")}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 px-3 text-xs"
+                    onClick={onSave}
+                    disabled={saveState === "saving"}
+                    aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
+                  >
+                    <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                      <path d="M17 21v-8H7v8" />
+                      <path d="M7 3v5h8" />
+                    </svg>
+                    {t("common.save")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {saveState === "saving" ? t("common.saving") : t("common.save")}
+                </TooltipContent>
+              </Tooltip>
+              <Badge variant="secondary" className="h-6 px-2 text-[11px]">
+                {statusText}
+              </Badge>
+            </>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {onOpenPlanSettings ? (
+          {onOpenPlanSettings && !readOnly ? (
             <Button
               type="button"
               variant="outline"
@@ -141,7 +149,7 @@ export function SeatingToolbar({
             </svg>
           </Button>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2">
-            {isMobileEditingTitle ? (
+            {isMobileEditingTitle && !readOnly ? (
               <Input
                 value={planName}
                 onChange={(event) => onPlanNameChange(event.target.value)}
@@ -153,36 +161,40 @@ export function SeatingToolbar({
                 {planName}
               </p>
             )}
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-7 w-7 p-0"
-              aria-label={
-                isMobileEditingTitle ? t("toolbar.doneEditingTitle") : t("toolbar.editTitle")
-              }
-              onClick={() => setIsMobileEditingTitle((current) => !current)}
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-              </svg>
-            </Button>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                aria-label={
+                  isMobileEditingTitle ? t("toolbar.doneEditingTitle") : t("toolbar.editTitle")
+                }
+                onClick={() => setIsMobileEditingTitle((current) => !current)}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </Button>
+            ) : null}
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              onClick={onSave}
-              disabled={saveState === "saving"}
-              aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                <path d="M17 21v-8H7v8" />
-                <path d="M7 3v5h8" />
-              </svg>
-            </Button>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                onClick={onSave}
+                disabled={saveState === "saving"}
+                aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                  <path d="M17 21v-8H7v8" />
+                  <path d="M7 3v5h8" />
+                </svg>
+              </Button>
+            ) : null}
           </div>
         </div>
         <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>

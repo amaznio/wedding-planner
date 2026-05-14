@@ -129,7 +129,38 @@
     "pairSideAuto": "Auto",
     "pairSideMaleLeft": "Boy left",
     "pairSideFemaleLeft": "Girl left",
-    "pairSideHelp": "Default side preference used when auto-placing adjacent mixed-sex pairs."
+    "pairSideHelp": "Default side preference used when auto-placing adjacent mixed-sex pairs.",
+    "publicRead": "Public read access",
+    "publicReadHelp": "Anyone with this plan URL can view the layout without signing in.",
+    "publicReadEnabled": "Public read access enabled",
+    "publicReadDisabled": "Public read access disabled",
+    "publicReadUpdateError": "Failed to update public sharing"
+  },
+  "seatingAccess": {
+    "unauthenticated": {
+      "title": "This seating plan is private",
+      "description": "Sign in to check whether you have access to this plan."
+    },
+    "forbidden": {
+      "title": "You don’t have access to this seating plan",
+      "description": "This plan is visible only to wedding collaborators.",
+      "help": "Ask the wedding owner to add you as a collaborator."
+    },
+    "notFound": {
+      "title": "This seating plan link is invalid or no longer available",
+      "description": "Check the URL or ask for a new link."
+    },
+    "generic": {
+      "title": "Failed to load seating plan",
+      "description": "Something went wrong while loading this plan. Try again."
+    },
+    "actions": {
+      "signIn": "Sign in",
+      "goWeddings": "Go to my weddings",
+      "goPlans": "Back to seating plans",
+      "goHome": "Back to home",
+      "retry": "Try again"
+    }
   },
   "guestPanel": {
     "title": "Guests",

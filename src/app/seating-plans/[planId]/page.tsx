@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { AlertTriangle, Link2Off, LockKeyhole, ShieldAlert } from "lucide-react";
 
 import { InspectorPanel } from "@/features/seating-editor/components/InspectorPanel";
 import { SeatingCanvas } from "@/features/seating-editor/components/SeatingCanvas";
@@ -41,6 +42,7 @@ type GuestSex = "male" | "female" | "unknown";
 type ApiPlan = {
   id: string;
   name: string;
+  isPublicRead: boolean;
   width: number;
   height: number;
   pairSidePreference?: "auto" | "male-left" | "female-left";
@@ -122,6 +124,19 @@ type BatchMoveAssignmentsResponse = {
 
 type ApiRelationship = SeatingRelationship;
 
+type ApiPlanAccess = {
+  role: "owner" | "editor" | "viewer" | null;
+  canEdit: boolean;
+  isPublicRead: boolean;
+  isPublicViewer: boolean;
+  isStandalonePlan: boolean;
+};
+
+type PlanAccessError = {
+  kind: "unauthenticated" | "forbidden" | "notFound" | "generic";
+  message?: string;
+};
+
 function normalizePlan(plan: ApiPlan): SeatingPlan {
   return {
     id: plan.id,
@@ -143,6 +158,7 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
 }
 
 export default function SeatingPlanEditorPage() {
+  const router = useRouter();
   const { t } = useI18n();
   const params = useParams<{ planId: string }>();
   const planId = params.planId;
@@ -169,7 +185,7 @@ export default function SeatingPlanEditorPage() {
   } = useSeatingEditorStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<PlanAccessError | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isTableDragging, setIsTableDragging] = useState(false);
@@ -207,6 +223,9 @@ export default function SeatingPlanEditorPage() {
     notes: string;
   }>({ name: "", sex: "unknown", groupId: null, notes: "" });
   const [showGroupColors, setShowGroupColors] = useState(false);
+  const [planAccess, setPlanAccess] = useState<ApiPlanAccess | null>(null);
+  const [isPublicRead, setIsPublicRead] = useState(false);
+  const [isUpdatingSharing, setIsUpdatingSharing] = useState(false);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const savePlanRef = useRef<(source: "manual" | "auto") => Promise<void>>(async () => {});
@@ -215,6 +234,7 @@ export default function SeatingPlanEditorPage() {
   const isTableDraggingRef = useRef(false);
   const isDirtyRef = useRef(isDirty);
   const planRef = useRef(plan);
+  const canEdit = planAccess?.canEdit ?? true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -444,13 +464,33 @@ export default function SeatingPlanEditorPage() {
         const planResponse = await fetch(`/api/seating-plans/${planId}`, {
           cache: "no-store",
         });
-        if (!planResponse.ok) throw new Error("Failed to load seating plan");
 
-        const planData = (await planResponse.json()) as { plan: ApiPlan };
+        if (!planResponse.ok) {
+          const errorPayload = (await planResponse.json().catch(() => null)) as { error?: string } | null;
+          const message = errorPayload?.error;
+
+          if (planResponse.status === 401) {
+            setLoadError({ kind: "unauthenticated", message });
+          } else if (planResponse.status === 403) {
+            setLoadError({ kind: "forbidden", message });
+          } else if (planResponse.status === 404) {
+            setLoadError({ kind: "notFound", message });
+          } else {
+            setLoadError({ kind: "generic", message: message ?? t("editor.loadError") });
+          }
+          return;
+        }
+
+        const planData = (await planResponse.json()) as { plan: ApiPlan; access?: ApiPlanAccess };
         setPlan(normalizePlan(planData.plan));
+        setPlanAccess(planData.access ?? null);
+        setIsPublicRead(Boolean(planData.access?.isPublicRead ?? planData.plan.isPublicRead));
         await Promise.all([loadGuests(), loadGroups(), loadRelationships()]);
       } catch (error) {
-        setLoadError(error instanceof Error ? error.message : t("editor.loadError"));
+        setLoadError({
+          kind: "generic",
+          message: error instanceof Error ? error.message : t("editor.loadError"),
+        });
       } finally {
         setIsLoading(false);
       }
@@ -775,6 +815,14 @@ export default function SeatingPlanEditorPage() {
         target?.getAttribute("contenteditable") === "true";
       if (isTypingInField) return;
 
+      if (!canEdit) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          clearSelection();
+        }
+        return;
+      }
+
       if ((event.key === "Delete" || event.key === "Backspace") && selectedTableId) {
         event.preventDefault();
         deleteSelectedTable();
@@ -826,6 +874,7 @@ export default function SeatingPlanEditorPage() {
     deleteSelectedTable,
     guests,
     handleSelectGuest,
+    canEdit,
     selectedGuest,
     selectedGuestId,
     selectedTableId,
@@ -999,6 +1048,57 @@ export default function SeatingPlanEditorPage() {
   const handleOpenLegend = useCallback(() => {
     window.dispatchEvent(new Event("mobile-open-legend"));
   }, []);
+
+  const handleTogglePublicRead = useCallback(
+    async (nextValue: boolean) => {
+      if (!canEdit || isUpdatingSharing) return;
+
+      const previous = isPublicRead;
+      setIsPublicRead(nextValue);
+      setIsUpdatingSharing(true);
+
+      try {
+        const response = await fetch(`/api/seating-plans/${planId}/sharing`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPublicRead: nextValue }),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(errorData?.error ?? "Failed to update sharing settings");
+        }
+
+        const payload = (await response.json()) as {
+          plan?: { isPublicRead: boolean };
+          access?: ApiPlanAccess;
+        };
+
+        const resolvedPublicRead = payload.plan?.isPublicRead ?? nextValue;
+        setIsPublicRead(resolvedPublicRead);
+        if (payload.access) {
+          setPlanAccess(payload.access);
+        }
+        toast({
+          title: t("toasts.success"),
+          description: resolvedPublicRead
+            ? t("planSettings.publicReadEnabled")
+            : t("planSettings.publicReadDisabled"),
+          variant: "success",
+        });
+      } catch (error) {
+        setIsPublicRead(previous);
+        toast({
+          title: t("editor.saveTitleError"),
+          description: error instanceof Error ? error.message : t("planSettings.publicReadUpdateError"),
+          variant: "destructive",
+        });
+      } finally {
+        setIsUpdatingSharing(false);
+      }
+    },
+    [canEdit, isPublicRead, isUpdatingSharing, planId, t],
+  );
 
   const handleCreateGroup = useCallback(
     async (name: string) => {
@@ -1647,9 +1747,133 @@ export default function SeatingPlanEditorPage() {
   }
 
   if (loadError) {
+    const primaryButtonByKind: Record<PlanAccessError["kind"], { label: string; onClick: () => void }> = {
+      unauthenticated: {
+        label: t("seatingAccess.actions.signIn"),
+        onClick: () => router.push(`/sign-in?next=${encodeURIComponent(`/seating-plans/${planId}`)}`),
+      },
+      forbidden: {
+        label: t("seatingAccess.actions.goWeddings"),
+        onClick: () => router.push("/weddings"),
+      },
+      notFound: {
+        label: t("seatingAccess.actions.goPlans"),
+        onClick: () => router.push("/seating-plans"),
+      },
+      generic: {
+        label: t("seatingAccess.actions.retry"),
+        onClick: () => window.location.reload(),
+      },
+    };
+
+    const secondaryButtonByKind: Record<PlanAccessError["kind"], { label: string; onClick: () => void }> = {
+      unauthenticated: {
+        label: t("seatingAccess.actions.goHome"),
+        onClick: () => router.push("/"),
+      },
+      forbidden: {
+        label: t("seatingAccess.actions.goPlans"),
+        onClick: () => router.push("/seating-plans"),
+      },
+      notFound: {
+        label: t("seatingAccess.actions.goHome"),
+        onClick: () => router.push("/"),
+      },
+      generic: {
+        label: t("seatingAccess.actions.goPlans"),
+        onClick: () => router.push("/seating-plans"),
+      },
+    };
+
+    const iconByKind: Record<PlanAccessError["kind"], ReactNode> = {
+      unauthenticated: <LockKeyhole className="size-5 text-amber-600" />,
+      forbidden: <ShieldAlert className="size-5 text-amber-600" />,
+      notFound: <Link2Off className="size-5 text-zinc-600" />,
+      generic: <AlertTriangle className="size-5 text-red-600" />,
+    };
+
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-50 p-6">
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</div>
+        <section className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-zinc-100">
+            {iconByKind[loadError.kind]}
+          </div>
+          <h1 className="text-xl font-semibold text-zinc-900">
+            {t(`seatingAccess.${loadError.kind}.title`)}
+          </h1>
+          <p className="mt-2 text-sm text-zinc-600">
+            {t(`seatingAccess.${loadError.kind}.description`)}
+          </p>
+          {loadError.message ? (
+            <p className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500">
+              {loadError.message}
+            </p>
+          ) : null}
+          {loadError.kind === "forbidden" ? (
+            <p className="mt-3 text-xs text-zinc-500">{t("seatingAccess.forbidden.help")}</p>
+          ) : null}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button onClick={primaryButtonByKind[loadError.kind].onClick}>
+              {primaryButtonByKind[loadError.kind].label}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={secondaryButtonByKind[loadError.kind].onClick}
+            >
+              {secondaryButtonByKind[loadError.kind].label}
+            </Button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <main className="bg-zinc-50">
+        <div className={`${isDesktopViewport ? "min-h-dvh lg:h-dvh" : "h-dvh"} flex flex-col overflow-hidden`}>
+          <SeatingToolbar
+            planName={plan.name}
+            isDirty={false}
+            saveState="idle"
+            lastSavedLabel={null}
+            onPlanNameChange={() => {}}
+            onSave={() => {}}
+            readOnly
+          />
+          <div className="relative min-h-0 flex-1 overflow-hidden border-t border-zinc-200 bg-zinc-100/40">
+            <SeatingCanvas
+              plan={plan}
+              selectedTableId={canvasHighlightedTableId ?? undefined}
+              selectedSeat={selectedSeat}
+              onSelectSeat={selectSeat}
+              seatAssignments={seatAssignments}
+              tableLabelById={tableLabelById}
+              selectedGuestId={selectedGuestId}
+              guests={guests.map((guest) => ({
+                id: guest.id,
+                name: guest.name,
+                sex: guest.sex,
+                plannedTableId: guest.plannedTableId,
+                plusOneHostGuestId: guest.plusOneHostGuestId,
+                group: guest.group,
+                assignment: guest.assignment
+                  ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
+                  : null,
+              }))}
+              showGroupColors={showGroupColors}
+              onToggleGroupColors={() => setShowGroupColors((current) => !current)}
+              enableTableDrag={false}
+              enableSeatDrag={false}
+              pairSidePreference={
+                plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
+              }
+              relationshipsByGuestId={relationshipsByGuestId}
+              mobileMode={!isDesktopViewport}
+              readOnly
+            />
+          </div>
+        </div>
       </main>
     );
   }
@@ -2077,6 +2301,24 @@ export default function SeatingPlanEditorPage() {
                   <h3 className="text-sm font-semibold text-zinc-900">{t("planSettings.title")}</h3>
                 </div>
                 <div className="space-y-3 border-t border-zinc-200 px-4 py-4">
+                  <div className="space-y-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium text-zinc-700">
+                          {t("planSettings.publicRead")}
+                        </p>
+                        <p className="text-xs text-zinc-500">{t("planSettings.publicReadHelp")}</p>
+                      </div>
+                      <Switch
+                        checked={isPublicRead}
+                        onCheckedChange={(checked) => {
+                          void handleTogglePublicRead(checked);
+                        }}
+                        disabled={isUpdatingSharing}
+                        aria-label={t("planSettings.publicRead")}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-zinc-600">
                       {t("planSettings.pairSidePreference")}
@@ -2325,6 +2567,24 @@ export default function SeatingPlanEditorPage() {
             </SheetTitle>
             <div className="min-h-0 flex-1 overflow-y-auto border-t border-zinc-200 px-4 py-4">
               <div className="space-y-3">
+                <div className="space-y-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-zinc-700">
+                        {t("planSettings.publicRead")}
+                      </p>
+                      <p className="text-xs text-zinc-500">{t("planSettings.publicReadHelp")}</p>
+                    </div>
+                    <Switch
+                      checked={isPublicRead}
+                      onCheckedChange={(checked) => {
+                        void handleTogglePublicRead(checked);
+                      }}
+                      disabled={isUpdatingSharing}
+                      aria-label={t("planSettings.publicRead")}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium text-zinc-600">
                     {t("planSettings.pairSidePreference")}

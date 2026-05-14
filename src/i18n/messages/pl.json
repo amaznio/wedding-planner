@@ -129,7 +129,38 @@
     "pairSideAuto": "Auto",
     "pairSideMaleLeft": "Chłopak po lewej",
     "pairSideFemaleLeft": "Dziewczyna po lewej",
-    "pairSideHelp": "Domyślna preferencja strony używana przy automatycznym sadzaniu par różnej płci obok siebie."
+    "pairSideHelp": "Domyślna preferencja strony używana przy automatycznym sadzaniu par różnej płci obok siebie.",
+    "publicRead": "Publiczny podgląd",
+    "publicReadHelp": "Każdy z linkiem do tego planu może go wyświetlić bez logowania.",
+    "publicReadEnabled": "Włączono publiczny podgląd",
+    "publicReadDisabled": "Wyłączono publiczny podgląd",
+    "publicReadUpdateError": "Nie udało się zaktualizować udostępniania"
+  },
+  "seatingAccess": {
+    "unauthenticated": {
+      "title": "Ten plan stołów jest prywatny",
+      "description": "Zaloguj się, aby sprawdzić, czy masz dostęp do tego planu."
+    },
+    "forbidden": {
+      "title": "Nie masz dostępu do tego planu stołów",
+      "description": "Ten plan jest widoczny tylko dla współpracowników wesela.",
+      "help": "Poproś właściciela wesela o dodanie Cię jako współpracownika."
+    },
+    "notFound": {
+      "title": "Link do tego planu jest nieprawidłowy lub już niedostępny",
+      "description": "Sprawdź adres URL albo poproś o nowy link."
+    },
+    "generic": {
+      "title": "Nie udało się wczytać planu stołów",
+      "description": "Wystąpił błąd podczas wczytywania planu. Spróbuj ponownie."
+    },
+    "actions": {
+      "signIn": "Zaloguj się",
+      "goWeddings": "Przejdź do moich wesel",
+      "goPlans": "Wróć do planów stołów",
+      "goHome": "Wróć na stronę główną",
+      "retry": "Spróbuj ponownie"
+    }
   },
   "guestPanel": {
     "title": "Goście",

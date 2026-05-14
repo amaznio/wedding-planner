@@ -43,7 +43,6 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
   const [removeTarget, setRemoveTarget] = useState<WeddingCollaborator | null>(null);
 
   const canManageMembers = access?.canManageMembers ?? false;
-  const isOwner = access?.role === "owner";
 
   const loadMembers = useCallback(async () => {
     const response = await fetch(`/api/weddings/${weddingId}/members`, { cache: "no-store" });
@@ -202,15 +201,9 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
     }
   }, [loadMembers, removeTarget, t, weddingId]);
 
-  const scrollToInviteCard = () => {
-    const inviteSection = document.getElementById("invite-people-card");
-    if (!inviteSection) return;
-    inviteSection.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-2">
-      <CollaboratorsHeader isOwner={isOwner} onInviteClick={scrollToInviteCard} />
+      <CollaboratorsHeader />
 
       {error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

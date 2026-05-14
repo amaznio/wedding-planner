@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 214 - Seat drop no longer auto-opens right inspector (completed)
+Phase 217 - Collaborators header action removal (completed)
 
 ## Completed Phases
 
@@ -226,8 +226,99 @@ Phase 214 - Seat drop no longer auto-opens right inspector (completed)
 - Phase 212 - Collaborator chips context + single-line solidity refactor
 - Phase 213 - Collaborator chips micro-typography reduction
 - Phase 214 - Seat drop no longer auto-opens right inspector
+- Phase 215 - Seating plan public-read sharing + viewer-only editor enforcement
+- Phase 216 - Seating plan access-denied UX states
+- Phase 217 - Collaborators header action removal
 
 ## Completed Work
+
+- Implemented Phase 217 collaborators header action removal:
+  - removed header-right notification bell and invite button from collaborators page heading
+  - simplified `CollaboratorsHeader` API by removing owner/invite props and action rendering
+  - removed unused invite-scroll handler and owner flag usage from collaborators page
+  - kept invite functionality in the existing invite card section unchanged
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorsHeader.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+  - known issues:
+    - no new issues introduced
+  - next recommended step:
+    - optionally tailor subtitle text by role again (owner/viewer) if you still want role-aware copy without header actions
+
+- Implemented Phase 216 seating plan access-denied UX states:
+  - replaced generic seating plan load failure with explicit access state UI for:
+    - unauthenticated/private (`401`)
+    - authenticated but no membership/private (`403`)
+    - invalid/missing plan (`404`)
+    - generic load failure fallback
+  - mapped `/api/seating-plans/[planId]` response status codes to dedicated state variants in seating plan page loader
+  - added action-oriented CTAs per state:
+    - sign in with `next=/seating-plans/[planId]`
+    - go to weddings
+    - back to plans/home
+    - retry on generic errors
+  - retained optional backend error detail rendering in a subtle helper panel
+  - added localized EN/PL copy for all new access states and actions under `seatingAccess.*`
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - existing pre-phase lint warnings remain in seating-plan/canvas hooks (unchanged)
+  - next recommended step:
+    - add a lightweight branded illustration/icon treatment per state for stronger visual distinction (optional polish)
+
+- Implemented Phase 215 seating plan public-read sharing + viewer-only editor enforcement:
+  - added per-plan public-read sharing model field:
+    - `SeatingPlan.isPublicRead` with default `false`
+    - migration: `20260514150000_add_seating_plan_public_read`
+  - updated seating authz to allow anonymous/non-member viewer reads for event-linked public plans:
+    - `viewer` reads can be public when `isPublicRead=true`
+    - `editor+` mutations remain protected and require editor/owner membership
+    - standalone seating plans keep legacy authenticated behavior
+  - extended plan GET access payload for frontend role gating:
+    - role/canEdit/public flags/standalone flag
+  - added sharing endpoint:
+    - `PATCH /api/seating-plans/[planId]/sharing` with `{ isPublicRead }`
+    - authz: `editor+`
+    - standalone plans rejected for sharing toggle in this phase
+  - added viewer/public read-only editor mode in `/seating-plans/[planId]`:
+    - non-editors/public users now get top bar + canvas only
+    - mutating panels/controls hidden (save/title edit/settings button, guest/inspector/tools/add-table flows)
+    - canvas remains inspectable (seat/table viewing + zoom/pan)
+  - updated shared components for explicit read-only behavior:
+    - `SeatingToolbar` supports `readOnly` mode
+    - `SeatingCanvas` supports `readOnly` mode (no assignment/unassign controls, no add-table controls, no mobile move-tables toggle)
+  - added EN/PL i18n keys for public-read setting labels and toggle feedback
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260514150000_add_seating_plan_public_read/migration.sql`
+    - `src/lib/auth-session.ts`
+    - `src/lib/wedding-authz.ts`
+    - `src/app/api/seating-plans/[planId]/route.ts`
+    - `src/app/api/seating-plans/[planId]/sharing/route.ts`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma:validate` (pass)
+    - `corepack pnpm prisma generate` (pass)
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - existing pre-phase lint warnings remain in seating-plan/canvas hooks (unchanged)
+  - next recommended step:
+    - add a “copy share link” action in plan settings with visible public/private badge for easier editor workflow
 
 - Implemented Phase 214 seat drop no longer auto-opens right inspector:
   - removed guest auto-selection side effect from desktop seat drop handler

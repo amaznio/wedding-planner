@@ -113,6 +113,7 @@ model SeatingPlan {
   eventId   String?
   event     WeddingEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
   name      String
+  isPublicRead Boolean @default(false)
   width     Int      @default(1600)
   height    Int      @default(1000)
   pairSidePreference String @default("auto")
