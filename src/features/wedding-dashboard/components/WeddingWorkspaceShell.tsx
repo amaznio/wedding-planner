@@ -31,6 +31,7 @@ type WeddingWorkspaceShellProps = {
   currentUser: {
     name: string;
     email: string;
+    image?: string | null;
   };
   children: ReactNode;
 };

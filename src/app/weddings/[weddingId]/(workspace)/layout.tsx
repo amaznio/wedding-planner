@@ -1,7 +1,10 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { WeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
 import type { DashboardNavItem } from "@/features/wedding-dashboard/types";
+import { auth } from "@/lib/auth";
 
 type WeddingWorkspaceLayoutProps = {
   children: React.ReactNode;
@@ -12,6 +15,13 @@ export default async function WeddingWorkspaceLayout({
   children,
   params,
 }: WeddingWorkspaceLayoutProps) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   const { weddingId } = await params;
   const wedding = await prisma.wedding.findUnique({
     where: { id: weddingId },
@@ -50,7 +60,11 @@ export default async function WeddingWorkspaceLayout({
       weddingId={weddingId}
       navigation={navigation}
       eventNamesById={eventNamesById}
-      currentUser={{ name: "Klaudia", email: "klaudia@example.com" }}
+      currentUser={{
+        name: session.user.name ?? session.user.email ?? "User",
+        email: session.user.email ?? "",
+        image: session.user.image ?? null,
+      }}
     >
       {children}
     </WeddingWorkspaceShell>

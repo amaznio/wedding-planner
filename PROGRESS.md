@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 192 - Better Auth foundation + login/logout + user menu + API/UI protection (completed)
+Phase 205 - Duo banner copy compression to prevent overflow (completed)
 
 ## Completed Phases
 
@@ -204,8 +204,284 @@ Phase 192 - Better Auth foundation + login/logout + user menu + API/UI protectio
 - Phase 190 - Remove unused sidebar i18n keys
 - Phase 191 - Wedding location editable from dashboard details
 - Phase 149 - Better Auth foundation + login/logout + user menu + API/UI protection
+- Phase 193 - Wedding workspace session user wiring + sidebar logout hookup
+- Phase 194 - Wedding sidebar footer language selector
+- Phase 195 - Wedding sidebar footer user menu replaced with shadcn example pattern
+- Phase 196 - Sidebar user dropdown animation parity with shadcn pattern
+- Phase 197 - Sidebar-07 nav-user chevron parity (no chevron rotation)
+- Phase 198 - Sidebar-07 nav-user visual parity + optional user image wiring
+- Phase 199 - Subtle user-trigger focus ring + dropdown animation utilities enabled
+- Phase 200 - Turbopack CSS import hotfix for tw-animate
+- Phase 201 - Remove broken tw-animate import path and use local dropdown keyframes
+- Phase 202 - Wedding sidebar duo banner visual match pass
+- Phase 203 - Wedding sidebar duo banner contrast and text-overflow refinement
+- Phase 204 - Duo banner compact typography and spacing refactor
+- Phase 205 - Duo banner copy compression to prevent overflow
 
 ## Completed Work
+
+- Implemented Phase 205 duo banner copy compression to prevent overflow:
+  - updated only i18n text for the duo banner CTA to keep the same meaning with shorter wording
+  - kept title unchanged:
+    - EN `duoTitle`: `Plan together`
+  - shortened subtitle copy:
+    - EN `duoAction`: `Invite your partner`
+    - PL `duoAction`: `Zaproś partnera`
+  - no component/layout/behavior changes:
+    - no updates to `WeddingDashboardSidebar` classes, spacing, line-clamp, or click handling
+    - CTA behavior remains unchanged and fully clickable
+  - files changed:
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - run a quick visual EN/PL sidebar check to confirm the subtitle no longer clips in your target viewport
+
+- Implemented Phase 204 duo banner compact typography and spacing refactor:
+  - kept the existing violet banner emphasis (`bg-violet-50`, violet border, subtle violet hover)
+  - tightened banner spacing and rhythm:
+    - container now uses explicit horizontal alignment with compact paddings and `gap-3`
+    - added `mb-3` for consistent vertical spacing between banner and language selector
+    - reduced icon container and chevron sizes to match compact density
+  - reduced typography scale for readability in the sidebar footprint:
+    - title changed from `text-base` to `text-sm` (kept `font-semibold` + `leading-tight`)
+    - subtitle changed from `text-sm` to `text-xs`
+  - capped subtitle rendering to two lines using `line-clamp-2` to prevent overflow while avoiding single-line ellipsis behavior
+  - preserved existing behavior and copy:
+    - click action remains `onPlaceholderAction("collaboration")`
+    - banner remains hidden in collapsed sidebar mode
+    - no i18n key changes
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - run a quick visual EN/PL QA pass in the workspace sidebar to confirm the two-line clamp and spacing feel right at your typical viewport width
+
+- Implemented Phase 203 wedding sidebar duo banner contrast and text-overflow refinement:
+  - restored a stronger violet banner background so the collaboration CTA stands out in the sidebar footer
+  - reduced banner visual density:
+    - slightly smaller icon container/icon
+    - reduced title size and adjusted line-height
+    - softer, consistent violet text colors
+  - fixed subtitle clipping by removing hard truncation and allowing natural wrapping
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - if you want even tighter visual match, we can do a pixel pass for exact spacing/radius/color against your screenshot
+
+- Implemented Phase 202 wedding sidebar duo banner visual match pass:
+  - redesigned the `Plan together`/`Planowanie w duecie` card to match the provided UI reference more closely
+  - converted the duo area into one full-width clickable banner while preserving existing placeholder behavior (`onPlaceholderAction("collaboration")`)
+  - added left icon and right chevron affordance to match the design language
+  - updated duo subtitle copy to match the target CTA tone:
+    - PL: `Zaproś partnera do wspólnego planowania`
+    - EN: `Invite your partner to plan together`
+  - tuned visual styling:
+    - rounded `2xl` card shape
+    - subtle border/background treatment
+    - stronger title hierarchy with softer subtitle color
+    - balanced spacing and icon sizing for sidebar width
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/i18n/messages/pl.json`
+    - `src/i18n/messages/en.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+    - `corepack pnpm lint` (pass with pre-existing warnings)
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - wire this banner to a real collaboration/share flow when that feature is implemented
+
+- Implemented Phase 201 remove broken tw-animate import path and use local dropdown keyframes:
+  - removed external animation package integration that continued to fail under Turbopack CSS import resolution
+  - replaced dropdown open/close motion with local, explicit keyframes:
+    - added `@keyframes dropdown-in` and `@keyframes dropdown-out` in global CSS
+    - updated shared `DropdownMenuContent` classes to use:
+      - `data-[state=open]:animate-[dropdown-in_140ms_ease-out]`
+      - `data-[state=closed]:animate-[dropdown-out_110ms_ease-in]`
+  - removed `tw-animate-css` dependency from the project
+  - files changed:
+    - `src/app/globals.css`
+    - `src/components/ui/dropdown-menu.tsx`
+    - `package.json`
+    - `pnpm-lock.yaml`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm remove tw-animate-css`
+    - `corepack pnpm typecheck`
+    - `corepack pnpm exec next dev -p 3002` (server reached `Ready`; then exited because another dev server was already running)
+  - known issues:
+    - none from this phase
+  - next recommended step:
+    - verify dropdown motion feel in app and tune duration/easing values if you want it snappier or softer
+
+- Implemented Phase 200 Turbopack CSS import hotfix for tw-animate:
+  - fixed `pnpm dev` CSS resolution error:
+    - before: `@import "tw-animate-css";`
+    - after: `@import "tw-animate-css/dist/tw-animate.css";`
+  - reason:
+    - Turbopack did not resolve the package `style` export in this setup, but resolves the explicit CSS file path
+  - files changed:
+    - `src/app/globals.css`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm dev` (reached `Ready`; then exited because another dev server was already running on PID `12320`)
+  - known issues:
+    - none from this hotfix
+  - next recommended step:
+    - keep using existing running dev server on port `3000` and hard-refresh to confirm dropdown animation now appears
+
+- Implemented Phase 199 subtle user-trigger focus ring + dropdown animation utilities enabled:
+  - made footer user trigger focus ring less aggressive while preserving keyboard focus visibility:
+    - added `focus-visible:ring-1`
+    - added `focus-visible:ring-zinc-300` and `dark:focus-visible:ring-zinc-600`
+  - fixed missing dropdown open/close motion by enabling shadcn animation utilities:
+    - installed `tw-animate-css`
+    - imported it in global stylesheet (`@import "tw-animate-css";`)
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/app/globals.css`
+    - `package.json`
+    - `pnpm-lock.yaml`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm add -D tw-animate-css`
+    - `corepack pnpm typecheck`
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - verify other existing components that use `animate-in`/`animate-out` (e.g. `Select`) now match expected motion and tune durations only if needed
+
+- Implemented Phase 198 sidebar-07 nav-user visual parity + optional user image wiring:
+  - aligned sidebar footer user trigger classes to shadcn `sidebar-07` `nav-user` pattern:
+    - removed custom border/background/padding/radius overrides on trigger
+    - switched to shadcn open-state semantic classes:
+      - `data-[state=open]:bg-sidebar-accent`
+      - `data-[state=open]:text-sidebar-accent-foreground`
+    - aligned trigger content sizing/typography:
+      - avatar `h-8 w-8 rounded-lg`
+      - removed custom zinc text-color overrides in trigger/header
+      - removed icon-collapse-only chevron hiding to match example behavior
+  - added optional user image wiring so avatar works when image exists and still gracefully falls back to initials when it does not:
+    - `currentUser.image?: string | null` added to relevant types/props
+    - `AvatarImage` now uses `src={currentUser.image ?? undefined}`
+    - workspace layout now passes `session.user.image ?? null`
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/features/wedding-dashboard/types.ts`
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - if you want full block-level `sidebar-07` parity, align the dropdown item/icon spacing classes in `DropdownMenuItem` primitives to shadcn semantic defaults in a separate phase
+
+- Implemented Phase 197 sidebar-07 nav-user chevron parity (no chevron rotation):
+  - compared against shadcn `sidebar-07` `nav-user` example and aligned trigger icon behavior
+  - removed custom chevron rotation classes from sidebar footer user trigger
+  - kept dropdown content open/close animation behavior introduced in phase 196
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck`
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - if you want strict 1:1 `sidebar-07` parity, align the remaining trigger classes to sidebar semantic tokens (`bg-sidebar-accent`) in a separate styling pass
+
+- Implemented Phase 196 sidebar user dropdown animation parity with shadcn pattern:
+  - verified `WeddingDashboardSidebar` user footer composition against shadcn `sidebar-16` `nav-user` example pattern
+  - confirmed layout was already close, but open/close motion was missing because shared `DropdownMenuContent` lacked shadcn animation/state classes
+  - updated shared dropdown menu content styling to include shadcn-style open/close and side-slide animations:
+    - `data-[state=open]:animate-in`, `data-[state=closed]:animate-out`
+    - fade/zoom transitions
+    - side-aware slide-in transitions
+    - transform-origin and max-height/overflow behavior for popper content
+  - added small user-trigger polish to better match expected behavior:
+    - trigger now applies open-state text color
+    - chevron icon now rotates on open (`transition-transform`)
+  - files changed:
+    - `src/components/ui/dropdown-menu.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm dlx shadcn@latest view @shadcn/dropdown-menu`
+    - `corepack pnpm dlx shadcn@latest view @shadcn/sidebar`
+    - `corepack pnpm typecheck`
+  - known issues:
+    - no new issues introduced in this phase
+  - next recommended step:
+    - if you want strict visual parity, extract a dedicated `NavUser` component and copy shadcn `sidebar-16` classes 1:1, then layer wedding-specific colors as a follow-up
+
+- Implemented Phase 195 wedding sidebar footer user menu replaced with shadcn example pattern:
+  - replaced sidebar footer user menu composition with shadcn-style nav-user pattern:
+    - chevrons trigger
+    - dropdown profile label section
+    - grouped menu items with separators
+  - updated user-menu actions in sidebar dropdown:
+    - `Upgrade to Pro` placeholder action
+    - `Account` navigates to `/account`
+    - `Billing` placeholder action
+    - `Notifications` placeholder action
+    - `Log out` keeps real Better Auth sign-out flow
+  - extended shared dropdown UI primitives to support shadcn composition:
+    - added `DropdownMenuGroup`
+    - added `DropdownMenuLabel`
+    - added `DropdownMenuSeparator`
+  - added i18n keys for new sidebar menu labels in EN/PL
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/components/ui/dropdown-menu.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+
+- Implemented Phase 194 wedding sidebar footer language selector:
+  - added language selector to wedding workspace sidebar footer using existing i18n provider (`locale`, `setLocale`)
+  - reused existing translation keys:
+    - `common.language`
+    - `common.english`
+    - `common.polish`
+  - selector is hidden in collapsed icon-rail mode to preserve compact sidebar layout
+  - files changed:
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `PROGRESS.md`
+
+- Implemented Phase 193 wedding workspace session user wiring + sidebar logout hookup:
+  - replaced hardcoded wedding workspace user (`Klaudia / klaudia@example.com`) with Better Auth session user in workspace layout
+  - added auth guard in workspace layout:
+    - when session is missing, redirects to `/sign-in`
+  - wired real logout behavior in wedding sidebar profile dropdown:
+    - replaced placeholder action with `authClient.signOut()`
+    - redirects to `/sign-in` and refreshes router after sign-out
+  - wired dashboard greeting header to authenticated user name:
+    - `Witaj, {{name}}!` now uses `authClient.useSession()` first name fallback chain
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `PROGRESS.md`
 
 - Implemented Phase 192 Better Auth foundation + login/logout + user menu + API/UI protection:
   - added Better Auth integration with Prisma adapter and Next handler:
@@ -2531,6 +2807,28 @@ Phase 192 - Better Auth foundation + login/logout + user menu + API/UI protectio
 
 ## Commands Run
 
+- `corepack pnpm typecheck` (pass; Phase 205 duo banner copy compression to prevent overflow)
+- `corepack pnpm lint` (pass with existing warnings; Phase 205 duo banner copy compression to prevent overflow)
+
+- `corepack pnpm typecheck` (pass; Phase 204 duo banner compact typography and spacing refactor)
+- `corepack pnpm lint` (pass with existing warnings; Phase 204 duo banner compact typography and spacing refactor)
+
+- `corepack pnpm typecheck` (pass; Phase 203 wedding sidebar duo banner contrast and text-overflow refinement)
+
+- `corepack pnpm typecheck` (pass; Phase 202 wedding sidebar duo banner visual match pass)
+- `corepack pnpm lint` (pass with existing warnings; Phase 202 wedding sidebar duo banner visual match pass)
+
+- `corepack pnpm typecheck` (pass; Phase 195 wedding sidebar footer user menu replaced with shadcn example pattern)
+- `corepack pnpm lint` (pass with existing warnings; Phase 195 wedding sidebar footer user menu replaced with shadcn example pattern)
+- `corepack pnpm i18n:audit` (fail on pre-existing hardcoded text in `src/app/page.tsx`: `Open weddings`)
+
+- `corepack pnpm typecheck` (pass; Phase 194 wedding sidebar footer language selector)
+- `corepack pnpm lint` (pass with existing warnings; Phase 194 wedding sidebar footer language selector)
+
+- `corepack pnpm typecheck` (pass; Phase 193 wedding workspace session user wiring + sidebar logout hookup)
+- `corepack pnpm lint` (pass with existing warnings; Phase 193 wedding workspace session user wiring + sidebar logout hookup)
+- `corepack pnpm build` (pass; Phase 193 wedding workspace session user wiring + sidebar logout hookup)
+
 - `corepack pnpm add better-auth @better-auth/prisma-adapter` (pass)
 - `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/schema.prisma` (initial fail: `BETTER_AUTH_SECRET` missing and overwrite prompt)
 - `corepack pnpm dlx @better-auth/cli generate --config src/lib/auth.ts --output prisma/better-auth.schema.prisma --yes` (pass; used to derive auth schema models)
@@ -3067,6 +3365,35 @@ Phase 192 - Better Auth foundation + login/logout + user menu + API/UI protectio
 
 ## How To Test
 
+Phase 195 targeted checks:
+
+1. Run `corepack pnpm dev`.
+2. Sign in and open `/weddings/{weddingId}`.
+3. In sidebar footer, open user dropdown and verify shadcn-style structure:
+   - profile label block at top with avatar/name/email
+   - grouped menu sections separated by dividers
+   - `Upgrade to Pro`, `Account`, `Billing`, `Notifications`, `Log out` rows with icons
+4. Click `Account` and verify navigation to `/account`.
+5. Click `Log out` and verify sign-out + redirect to `/sign-in`.
+
+Phase 194 targeted checks:
+
+1. Run `corepack pnpm dev`.
+2. Sign in and open `/weddings/{weddingId}`.
+3. In the sidebar footer, verify language selector is visible in expanded sidebar mode.
+4. Switch between `English` and `Polish` and verify wedding workspace UI text updates immediately.
+5. Collapse sidebar to icon mode and verify language selector is hidden (compact rail remains clean).
+
+Phase 193 targeted checks:
+
+1. Run `corepack pnpm dev`.
+2. Sign in with a real Better Auth user account.
+3. Open `/weddings/{weddingId}` and verify sidebar profile card shows authenticated user name/email (not hardcoded `Klaudia` values).
+4. Verify dashboard greeting uses authenticated first name (`Witaj, {name}!`).
+5. Open sidebar profile dropdown and click `Wyloguj` / logout action.
+6. Verify user is signed out and redirected to `/sign-in`.
+7. While signed out, open `/weddings/{weddingId}` directly and verify redirect to `/sign-in`.
+
 Phase 192 targeted checks:
 
 1. Run `corepack pnpm dev`.
@@ -3155,6 +3482,7 @@ Legacy regression checks:
 
 ## Next Recommended Step
 
+- Add dedicated collaboration/invite flow for the sidebar duo banner CTA (currently placeholder action only).
 - Attach plans to users:
   - add `ownerId` on `SeatingPlan` linked to `User.id`
   - set owner on plan creation and scope plan read/update/delete queries to owner

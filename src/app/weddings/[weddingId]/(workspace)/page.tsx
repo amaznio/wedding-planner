@@ -16,6 +16,7 @@ import { PlanningProgressSection } from "@/features/wedding-dashboard/components
 import { DashboardWidgetsGrid } from "@/features/wedding-dashboard/components/DashboardWidgetsGrid";
 import { DashboardTipBanner } from "@/features/wedding-dashboard/components/DashboardTipBanner";
 import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
+import { authClient } from "@/lib/auth-client";
 
 type WeddingDetailApiResponse = {
   wedding: {
@@ -84,6 +85,7 @@ export default function WeddingDashboardHomePage() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const { openSidebar } = useWeddingWorkspaceShell();
+  const { data: session } = authClient.useSession();
 
   const [data, setData] = useState<WeddingDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -264,10 +266,13 @@ export default function WeddingDashboardHomePage() {
     }
   };
 
+  const sessionFirstName = session?.user.name?.trim().split(/\s+/)[0] ?? null;
+  const greetingName = sessionFirstName || data.currentUser.name.split(" ")[0] || data.currentUser.name;
+
   return (
     <>
       <WeddingDashboardHeader
-        firstName={data.currentUser.name.split(" ")[0] ?? data.currentUser.name}
+        firstName={greetingName}
         onOpenSidebar={openSidebar}
         onQuickAction={handleQuickAction}
         onPlaceholderAction={handlePlaceholderAction}

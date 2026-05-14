@@ -1,16 +1,28 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -27,15 +39,22 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth-client";
 import {
+  ChevronRight,
   CalendarDays,
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
   CheckSquare,
   Compass,
+  CreditCard,
   FileText,
+  Gift,
   HeartHandshake,
   HeartIcon,
+  LogOut,
   NotebookTabs,
-  PiggyBank,
   Sparkles,
   Users,
   UtensilsCrossed,
@@ -50,6 +69,7 @@ type WeddingDashboardSidebarProps = {
   currentUser: {
     name: string;
     email: string;
+    image?: string | null;
   };
   onPlaceholderAction: (id: string) => void;
 };
@@ -73,9 +93,19 @@ export function WeddingDashboardSidebar({
   currentUser,
   onPlaceholderAction,
 }: WeddingDashboardSidebarProps) {
-  const { t } = useI18n();
+  const router = useRouter();
+  const { locale, setLocale, t } = useI18n();
   const normalizedPath = normalizePath(currentPath);
   const { isMobile } = useSidebar();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    await authClient.signOut();
+    router.push("/sign-in");
+    router.refresh();
+  };
 
   return (
     <Sidebar
@@ -167,16 +197,36 @@ export function WeddingDashboardSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-zinc-200 p-3 group-data-[collapsible=icon]:p-2">
-        <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 group-data-[collapsible=icon]:hidden">
-          <p className="text-sm font-medium text-violet-900">{t("dashboard.sidebar.duoTitle")}</p>
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-1 h-auto px-0 py-0 text-sm text-violet-700 hover:bg-transparent"
-            onClick={() => onPlaceholderAction("collaboration")}
-          >
-            {t("dashboard.sidebar.duoAction")}
-          </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="mb-3 h-auto w-full items-center justify-start gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-3.5 py-3 text-left shadow-none hover:bg-violet-100/70 group-data-[collapsible=icon]:hidden"
+          onClick={() => onPlaceholderAction("collaboration")}
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-pink-500">
+            <Gift className="size-[18px]" />
+          </span>
+          <span className="min-w-0 flex-1 pr-0.5">
+            <span className="block text-sm font-semibold leading-tight text-violet-700">
+              {t("dashboard.sidebar.duoTitle")}
+            </span>
+            <span className="mt-1 block line-clamp-2 text-xs leading-snug text-violet-600">
+              {t("dashboard.sidebar.duoAction")}
+            </span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-violet-400" />
+        </Button>
+        <div className="group-data-[collapsible=icon]:hidden">
+          <p className="mb-1 text-xs font-medium text-zinc-600">{t("common.language")}</p>
+          <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
+            <SelectTrigger className="w-full" aria-label={t("common.language")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="en">{t("common.english")}</SelectItem>
+              <SelectItem value="pl">{t("common.polish")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <SidebarMenu>
@@ -185,16 +235,17 @@ export function WeddingDashboardSidebar({
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="rounded-xl border border-zinc-200 bg-white p-2.5 data-[state=open]:bg-zinc-100 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-zinc-300 dark:focus-visible:ring-zinc-600"
                 >
-                  <Avatar className="size-9 rounded-lg">
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={currentUser.image ?? undefined} alt={currentUser.name} />
                     <AvatarFallback className="rounded-lg">{currentUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="truncate font-medium text-zinc-900">{currentUser.name}</span>
-                    <span className="truncate text-xs text-zinc-600">{currentUser.email}</span>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{currentUser.name}</span>
+                    <span className="truncate text-xs">{currentUser.email}</span>
                   </div>
-                  <PiggyBank className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                  <ChevronsUpDown className="ml-auto size-4" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -203,14 +254,53 @@ export function WeddingDashboardSidebar({
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("profile")}>
-                  {t("dashboard.sidebar.profile")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("preferences")}>
-                  {t("dashboard.sidebar.preferences")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onPlaceholderAction("logout")}>
-                  {t("dashboard.sidebar.logout")}
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar className="size-8 rounded-lg">
+                      <AvatarImage src={currentUser.image ?? undefined} alt={currentUser.name} />
+                      <AvatarFallback className="rounded-lg">{currentUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{currentUser.name}</span>
+                      <span className="truncate text-xs">{currentUser.email}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onSelect={() => onPlaceholderAction("upgrade")}>
+                    <Sparkles className="mr-2 size-4" />
+                    <span>{t("dashboard.sidebar.upgradePro")}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      router.push("/account");
+                    }}
+                  >
+                    <BadgeCheck className="mr-2 size-4" />
+                    <span>{t("dashboard.sidebar.account")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onPlaceholderAction("billing")}>
+                    <CreditCard className="mr-2 size-4" />
+                    <span>{t("dashboard.sidebar.billing")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onPlaceholderAction("notifications")}>
+                    <Bell className="mr-2 size-4" />
+                    <span>{t("dashboard.sidebar.notifications")}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={isSigningOut}
+                  onSelect={() => {
+                    void handleSignOut();
+                  }}
+                >
+                  <LogOut className="mr-2 size-4" />
+                  <span>{isSigningOut ? t("userMenu.signingOut") : t("dashboard.sidebar.logout")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -74,6 +74,7 @@ export type WeddingDashboardData = {
   currentUser: {
     name: string;
     email: string;
+    image?: string | null;
   };
   navigation: DashboardNavItem[];
   overview: WeddingOverviewData;
