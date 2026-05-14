@@ -22,9 +22,15 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
 import type { WeddingCollaborator, WeddingRole } from "../types";
+import { CollaboratorStats } from "./CollaboratorStats";
 
 type PeopleWithAccessCardProps = {
   collaborators: WeddingCollaborator[];
+  stats?: {
+    total: number;
+    editors: number;
+    viewers: number;
+  };
   currentUserId: string | null;
   canManageMembers: boolean;
   updatingUserId: string | null;
@@ -51,6 +57,7 @@ function formatAddedDate(value: string, locale: "en" | "pl") {
 
 export function PeopleWithAccessCard({
   collaborators,
+  stats,
   currentUserId,
   canManageMembers,
   updatingUserId,
@@ -64,7 +71,12 @@ export function PeopleWithAccessCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("weddingCollaboratorsPage.people.title")}</CardTitle>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <CardTitle>{t("weddingCollaboratorsPage.people.title")}</CardTitle>
+          {stats ? (
+            <CollaboratorStats total={stats.total} editors={stats.editors} viewers={stats.viewers} />
+          ) : null}
+        </div>
       </CardHeader>
       <CardContent className="px-0">
         {collaborators.length === 0 || hasOnlyOwner ? (

@@ -6,7 +6,6 @@ import { useI18n } from "@/i18n/provider";
 import type { SearchableUser, WeddingAccess, WeddingCollaborator, WeddingRole } from "../types";
 import { AccessInfoCallout } from "./AccessInfoCallout";
 import { CollaboratorsHeader } from "./CollaboratorsHeader";
-import { CollaboratorStats } from "./CollaboratorStats";
 import { InvitePeopleCard } from "./InvitePeopleCard";
 import { PeopleWithAccessCard } from "./PeopleWithAccessCard";
 import { RemoveCollaboratorDialog } from "./RemoveCollaboratorDialog";
@@ -210,7 +209,7 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-2">
       <CollaboratorsHeader isOwner={isOwner} onInviteClick={scrollToInviteCard} />
 
       {error ? (
@@ -231,9 +230,9 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
         </p>
       ) : (
         <>
-          <CollaboratorStats total={stats.total} editors={stats.editors} viewers={stats.viewers} />
           <PeopleWithAccessCard
             collaborators={collaborators}
+            stats={stats}
             currentUserId={currentUserId}
             canManageMembers={canManageMembers}
             updatingUserId={updatingUserId}

@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 208 - Wedding collaborators route/page + membership management UI (completed)
+Phase 214 - Seat drop no longer auto-opens right inspector (completed)
 
 ## Completed Phases
 
@@ -220,8 +220,122 @@ Phase 208 - Wedding collaborators route/page + membership management UI (complet
 - Phase 206 - Wedding membership authorization (owner/editor/viewer)
 - Phase 207 - App-level authorization roles and admin console
 - Phase 208 - Wedding collaborators route/page + membership management UI
+- Phase 209 - Collaborators header/stats density refactor
+- Phase 210 - Collaborators chips compactness pass
+- Phase 211 - Collaborator chips hierarchy compactness pass
+- Phase 212 - Collaborator chips context + single-line solidity refactor
+- Phase 213 - Collaborator chips micro-typography reduction
+- Phase 214 - Seat drop no longer auto-opens right inspector
 
 ## Completed Work
+
+- Implemented Phase 214 seat drop no longer auto-opens right inspector:
+  - removed guest auto-selection side effect from desktop seat drop handler
+  - dropping a guest onto a seat now assigns the seat without opening the right inspector panel
+  - kept all assignment logic, drag lifecycle, and toast feedback unchanged
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+  - known issues:
+    - no new issues introduced
+  - next recommended step:
+    - verify drag-to-seat and seat-to-seat flows still feel correct when inspector is closed
+
+- Implemented Phase 213 collaborator chips micro-typography reduction:
+  - slightly reduced collaborator chip text size to make chips feel lighter and less dominant
+  - preserved count emphasis by keeping value at `text-sm` while reducing surrounding text scale
+  - no layout/auth/API/data-model changes (UI-only refinement)
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+  - known issues:
+    - no new issues introduced
+  - next recommended step:
+    - quick visual check in PL on desktop/tablet to confirm readability at the new size
+
+- Implemented Phase 212 collaborator chips context + single-line solidity refactor:
+  - moved collaborator summary chips into the `People with access` card header for tighter context with the members table
+  - removed page-level stats placement from collaborators page flow
+  - refactored chips to single-line format (`{count} {label}`) with `whitespace-nowrap` to prevent internal wrapping in PL/EN
+  - replaced translucent chip surface with solid neutral background and subtle border for clearer visual stability
+  - kept behavior/API/auth/data model unchanged (UI-only pass)
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `src/features/wedding-collaborators/components/PeopleWithAccessCard.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - existing pre-phase lint warnings remain in seating-related files
+  - next recommended step:
+    - run quick visual QA in PL/EN on desktop + tablet widths and, if needed, shorten localized chip labels for very narrow breakpoints
+
+- Implemented Phase 211 collaborator chips hierarchy compactness pass:
+  - tightened chip footprint and visual hierarchy in collaborators stats:
+    - reduced chip min-width, padding, and internal gap
+    - reduced icon token + icon glyph sizes
+    - reduced numeric scale from headline-style to compact emphasis
+    - set label to medium-weight compact text
+    - moved helper text visibility to very large screens (`2xl`) to reduce visual noise
+    - softened chip visual weight with lighter chip background/border contrast
+  - tightened inter-section vertical rhythm in collaborators page container
+  - no behavior/API/auth/data-model changes (visual-only refactor)
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - existing pre-phase lint warnings remain unchanged in seating-related files
+  - next recommended step:
+    - run a visual EN/PL desktop/tablet/mobile pass to verify long labels don’t wrap awkwardly at intermediate widths
+
+- Implemented Phase 210 collaborators chips compactness pass:
+  - made collaborator stat chips smaller and denser:
+    - reduced chip min width, padding, and horizontal gaps
+    - reduced icon token size and icon glyph size
+    - emphasized count with compact numeric style
+    - moved helper subtitle visibility to extra-large screens only
+  - kept behavior/API/authorization unchanged (visual-only update)
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+  - known issues:
+    - no new issues introduced
+  - next recommended step:
+    - run quick visual QA in PL/EN to confirm chip readability on narrow screens
+
+- Implemented Phase 209 collaborators header/stats density refactor:
+  - removed heavy card wrapper styling from collaborators header section
+  - kept existing actions and behavior (notifications button + invite controls) while tightening vertical spacing
+  - replaced large 3-column stats card with compact inline chips:
+    - each chip now shows icon + count + short label
+    - helper text is hidden on mobile and shown on larger screens only
+    - chips wrap cleanly on small screens
+  - reduced top section spacing in collaborators page container for a lighter hierarchy
+  - no backend/API/auth/schema changes in this phase
+  - files changed:
+    - `src/features/wedding-collaborators/components/CollaboratorsHeader.tsx`
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - existing pre-phase lint warnings remain unchanged in seating-related files
+  - next recommended step:
+    - run a visual pass in EN/PL at common desktop/mobile breakpoints and fine-tune chip truncation if needed
 
 - Implemented Phase 208 wedding collaborators route/page + membership management UI:
   - added backend alignment for collaborator listing and searching:

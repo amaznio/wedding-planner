@@ -15,11 +15,11 @@ export function CollaboratorsHeader({ isOwner, onInviteClick }: CollaboratorsHea
   const { t } = useI18n();
 
   return (
-    <header className="rounded-lg border border-zinc-200 bg-white p-4">
+    <header className="px-1 py-1">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold text-zinc-900">{t("weddingCollaboratorsPage.title")}</h1>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-zinc-600">
             {isOwner
               ? t("weddingCollaboratorsPage.subtitleOwner")
               : t("weddingCollaboratorsPage.subtitleViewer")}

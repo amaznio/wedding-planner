@@ -758,14 +758,13 @@ export default function SeatingPlanEditorPage() {
             description: result.message,
           });
         }
-        handleSelectGuest(guestId);
       } catch (error) {
         setGuestsError(error instanceof Error ? error.message : t("canvas.failedAssign"));
       } finally {
         endGuestDrag();
       }
     },
-    [endGuestDrag, handleSeatAssign, handleSelectGuest, isDesktopViewport],
+    [endGuestDrag, handleSeatAssign, isDesktopViewport],
   );
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
