@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,15 @@ type Vendor = {
   paymentStatus: string;
 };
 
+type WeddingAccessResponse = {
+  access: {
+    role: "owner" | "editor" | "viewer";
+    canEdit: boolean;
+    canManageMembers: boolean;
+    canDeleteWedding: boolean;
+  };
+};
+
 export default function WeddingVendorsPage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
@@ -23,13 +32,21 @@ export default function WeddingVendorsPage() {
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
-  const load = async () => {
-    const response = await fetch(`/api/weddings/${weddingId}/vendors`, { cache: "no-store" });
-    if (!response.ok) throw new Error("Failed to load vendors");
-    const data = (await response.json()) as { vendors: Vendor[] };
+  const load = useCallback(async () => {
+    const [vendorsResponse, weddingResponse] = await Promise.all([
+      fetch(`/api/weddings/${weddingId}/vendors`, { cache: "no-store" }),
+      fetch(`/api/weddings/${weddingId}`, { cache: "no-store" }),
+    ]);
+    if (!vendorsResponse.ok) throw new Error("Failed to load vendors");
+    if (weddingResponse.ok) {
+      const weddingData = (await weddingResponse.json()) as WeddingAccessResponse;
+      setCanEdit(weddingData.access?.canEdit ?? false);
+    }
+    const data = (await vendorsResponse.json()) as { vendors: Vendor[] };
     setVendors(data.vendors ?? []);
-  };
+  }, [weddingId]);
 
   useEffect(() => {
     let active = true;
@@ -46,9 +63,10 @@ export default function WeddingVendorsPage() {
     return () => {
       active = false;
     };
-  }, [weddingId]);
+  }, [load]);
 
   const onCreate = async () => {
+    if (!canEdit) return;
     if (!name.trim()) return;
     setIsSaving(true);
     setError(null);
@@ -91,12 +109,13 @@ export default function WeddingVendorsPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Vendor name"
+            disabled={!canEdit}
             className="h-10 flex-1 rounded-md border border-zinc-300 px-3 text-sm"
           />
           <button
             type="button"
             onClick={onCreate}
-            disabled={isSaving || !name.trim()}
+            disabled={!canEdit || isSaving || !name.trim()}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {isSaving ? "Adding..." : "Add vendor"}

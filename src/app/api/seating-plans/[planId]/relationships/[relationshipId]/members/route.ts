@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 
 import { replaceRelationshipMembersSchema } from "@/features/seating-editor/schemas/relationship.schema";
 import { prisma } from "@/lib/prisma";
-import { requireAuthSession } from "@/lib/auth-session";
+import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string; relationshipId: string }>;
@@ -52,10 +52,9 @@ function toApiRelationship(relationship: DbRelationship) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId, relationshipId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   try {
     const body = await request.json();

@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { updateWeddingSchema } from "@/features/wedding/schemas/wedding.schema";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string }>;
@@ -11,6 +12,9 @@ type RouteContext = {
 
 export async function GET(_: Request, context: RouteContext) {
   const { weddingId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "viewer");
+  if (authz.response) return authz.response;
+
   const wedding = await prisma.wedding.findUnique({
     where: { id: weddingId },
     include: {
@@ -29,11 +33,14 @@ export async function GET(_: Request, context: RouteContext) {
   if (!wedding) {
     return NextResponse.json({ error: "Wedding not found" }, { status: 404 });
   }
-  return NextResponse.json({ wedding });
+  return NextResponse.json({ wedding, access: authz.access });
 }
 
 export async function PUT(request: Request, context: RouteContext) {
   const { weddingId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   try {
     const body = await request.json();
     const payload = updateWeddingSchema.parse(body);
@@ -48,7 +55,7 @@ export async function PUT(request: Request, context: RouteContext) {
         notes: payload.notes,
       },
     });
-    return NextResponse.json({ wedding });
+    return NextResponse.json({ wedding, access: authz.access });
   } catch (error) {
     if (error instanceof ZodError) return validationErrorResponse(error);
     return NextResponse.json({ error: "Failed to update wedding" }, { status: 500 });
@@ -57,6 +64,9 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   const { weddingId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "owner");
+  if (authz.response) return authz.response;
+
   const existing = await prisma.wedding.findUnique({ where: { id: weddingId }, select: { id: true } });
   if (!existing) {
     return NextResponse.json({ error: "Wedding not found" }, { status: 404 });

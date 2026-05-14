@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,15 @@ type Expense = {
   status: string;
 };
 
+type WeddingAccessResponse = {
+  access: {
+    role: "owner" | "editor" | "viewer";
+    canEdit: boolean;
+    canManageMembers: boolean;
+    canDeleteWedding: boolean;
+  };
+};
+
 export default function WeddingExpensesPage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
@@ -25,18 +34,26 @@ export default function WeddingExpensesPage() {
   const [amountMinor, setAmountMinor] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
   const totalMinor = useMemo(
     () => expenses.reduce((sum, expense) => sum + expense.amountMinor, 0),
     [expenses],
   );
 
-  const load = async () => {
-    const response = await fetch(`/api/weddings/${weddingId}/expenses`, { cache: "no-store" });
-    if (!response.ok) throw new Error("Failed to load expenses");
-    const data = (await response.json()) as { expenses: Expense[] };
+  const load = useCallback(async () => {
+    const [expensesResponse, weddingResponse] = await Promise.all([
+      fetch(`/api/weddings/${weddingId}/expenses`, { cache: "no-store" }),
+      fetch(`/api/weddings/${weddingId}`, { cache: "no-store" }),
+    ]);
+    if (!expensesResponse.ok) throw new Error("Failed to load expenses");
+    if (weddingResponse.ok) {
+      const weddingData = (await weddingResponse.json()) as WeddingAccessResponse;
+      setCanEdit(weddingData.access?.canEdit ?? false);
+    }
+    const data = (await expensesResponse.json()) as { expenses: Expense[] };
     setExpenses(data.expenses ?? []);
-  };
+  }, [weddingId]);
 
   useEffect(() => {
     let active = true;
@@ -53,9 +70,10 @@ export default function WeddingExpensesPage() {
     return () => {
       active = false;
     };
-  }, [weddingId]);
+  }, [load]);
 
   const onCreate = async () => {
+    if (!canEdit) return;
     if (!title.trim() || !category.trim() || !amountMinor.trim()) return;
     setIsSaving(true);
     setError(null);
@@ -110,24 +128,27 @@ export default function WeddingExpensesPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Expense title"
+            disabled={!canEdit}
             className="h-10 rounded-md border border-zinc-300 px-3 text-sm"
           />
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Category"
+            disabled={!canEdit}
             className="h-10 rounded-md border border-zinc-300 px-3 text-sm"
           />
           <input
             value={amountMinor}
             onChange={(e) => setAmountMinor(e.target.value)}
             placeholder="Amount (minor)"
+            disabled={!canEdit}
             className="h-10 rounded-md border border-zinc-300 px-3 text-sm"
           />
           <button
             type="button"
             onClick={onCreate}
-            disabled={isSaving}
+            disabled={!canEdit || isSaving}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {isSaving ? "Adding..." : "Add expense"}

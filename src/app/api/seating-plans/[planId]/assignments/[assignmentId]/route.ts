@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuthSession } from "@/lib/auth-session";
+import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string; assignmentId: string }>;
 };
 
 export async function DELETE(_: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId, assignmentId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   const assignment = await prisma.seatAssignment.findFirst({
     where: {

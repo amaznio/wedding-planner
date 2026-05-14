@@ -13,6 +13,8 @@ export const eventRsvpStatusSchema = z.enum(["unknown", "confirmed", "declined",
 export const householdMemberRoleSchema = z.enum(["adult", "child"]);
 export const vendorPaymentStatusSchema = z.enum(["not_started", "partial", "paid", "canceled"]);
 export const expenseStatusSchema = z.enum(["planned", "committed", "paid", "reimbursed", "canceled"]);
+export const weddingMemberRoleSchema = z.enum(["owner", "editor", "viewer"]);
+export const weddingMemberAssignableRoleSchema = z.enum(["editor", "viewer"]);
 
 export const createWeddingSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -174,4 +176,17 @@ export const importWeddingGuestsCsvSchema = z.object({
 
 export const importExpensesCsvSchema = z.object({
   csv: z.string().min(1),
+});
+
+export const addWeddingMemberSchema = z.object({
+  email: z.string().trim().email().max(320),
+  role: weddingMemberAssignableRoleSchema.default("viewer"),
+});
+
+export const updateWeddingMemberSchema = z.object({
+  role: weddingMemberAssignableRoleSchema,
+});
+
+export const transferWeddingOwnershipSchema = z.object({
+  userId: z.string().min(1),
 });

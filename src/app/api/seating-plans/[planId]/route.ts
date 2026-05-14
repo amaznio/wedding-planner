@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 
 import { updateSeatingPlanSchema } from "@/features/seating-editor/schemas/seating-plan.schema";
 import { prisma } from "@/lib/prisma";
-import { requireAuthSession } from "@/lib/auth-session";
+import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -20,10 +20,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function GET(_: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "viewer");
+  if (authz.response) return authz.response;
 
   const plan = await prisma.seatingPlan.findUnique({
     where: { id: planId },
@@ -38,14 +37,13 @@ export async function GET(_: Request, context: RouteContext) {
     return NextResponse.json({ error: "Seating plan not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ plan });
+  return NextResponse.json({ plan, access: authz.access });
 }
 
 export async function PUT(request: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   try {
     const body = await request.json();
@@ -153,7 +151,7 @@ export async function PUT(request: Request, context: RouteContext) {
       });
     });
 
-    return NextResponse.json({ plan: updatedPlan });
+    return NextResponse.json({ plan: updatedPlan, access: authz.access });
   } catch (error) {
     if (error instanceof ZodError) {
       return validationErrorResponse(error);
@@ -169,10 +167,9 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   const existingPlan = await prisma.seatingPlan.findUnique({
     where: { id: planId },

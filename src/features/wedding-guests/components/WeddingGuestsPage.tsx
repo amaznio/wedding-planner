@@ -15,6 +15,12 @@ import { GuestsPageHeader } from "./GuestsPageHeader";
 import { GuestStatsCards } from "./GuestStatsCards";
 
 type WeddingDetailsApiResponse = {
+  access: {
+    role: "owner" | "editor" | "viewer";
+    canEdit: boolean;
+    canManageMembers: boolean;
+    canDeleteWedding: boolean;
+  };
   wedding: {
     id: string;
     name: string;
@@ -78,6 +84,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [availableEvents, setAvailableEvents] = useState<Array<{ id: string; name: string; type: WeddingEventType }>>([]);
   const [linkableGuests, setLinkableGuests] = useState<Array<{ id: string; name: string }>>([]);
+  const [canEditWedding, setCanEditWedding] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -106,6 +113,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
         const firstEventId = weddingJson.wedding.events[0]?.id;
         const stats = deriveGuestStats(mappedGuests);
         if (active) {
+          setCanEditWedding(weddingJson.access?.canEdit ?? false);
           const linkedHostIds = new Set(
             guestsJson.guests
               .map((guest) => guest.plusOneHostGuestId)
@@ -181,6 +189,10 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   }, [data.stats]);
 
   const handleQuickAction = (action: "import" | "add" | "send" | "reminder" | "export" | "plan" | "learn") => {
+    if (!canEditWedding && action !== "plan" && action !== "learn") {
+      return;
+    }
+
     if (action === "add") {
       setIsAddGuestDialogOpen(true);
       return;
@@ -215,7 +227,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
         </div>
       </div>
 
-      {isAddGuestDialogOpen ? (
+      {isAddGuestDialogOpen && canEditWedding ? (
         <AddGuestDialog
           weddingId={weddingId}
           open={isAddGuestDialogOpen}

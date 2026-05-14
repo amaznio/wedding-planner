@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { updateVendorSchema } from "@/features/wedding/schemas/wedding.schema";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string; vendorId: string }>;
@@ -11,6 +12,9 @@ type RouteContext = {
 
 export async function GET(_: Request, context: RouteContext) {
   const { weddingId, vendorId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "viewer");
+  if (authz.response) return authz.response;
+
   const vendor = await prisma.vendor.findFirst({
     where: { id: vendorId, weddingId },
     include: {
@@ -24,6 +28,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { weddingId, vendorId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   try {
     const body = await request.json();
     const payload = updateVendorSchema.parse(body);
@@ -87,6 +94,9 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   const { weddingId, vendorId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   const vendor = await prisma.vendor.findFirst({
     where: { id: vendorId, weddingId },
     select: { id: true },

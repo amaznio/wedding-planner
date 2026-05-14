@@ -83,6 +83,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       { id: "schedule", disabled: true },
       { id: "tasks", disabled: true, counter: 12 },
       { id: "guests", href: `/weddings/${input.weddingId}/guests` },
+      { id: "collaborators", href: `/weddings/${input.weddingId}/collaborators` },
       { id: "events", href: events[0]?.href },
       { id: "budget", href: `/weddings/${input.weddingId}/expenses` },
       { id: "vendors", href: `/weddings/${input.weddingId}/vendors` },

@@ -52,8 +52,22 @@ enum ExpenseStatus {
   canceled
 }
 
+enum WeddingMemberRole {
+  owner
+  editor
+  viewer
+}
+
+enum AppRole {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
 model Wedding {
   id        String   @id @default(cuid())
+  ownerId   String?
+  owner     User?    @relation("WeddingOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   name      String
   date      DateTime?
   timezone  String?
@@ -69,6 +83,9 @@ model Wedding {
   guestGroups WeddingGuestGroup[]
   vendors Vendor[]
   expenses Expense[]
+  memberships WeddingMembership[]
+
+  @@index([ownerId])
 }
 
 model WeddingEvent {
@@ -382,15 +399,33 @@ model User {
   id            String    @id
   name          String
   email         String
+  role          AppRole   @default(USER)
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  ownedWeddings Wedding[] @relation("WeddingOwner")
+  weddingMemberships WeddingMembership[]
 
   @@unique([email])
   @@map("user")
+}
+
+model WeddingMembership {
+  id        String           @id @default(cuid())
+  weddingId String
+  wedding   Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      WeddingMemberRole
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([weddingId, userId])
+  @@index([weddingId])
+  @@index([userId])
 }
 
 model Session {

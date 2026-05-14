@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { updateHouseholdMemberSchema } from "@/features/wedding/schemas/wedding.schema";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string; householdId: string; guestId: string }>;
@@ -11,6 +12,9 @@ type RouteContext = {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { weddingId, householdId, guestId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   try {
     const body = await request.json();
     const payload = updateHouseholdMemberSchema.parse(body);
@@ -41,6 +45,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   const { weddingId, householdId, guestId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   const member = await prisma.householdMember.findFirst({
     where: {
       householdId,

@@ -48,6 +48,12 @@ type WeddingEventDetailPageProps = {
 };
 
 type WeddingDetailsApiResponse = {
+  access: {
+    role: "owner" | "editor" | "viewer";
+    canEdit: boolean;
+    canManageMembers: boolean;
+    canDeleteWedding: boolean;
+  };
   wedding: {
     id: string;
     name: string;
@@ -166,6 +172,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const [activeTab, setActiveTab] = useState<EventTabId>("overview");
   const [planName, setPlanName] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [canEditWedding, setCanEditWedding] = useState(false);
 
   const firstSeatingPlan = data.seatingPlans[0];
   const seatingPlanHref = firstSeatingPlan ? `/seating-plans/${firstSeatingPlan.id}` : null;
@@ -197,6 +204,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
 
         const weddingJson = (await weddingResult.value.json()) as WeddingDetailsApiResponse;
         const eventJson = (await eventResult.value.json()) as WeddingEventApiResponse;
+        setCanEditWedding(weddingJson.access?.canEdit ?? false);
 
         const eventGuestsJson =
           eventGuestsResult.status === "fulfilled" && eventGuestsResult.value.ok
@@ -285,6 +293,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   }, [eventId, locale, mockData, t, weddingId]);
 
   const onCreatePlan = async () => {
+    if (!canEditWedding) return;
     if (!planName.trim()) return;
 
     setIsCreatingPlan(true);
@@ -355,7 +364,12 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
             {t("events.detail.actions.guestPreview")}
           </Button>
-          <Button type="button" className="bg-rose-500 hover:bg-rose-400" onClick={() => undefined}>
+          <Button
+            type="button"
+            className="bg-rose-500 hover:bg-rose-400"
+            onClick={() => undefined}
+            disabled={!canEditWedding}
+          >
             <Edit3 className="size-4" />
             {t("events.detail.actions.editEvent")}
           </Button>
@@ -667,12 +681,13 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                   value={planName}
                   onChange={(event) => setPlanName(event.target.value)}
                   placeholder={t("events.detail.seatingTab.planNamePlaceholder")}
+                  disabled={!canEditWedding}
                   className="h-10 flex-1 rounded-md border border-zinc-300 px-3 text-sm"
                 />
                 <Button
                   type="button"
                   onClick={onCreatePlan}
-                  disabled={isCreatingPlan || !planName.trim()}
+                  disabled={!canEditWedding || isCreatingPlan || !planName.trim()}
                   className="bg-rose-500 hover:bg-rose-400"
                 >
                   {isCreatingPlan ? t("events.detail.seatingTab.creating") : t("events.detail.seatingTab.create")}

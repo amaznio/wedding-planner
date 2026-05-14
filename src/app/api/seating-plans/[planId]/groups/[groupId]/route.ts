@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { normalizeGroupName } from "@/features/seating-editor/lib/guest-groups";
 import { updateGuestGroupSchema } from "@/features/seating-editor/schemas/guest-group.schema";
 import { prisma } from "@/lib/prisma";
-import { requireAuthSession } from "@/lib/auth-session";
+import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string; groupId: string }>;
@@ -21,10 +21,9 @@ function validationErrorResponse(error: ZodError) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId, groupId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   try {
     const body = await request.json();
@@ -88,10 +87,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId, groupId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
 
   const existing = await prisma.seatingGuestGroup.findFirst({
     where: { id: groupId, planId },

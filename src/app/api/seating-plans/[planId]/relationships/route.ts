@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 
 import { createRelationshipSchema } from "@/features/seating-editor/schemas/relationship.schema";
 import { prisma } from "@/lib/prisma";
-import { requireAuthSession } from "@/lib/auth-session";
+import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -53,10 +53,9 @@ function toApiRelationship(relationship: DbRelationship) {
 }
 
 export async function GET(_: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "viewer");
+  if (authz.response) return authz.response;
 
   const relationships = await prisma.seatingRelationship.findMany({
     where: { planId },
@@ -80,10 +79,10 @@ export async function GET(_: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const { unauthorized } = await requireAuthSession();
-  if (unauthorized) return unauthorized;
-
   const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
+
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
 

@@ -6,6 +6,7 @@ import { updateWeddingGroupSchema } from "@/features/wedding/schemas/wedding.sch
 import { normalizeGroupName } from "@/features/seating-editor/lib/guest-groups";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string; groupId: string }>;
@@ -13,6 +14,9 @@ type RouteContext = {
 
 export async function GET(_: Request, context: RouteContext) {
   const { weddingId, groupId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "viewer");
+  if (authz.response) return authz.response;
+
   const group = await prisma.weddingGuestGroup.findFirst({
     where: { id: groupId, weddingId },
     include: {
@@ -27,6 +31,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { weddingId, groupId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   try {
     const body = await request.json();
     const payload = updateWeddingGroupSchema.parse(body);
@@ -55,6 +62,9 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   const { weddingId, groupId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   const group = await prisma.weddingGuestGroup.findFirst({
     where: { id: groupId, weddingId },
     select: { id: true },

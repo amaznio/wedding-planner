@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import { addHouseholdMemberSchema } from "@/features/wedding/schemas/wedding.schema";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string; householdId: string }>;
@@ -12,6 +13,9 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   const { weddingId, householdId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "editor");
+  if (authz.response) return authz.response;
+
   try {
     const body = await request.json();
     const payload = addHouseholdMemberSchema.parse(body);

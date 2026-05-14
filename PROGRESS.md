@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 205 - Duo banner copy compression to prevent overflow (completed)
+Phase 208 - Wedding collaborators route/page + membership management UI (completed)
 
 ## Completed Phases
 
@@ -217,8 +217,171 @@ Phase 205 - Duo banner copy compression to prevent overflow (completed)
 - Phase 203 - Wedding sidebar duo banner contrast and text-overflow refinement
 - Phase 204 - Duo banner compact typography and spacing refactor
 - Phase 205 - Duo banner copy compression to prevent overflow
+- Phase 206 - Wedding membership authorization (owner/editor/viewer)
+- Phase 207 - App-level authorization roles and admin console
+- Phase 208 - Wedding collaborators route/page + membership management UI
 
 ## Completed Work
+
+- Implemented Phase 208 wedding collaborators route/page + membership management UI:
+  - added backend alignment for collaborator listing and searching:
+    - changed `GET /api/weddings/[weddingId]/members` authorization from owner-only to `viewer+`
+    - extended members response to include `currentUserId` and `access` metadata for role-aware UI
+    - added owner-only user search endpoint:
+      - `GET /api/weddings/[weddingId]/members/search-users?q=...`
+      - returns existing users (`id`, `name`, `email`, `image`) excluding users already in the wedding
+  - added workspace collaborators route:
+    - `src/app/weddings/[weddingId]/(workspace)/collaborators/page.tsx`
+  - added collaborators feature module with dashboard-style composition:
+    - `WeddingCollaboratorsPage`
+    - `CollaboratorsHeader`
+    - `CollaboratorStats`
+    - `PeopleWithAccessCard`
+    - `InvitePeopleCard`
+    - `AccessInfoCallout`
+    - `RemoveCollaboratorDialog`
+  - implemented role-aware UI behavior:
+    - owners can invite existing users, set `editor/viewer`, change collaborator roles, and remove non-owner collaborators with confirmation
+    - owner row is protected (badge-only, no role edit, no removal action)
+    - editors/viewers can open page and view collaborators in read-only mode
+    - all mutations still enforced by backend owner-only authz
+  - integrated collaborators into workspace navigation:
+    - added new nav id `collaborators` in dashboard nav types
+    - added sidebar icon mapping and nav entry in workspace layout:
+      - `/weddings/[weddingId]/collaborators`
+    - added breadcrumb mapping in workspace shell:
+      - `Home > Collaborators` / `Strona główna > Współpraca`
+  - updated localization:
+    - added `dashboard.sidebar.nav.collaborators` in EN/PL
+    - added `weddingCollaboratorsPage.*` EN/PL keys for header, stats, table, invite, dialogs, tooltips, callouts, and errors
+  - files changed:
+    - `src/app/api/weddings/[weddingId]/members/route.ts`
+    - `src/app/api/weddings/[weddingId]/members/search-users/route.ts`
+    - `src/app/weddings/[weddingId]/(workspace)/collaborators/page.tsx`
+    - `src/features/wedding-collaborators/types.ts`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `src/features/wedding-collaborators/components/CollaboratorsHeader.tsx`
+    - `src/features/wedding-collaborators/components/CollaboratorStats.tsx`
+    - `src/features/wedding-collaborators/components/PeopleWithAccessCard.tsx`
+    - `src/features/wedding-collaborators/components/InvitePeopleCard.tsx`
+    - `src/features/wedding-collaborators/components/AccessInfoCallout.tsx`
+    - `src/features/wedding-collaborators/components/RemoveCollaboratorDialog.tsx`
+    - `src/features/wedding-dashboard/types.ts`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+    - `corepack pnpm prisma:validate` (pass)
+  - known issues:
+    - existing lint warnings remain in seating editor/pages (unchanged pre-existing warnings)
+  - next recommended step:
+    - connect the existing sidebar duo CTA (`Plan together`) to this collaborators page and add success toasts for invite/role/remove actions
+
+- Implemented Phase 207 app-level authorization roles and admin console:
+  - added app-level role model in Prisma:
+    - new enum `AppRole` (`SUPERADMIN`, `ADMIN`, `USER`)
+    - new `User.role` column with default `USER`
+    - added migration SQL: `prisma/migrations/20260514133000_add_app_roles/migration.sql`
+  - added centralized app-role authorization helper:
+    - `src/lib/app-authz.ts`
+    - enforces role hierarchy (`USER < ADMIN < SUPERADMIN`)
+    - supports bootstrap superadmin emails via `APP_BOOTSTRAP_SUPERADMIN_EMAILS`
+  - added protected admin APIs:
+    - `GET /api/admin/users` (`ADMIN+`) for user list and current app role
+    - `PATCH /api/admin/users/[userId]/role` (`SUPERADMIN` only)
+    - `GET /api/admin/weddings/legacy` (`ADMIN+`) for weddings needing owner/membership backfill
+    - `POST /api/admin/weddings/[weddingId]/assign-owner` (`ADMIN+`) to assign owner by existing user email with membership + `ownerId` sync in one transaction
+  - added minimal manual admin UI:
+    - new page `src/app/admin/page.tsx`
+    - owner assignment form for legacy weddings
+    - app-role management list for users (editable by `SUPERADMIN` only)
+  - updated route protection:
+    - `proxy.ts` now protects `/admin/:path*`
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260514133000_add_app_roles/migration.sql`
+    - `src/lib/app-authz.ts`
+    - `src/app/api/admin/users/route.ts`
+    - `src/app/api/admin/users/[userId]/role/route.ts`
+    - `src/app/api/admin/weddings/legacy/route.ts`
+    - `src/app/api/admin/weddings/[weddingId]/assign-owner/route.ts`
+    - `src/app/admin/page.tsx`
+    - `proxy.ts`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma generate` (pass)
+    - `corepack pnpm prisma:validate` (pass)
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - initial DB migration application still depends on your environment migration state/drift
+    - existing lint warnings in seating pages remain unchanged
+  - next recommended step:
+    - add discoverability links to `/admin` (e.g., account/user menu) and add audit logs for role/owner changes
+
+- Implemented Phase 206 wedding membership authorization (owner/editor/viewer):
+  - added Prisma authz data model:
+    - new enum `WeddingMemberRole` (`owner`, `editor`, `viewer`)
+    - new model `WeddingMembership` with unique `(weddingId, userId)`
+    - new nullable `Wedding.ownerId` linked to `User.id`
+    - added migration SQL only (no legacy-owner auto-backfill): `prisma/migrations/20260514124500_add_wedding_membership_auth/migration.sql`
+  - introduced centralized wedding/plan authorization helper:
+    - `src/lib/wedding-authz.ts`
+    - role enforcement helpers for wedding routes, event-linked seating plan routes, and standalone seating plan legacy behavior
+  - enforced role checks across all wedding and seating APIs:
+    - `/api/weddings/**` now requires membership and role-appropriate access (`viewer` for reads, `editor` for mutations, `owner` for wedding delete + member management)
+    - `/api/seating-plans/**` now enforces wedding membership for event-linked plans while preserving legacy auth-only access for standalone plans
+    - standardized authz responses: `401` unauthorized, `403` forbidden, `404` for missing resources after access checks
+  - added membership management APIs (owner-only):
+    - `GET/POST /api/weddings/[weddingId]/members`
+    - `PATCH/DELETE /api/weddings/[weddingId]/members/[userId]`
+    - `POST /api/weddings/[weddingId]/members/transfer-ownership`
+  - updated wedding creation/listing behavior:
+    - `POST /api/weddings` now creates wedding + owner membership transactionally from session user
+    - `GET /api/weddings` now returns only weddings where current user is a member and includes `access` capabilities
+    - `GET /api/weddings/[weddingId]` now includes `access` capabilities for UI gating
+  - added minimal read-only UI gating for viewers:
+    - blocked primary create/edit actions in wedding dashboard details, event seating-plan creation, vendors, expenses, and guest-add quick action flows when `access.canEdit` is false
+  - tightened workspace access:
+    - workspace layout query now requires current user membership for the target wedding
+    - proxy matcher now protects `/weddings/:path*` in addition to seating plans
+  - manual legacy backfill runbook (no auto-claim):
+    - legacy weddings without memberships remain inaccessible by design
+    - assign owner manually per wedding (example SQL):
+      - `UPDATE "Wedding" SET "ownerId" = '<USER_ID>' WHERE "id" = '<WEDDING_ID>';`
+      - `INSERT INTO "WeddingMembership" ("id","weddingId","userId","role","createdAt","updatedAt") VALUES (gen_random_uuid()::text,'<WEDDING_ID>','<USER_ID>','owner',NOW(),NOW()) ON CONFLICT ("weddingId","userId") DO UPDATE SET "role"='owner',"updatedAt"=NOW();`
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260514124500_add_wedding_membership_auth/migration.sql`
+    - `src/lib/wedding-authz.ts`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/app/api/weddings/**` (all wedding route handlers + new members endpoints)
+    - `src/app/api/seating-plans/**` (all seating route handlers)
+    - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `proxy.ts`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma migrate dev --name add_wedding_membership_auth` (fails due pre-existing migration drift in local DB)
+    - `corepack pnpm prisma generate` (pass)
+    - `corepack pnpm prisma:validate` (pass)
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with existing warnings)
+  - known issues:
+    - local `prisma migrate dev` remains blocked by pre-existing migration drift unrelated to this phase; migration SQL was added manually
+    - legacy weddings without owner/membership stay locked until manual backfill is performed
+  - next recommended step:
+    - build collaborator management UI on top of the new members APIs (list/add/change-role/remove/transfer ownership)
 
 - Implemented Phase 205 duo banner copy compression to prevent overflow:
   - updated only i18n text for the duo banner CTA to keep the same meaning with shorter wording

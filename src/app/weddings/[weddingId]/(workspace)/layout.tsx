@@ -23,8 +23,13 @@ export default async function WeddingWorkspaceLayout({
   }
 
   const { weddingId } = await params;
-  const wedding = await prisma.wedding.findUnique({
-    where: { id: weddingId },
+  const wedding = await prisma.wedding.findFirst({
+    where: {
+      id: weddingId,
+      memberships: {
+        some: { userId: session.user.id },
+      },
+    },
     include: {
       events: {
         orderBy: { createdAt: "asc" },
@@ -45,6 +50,7 @@ export default async function WeddingWorkspaceLayout({
     { id: "schedule", disabled: true },
     { id: "tasks", disabled: true, counter: 12 },
     { id: "guests", href: `/weddings/${weddingId}/guests` },
+    { id: "collaborators", href: `/weddings/${weddingId}/collaborators` },
     firstEventId
       ? { id: "events", href: `/weddings/${weddingId}/events/${firstEventId}` }
       : { id: "events", disabled: true },

@@ -361,6 +361,7 @@
         "schedule": "Schedule",
         "tasks": "Tasks",
         "guests": "Guests",
+        "collaborators": "Collaborators",
         "events": "Events",
         "budget": "Budget",
         "vendors": "Vendors",
@@ -509,6 +510,77 @@
         "event": "Use the events strip to open an event workspace.",
         "note": "Notes module is coming soon."
       }
+    }
+  },
+  "weddingCollaboratorsPage": {
+    "title": "Collaborators",
+    "subtitleOwner": "Invite people to help you plan your wedding. You're the owner of this wedding.",
+    "subtitleViewer": "View people who can access this wedding. Only the owner can manage access.",
+    "actions": {
+      "invitePeople": "Invite people",
+      "invite": "Invite",
+      "sendInvitation": "Send invitation",
+      "removeAccess": "Remove access"
+    },
+    "stats": {
+      "collaborators": "Collaborators",
+      "includingYou": "including you",
+      "editors": "Editors",
+      "editorsHint": "can edit and manage content",
+      "viewers": "Viewers",
+      "viewersHint": "can view only"
+    },
+    "people": {
+      "title": "People with access",
+      "columns": {
+        "person": "Person",
+        "role": "Role",
+        "access": "Access",
+        "actions": "Actions"
+      },
+      "empty": "No collaborators yet.",
+      "ownerBadge": "Owner",
+      "you": "You",
+      "addedOn": "Added on {{date}}"
+    },
+    "invite": {
+      "title": "Invite people",
+      "description": "Search and invite existing users to collaborate on your wedding.",
+      "searchPlaceholder": "Search by name or email",
+      "suggestedUsers": "Suggested users",
+      "searching": "Searching users...",
+      "noUsersFound": "No users found",
+      "tooShortQuery": "Type at least 2 characters to search."
+    },
+    "roles": {
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    },
+    "access": {
+      "full": "Full access",
+      "viewOnly": "View only"
+    },
+    "readOnlyBanner": "You can view collaborators, but only the owner can manage access.",
+    "info": {
+      "title": "Only the owner can manage access",
+      "description": "You can add, remove, and change roles for collaborators. Editors can manage content, viewers can only view."
+    },
+    "removeDialog": {
+      "title": "Remove collaborator?",
+      "description": "This person will lose access to the wedding workspace.",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "load": "Failed to load collaborators.",
+      "search": "Failed to search users.",
+      "invite": "Failed to invite user.",
+      "roleUpdate": "Failed to update role.",
+      "remove": "Failed to remove collaborator."
+    },
+    "tooltips": {
+      "ownerOnly": "Only the owner can manage access"
     }
   },
   "weddingGuestsPage": {

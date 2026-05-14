@@ -19,6 +19,12 @@ import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/component
 import { authClient } from "@/lib/auth-client";
 
 type WeddingDetailApiResponse = {
+  access: {
+    role: "owner" | "editor" | "viewer";
+    canEdit: boolean;
+    canManageMembers: boolean;
+    canDeleteWedding: boolean;
+  };
   wedding: {
     id: string;
     name: string;
@@ -95,6 +101,7 @@ export default function WeddingDashboardHomePage() {
   const [weddingForm, setWeddingForm] = useState<WeddingFormState | null>(null);
   const [isWeddingSaving, setIsWeddingSaving] = useState(false);
   const [weddingSaveError, setWeddingSaveError] = useState<string | null>(null);
+  const [canEditWedding, setCanEditWedding] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -133,6 +140,7 @@ export default function WeddingDashboardHomePage() {
         });
 
         if (active) {
+          setCanEditWedding(weddingJson.access?.canEdit ?? false);
           setData(built);
           setWeddingForm({
             name: weddingJson.wedding.name ?? "",
@@ -195,6 +203,7 @@ export default function WeddingDashboardHomePage() {
   };
 
   const handleWeddingSave = async () => {
+    if (!canEditWedding) return;
     if (!weddingForm) return;
 
     const trimmedName = weddingForm.name.trim();
@@ -282,6 +291,7 @@ export default function WeddingDashboardHomePage() {
           overview={data.overview}
           locale={locale as Locale}
           onOpenDetails={() => {
+            if (!canEditWedding) return;
             setWeddingSaveError(null);
             setIsWeddingDetailsOpen(true);
           }}

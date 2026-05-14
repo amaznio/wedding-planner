@@ -192,6 +192,10 @@ function buildWorkspaceBreadcrumbs({
     return [...home, { label: t("dashboard.sidebar.nav.guests") }];
   }
 
+  if (normalizedPath === `${weddingHomeHref}/collaborators`) {
+    return [...home, { label: t("dashboard.sidebar.nav.collaborators") }];
+  }
+
   if (normalizedPath === `${weddingHomeHref}/vendors`) {
     return [...home, { label: t("dashboard.sidebar.nav.vendors") }];
   }

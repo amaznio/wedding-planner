@@ -3,6 +3,7 @@ export type DashboardNavItemId =
   | "schedule"
   | "tasks"
   | "guests"
+  | "collaborators"
   | "events"
   | "budget"
   | "vendors"

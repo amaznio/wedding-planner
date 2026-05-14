@@ -361,6 +361,7 @@
         "schedule": "Harmonogram",
         "tasks": "Zadania",
         "guests": "Goście",
+        "collaborators": "Współpraca",
         "events": "Wydarzenia",
         "budget": "Budżet",
         "vendors": "Dostawcy",
@@ -509,6 +510,77 @@
         "event": "Użyj paska wydarzeń, aby otworzyć przestrzeń wydarzenia.",
         "note": "Moduł notatek pojawi się wkrótce."
       }
+    }
+  },
+  "weddingCollaboratorsPage": {
+    "title": "Współpraca",
+    "subtitleOwner": "Zaproś osoby do wspólnego planowania ślubu. Jesteś właścicielem tego wesela.",
+    "subtitleViewer": "Zobacz osoby z dostępem do tego wesela. Tylko właściciel może zarządzać dostępem.",
+    "actions": {
+      "invitePeople": "Zaproś osoby",
+      "invite": "Zaproś",
+      "sendInvitation": "Wyślij zaproszenie",
+      "removeAccess": "Usuń dostęp"
+    },
+    "stats": {
+      "collaborators": "Współpracownicy",
+      "includingYou": "razem z Tobą",
+      "editors": "Edytorzy",
+      "editorsHint": "mogą edytować treści",
+      "viewers": "Obserwatorzy",
+      "viewersHint": "mogą tylko przeglądać"
+    },
+    "people": {
+      "title": "Osoby z dostępem",
+      "columns": {
+        "person": "Osoba",
+        "role": "Rola",
+        "access": "Dostęp",
+        "actions": "Akcje"
+      },
+      "empty": "Brak współpracowników.",
+      "ownerBadge": "Właściciel",
+      "you": "Ty",
+      "addedOn": "Dodano {{date}}"
+    },
+    "invite": {
+      "title": "Zaproś osoby",
+      "description": "Wyszukaj i zaproś istniejących użytkowników do współpracy nad weselem.",
+      "searchPlaceholder": "Szukaj po nazwie lub e-mailu",
+      "suggestedUsers": "Sugerowani użytkownicy",
+      "searching": "Wyszukiwanie użytkowników...",
+      "noUsersFound": "Nie znaleziono użytkowników",
+      "tooShortQuery": "Wpisz co najmniej 2 znaki, aby wyszukać."
+    },
+    "roles": {
+      "owner": "Właściciel",
+      "editor": "Edytor",
+      "viewer": "Obserwator"
+    },
+    "access": {
+      "full": "Pełny dostęp",
+      "viewOnly": "Tylko podgląd"
+    },
+    "readOnlyBanner": "Możesz przeglądać współpracowników, ale tylko właściciel może zarządzać dostępem.",
+    "info": {
+      "title": "Tylko właściciel może zarządzać dostępem",
+      "description": "Możesz dodawać, usuwać i zmieniać role współpracowników. Edytorzy mogą zarządzać treścią, a obserwatorzy tylko przeglądać."
+    },
+    "removeDialog": {
+      "title": "Usunąć współpracownika?",
+      "description": "Ta osoba straci dostęp do przestrzeni ślubnej.",
+      "confirm": "Usuń",
+      "cancel": "Anuluj"
+    },
+    "errors": {
+      "load": "Nie udało się załadować współpracowników.",
+      "search": "Nie udało się wyszukać użytkowników.",
+      "invite": "Nie udało się zaprosić użytkownika.",
+      "roleUpdate": "Nie udało się zaktualizować roli.",
+      "remove": "Nie udało się usunąć współpracownika."
+    },
+    "tooltips": {
+      "ownerOnly": "Tylko właściciel może zarządzać dostępem"
     }
   },
   "weddingGuestsPage": {

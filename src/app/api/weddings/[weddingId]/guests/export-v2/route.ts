@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { requireWeddingRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ weddingId: string }>;
@@ -15,6 +16,9 @@ function csvEscape(value: string) {
 
 export async function GET(_: Request, context: RouteContext) {
   const { weddingId } = await context.params;
+  const authz = await requireWeddingRole(weddingId, "viewer");
+  if (authz.response) return authz.response;
+
   const guests = await prisma.guest.findMany({
     where: { weddingId },
     include: {
