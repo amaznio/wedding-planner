@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/provider";
 import type { Locale } from "@/i18n/config";
@@ -15,7 +16,7 @@ import { WeddingEventsStrip } from "@/features/wedding-dashboard/components/Wedd
 import { PlanningProgressSection } from "@/features/wedding-dashboard/components/PlanningProgressSection";
 import { DashboardWidgetsGrid } from "@/features/wedding-dashboard/components/DashboardWidgetsGrid";
 import { DashboardTipBanner } from "@/features/wedding-dashboard/components/DashboardTipBanner";
-import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
+import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import { authClient } from "@/lib/auth-client";
 
 type WeddingDetailApiResponse = {
@@ -33,6 +34,11 @@ type WeddingDetailApiResponse = {
     location: string | null;
     currency: string;
     notes: string | null;
+    coverImageUrl: string | null;
+    coverImagePublicId: string | null;
+    coverImageWidth: number | null;
+    coverImageHeight: number | null;
+    coverImageUploadedAt: string | null;
     events: Array<{
       id: string;
       name: string;
@@ -82,15 +88,45 @@ type WeddingUpdateApiResponse = {
     location: string | null;
     currency: string;
     notes: string | null;
+    coverImageUrl: string | null;
+    coverImagePublicId: string | null;
+    coverImageWidth: number | null;
+    coverImageHeight: number | null;
+    coverImageUploadedAt: string | null;
   };
 };
+
+type WeddingCoverSignApiResponse = {
+  signedUpload: {
+    cloudName: string;
+    apiKey: string;
+    uploadUrl: string;
+    timestamp: number;
+    signature: string;
+    folder: string;
+    publicId: string;
+  };
+};
+
+type WeddingCoverSaveApiResponse = {
+  wedding: {
+    id: string;
+    coverImageUrl: string | null;
+    coverImagePublicId: string | null;
+    coverImageWidth: number | null;
+    coverImageHeight: number | null;
+    coverImageUploadedAt: string | null;
+  };
+};
+
+const COVER_IMAGE_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const COVER_IMAGE_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export default function WeddingDashboardHomePage() {
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
   const router = useRouter();
   const { t, locale } = useI18n();
-  const { openSidebar } = useWeddingWorkspaceShell();
   const { data: session } = authClient.useSession();
 
   const [data, setData] = useState<WeddingDashboardData | null>(null);
@@ -101,6 +137,9 @@ export default function WeddingDashboardHomePage() {
   const [weddingForm, setWeddingForm] = useState<WeddingFormState | null>(null);
   const [isWeddingSaving, setIsWeddingSaving] = useState(false);
   const [weddingSaveError, setWeddingSaveError] = useState<string | null>(null);
+  const [coverImageError, setCoverImageError] = useState<string | null>(null);
+  const [isCoverImageUploading, setIsCoverImageUploading] = useState(false);
+  const coverImageInputRef = useRef<HTMLInputElement | null>(null);
   const [canEditWedding, setCanEditWedding] = useState(false);
 
   useEffect(() => {
@@ -132,6 +171,7 @@ export default function WeddingDashboardHomePage() {
           weddingName: weddingJson.wedding.name,
           weddingDate: weddingJson.wedding.date ? new Date(weddingJson.wedding.date) : null,
           venue: weddingJson.wedding.location ?? undefined,
+          coverImageUrl: weddingJson.wedding.coverImageUrl,
           currency: dashboardJson.currency,
           guestCount: weddingJson.wedding._count.guests,
           budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
@@ -171,12 +211,16 @@ export default function WeddingDashboardHomePage() {
 
   const firstEventHref = useMemo(() => data?.events.find((event) => event.href)?.href, [data?.events]);
 
-  if (isLoading || !data) {
-    return <main className="p-6 text-sm text-zinc-600">{t("dashboard.states.loading")}</main>;
+  if (isLoading) {
+    return <WorkspaceRouteLoading />;
   }
 
   if (error) {
     return <main className="p-6 text-sm text-red-600">{error}</main>;
+  }
+
+  if (!data) {
+    return <WorkspaceRouteLoading />;
   }
 
   const handlePlaceholderAction = (key: string) => {
@@ -275,6 +319,118 @@ export default function WeddingDashboardHomePage() {
     }
   };
 
+  const setCoverImageOnDashboard = (coverImageUrl: string | null) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        overview: {
+          ...prev.overview,
+          coverImageUrl,
+        },
+      };
+    });
+  };
+
+  const handleCoverImageFileSelect = async (file: File | null) => {
+    if (!canEditWedding || !file) return;
+
+    if (!COVER_IMAGE_ALLOWED_TYPES.has(file.type)) {
+      setCoverImageError(t("dashboard.overview.cover.errors.invalidType"));
+      return;
+    }
+
+    if (file.size > COVER_IMAGE_MAX_FILE_SIZE_BYTES) {
+      setCoverImageError(t("dashboard.overview.cover.errors.maxSize"));
+      return;
+    }
+
+    setIsCoverImageUploading(true);
+    setCoverImageError(null);
+
+    try {
+      const signResponse = await fetch(`/api/weddings/${weddingId}/cover/sign`, {
+        method: "POST",
+        cache: "no-store",
+      });
+      if (!signResponse.ok) {
+        throw new Error(t("dashboard.overview.cover.errors.signFailed"));
+      }
+
+      const signJson = (await signResponse.json()) as WeddingCoverSignApiResponse;
+      const signedUpload = signJson.signedUpload;
+
+      const cloudinaryUploadBody = new FormData();
+      cloudinaryUploadBody.append("file", file);
+      cloudinaryUploadBody.append("api_key", signedUpload.apiKey);
+      cloudinaryUploadBody.append("timestamp", String(signedUpload.timestamp));
+      cloudinaryUploadBody.append("signature", signedUpload.signature);
+      cloudinaryUploadBody.append("folder", signedUpload.folder);
+      cloudinaryUploadBody.append("public_id", signedUpload.publicId);
+
+      const uploadResponse = await fetch(signedUpload.uploadUrl, {
+        method: "POST",
+        body: cloudinaryUploadBody,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error(t("dashboard.overview.cover.errors.uploadFailed"));
+      }
+
+      const uploadJson = (await uploadResponse.json()) as {
+        secure_url?: string;
+        public_id?: string;
+        width?: number;
+        height?: number;
+      };
+
+      if (!uploadJson.secure_url || !uploadJson.public_id || !uploadJson.width || !uploadJson.height) {
+        throw new Error(t("dashboard.overview.cover.errors.uploadFailed"));
+      }
+
+      const saveResponse = await fetch(`/api/weddings/${weddingId}/cover`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secureUrl: uploadJson.secure_url,
+          publicId: uploadJson.public_id,
+          width: uploadJson.width,
+          height: uploadJson.height,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error(t("dashboard.overview.cover.errors.saveFailed"));
+      }
+
+      const saveJson = (await saveResponse.json()) as WeddingCoverSaveApiResponse;
+      setCoverImageOnDashboard(saveJson.wedding.coverImageUrl);
+    } catch (uploadError) {
+      setCoverImageError(uploadError instanceof Error ? uploadError.message : t("dashboard.overview.cover.errors.generic"));
+    } finally {
+      setIsCoverImageUploading(false);
+    }
+  };
+
+  const handleRemoveCoverImage = async () => {
+    if (!canEditWedding) return;
+
+    setCoverImageError(null);
+    setIsCoverImageUploading(true);
+
+    try {
+      const response = await fetch(`/api/weddings/${weddingId}/cover`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error(t("dashboard.overview.cover.errors.removeFailed"));
+      }
+
+      setCoverImageOnDashboard(null);
+    } catch (removeError) {
+      setCoverImageError(removeError instanceof Error ? removeError.message : t("dashboard.overview.cover.errors.generic"));
+    } finally {
+      setIsCoverImageUploading(false);
+    }
+  };
+
   const sessionFirstName = session?.user.name?.trim().split(/\s+/)[0] ?? null;
   const greetingName = sessionFirstName || data.currentUser.name.split(" ")[0] || data.currentUser.name;
 
@@ -282,7 +438,6 @@ export default function WeddingDashboardHomePage() {
     <>
       <WeddingDashboardHeader
         firstName={greetingName}
-        onOpenSidebar={openSidebar}
         onQuickAction={handleQuickAction}
         onPlaceholderAction={handlePlaceholderAction}
       />
@@ -293,6 +448,7 @@ export default function WeddingDashboardHomePage() {
           onOpenDetails={() => {
             if (!canEditWedding) return;
             setWeddingSaveError(null);
+            setCoverImageError(null);
             setIsWeddingDetailsOpen(true);
           }}
         />
@@ -328,7 +484,10 @@ export default function WeddingDashboardHomePage() {
 
       <Dialog open={isWeddingDetailsOpen} onOpenChange={(open) => {
         setIsWeddingDetailsOpen(open);
-        if (!open) setWeddingSaveError(null);
+        if (!open) {
+          setWeddingSaveError(null);
+          setCoverImageError(null);
+        }
       }}>
         <DialogContent closeLabel={t("common.close")}>
           <DialogHeader>
@@ -398,6 +557,62 @@ export default function WeddingDashboardHomePage() {
                 placeholder={t("dashboard.overview.edit.locationPlaceholder")}
                 disabled={isWeddingSaving}
               />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-zinc-800">{t("dashboard.overview.cover.title")}</p>
+              <p className="text-xs text-zinc-500">{t("dashboard.overview.cover.description")}</p>
+              <div className="overflow-hidden rounded-md border border-zinc-200">
+                {data?.overview.coverImageUrl ? (
+                  <div className="relative h-36 w-full">
+                    <Image
+                      src={data.overview.coverImageUrl}
+                      alt={t("dashboard.overview.cover.previewAlt")}
+                      fill
+                      sizes="640px"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-36 w-full bg-gradient-to-br from-rose-100 via-amber-50 to-violet-100" />
+                )}
+              </div>
+              <input
+                ref={coverImageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.target.value = "";
+                  void handleCoverImageFileSelect(file);
+                }}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isCoverImageUploading || isWeddingSaving}
+                  onClick={() => coverImageInputRef.current?.click()}
+                >
+                  {data?.overview.coverImageUrl
+                    ? t("dashboard.overview.cover.replace")
+                    : t("dashboard.overview.cover.upload")}
+                </Button>
+                {data?.overview.coverImageUrl ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isCoverImageUploading || isWeddingSaving}
+                    onClick={() => void handleRemoveCoverImage()}
+                  >
+                    {t("dashboard.overview.cover.remove")}
+                  </Button>
+                ) : null}
+              </div>
+              {isCoverImageUploading ? (
+                <p className="text-xs text-zinc-500">{t("dashboard.overview.cover.uploading")}</p>
+              ) : null}
+              {coverImageError ? <p className="text-sm text-red-600">{coverImageError}</p> : null}
             </div>
             <div className="space-y-1.5">
               <label htmlFor="wedding-notes" className="text-sm font-medium text-zinc-800">

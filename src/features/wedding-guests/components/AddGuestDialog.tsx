@@ -468,16 +468,16 @@ export function AddGuestDialog({
               <div className="grid gap-2 md:grid-cols-2">
                 <Button
                   type="button"
-                  variant={relationshipMode === "none" ? "default" : "outline"}
-                  className={cn("justify-start", relationshipMode === "none" ? "bg-rose-500 hover:bg-rose-400" : "")}
+                  variant={relationshipMode === "none" ? "primary" : "outline"}
+                  className="justify-start"
                   onClick={() => setRelationshipMode("none")}
                 >
                   {t("weddingGuestsPage.addGuest.relationship.none")}
                 </Button>
                 <Button
                   type="button"
-                  variant={relationshipMode === "with_partner" ? "default" : "outline"}
-                  className={cn("justify-start", relationshipMode === "with_partner" ? "bg-rose-500 hover:bg-rose-400" : "")}
+                  variant={relationshipMode === "with_partner" ? "primary" : "outline"}
+                  className="justify-start"
                   onClick={() => setRelationshipMode("with_partner")}
                 >
                   {t("weddingGuestsPage.addGuest.relationship.withPartner")}
@@ -510,16 +510,14 @@ export function AddGuestDialog({
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
-                        variant={relationshipGuestMode === "existing" ? "default" : "outline"}
-                        className={relationshipGuestMode === "existing" ? "bg-rose-500 hover:bg-rose-400" : ""}
+                        variant={relationshipGuestMode === "existing" ? "primary" : "outline"}
                         onClick={() => setRelationshipGuestMode("existing")}
                       >
                         {t("weddingGuestsPage.addGuest.relationship.searchExisting")}
                       </Button>
                       <Button
                         type="button"
-                        variant={relationshipGuestMode === "new" ? "default" : "outline"}
-                        className={relationshipGuestMode === "new" ? "bg-rose-500 hover:bg-rose-400" : ""}
+                        variant={relationshipGuestMode === "new" ? "primary" : "outline"}
                         onClick={() => setRelationshipGuestMode("new")}
                       >
                         {t("weddingGuestsPage.addGuest.relationship.addNew")}
@@ -544,11 +542,8 @@ export function AddGuestDialog({
                                 <Button
                                   key={guest.id}
                                   type="button"
-                                  variant={selectedExistingGuestId === guest.id ? "default" : "ghost"}
-                                  className={cn(
-                                    "justify-start",
-                                    selectedExistingGuestId === guest.id ? "bg-rose-500 hover:bg-rose-400" : "",
-                                  )}
+                                  variant={selectedExistingGuestId === guest.id ? "primary" : "ghost"}
+                                  className="justify-start"
                                   onClick={() => setSelectedExistingGuestId(guest.id)}
                                 >
                                   {guest.name}
@@ -729,7 +724,7 @@ export function AddGuestDialog({
                       className={cn(
                         "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
                         checked
-                          ? "border-rose-300 bg-rose-50 text-rose-700"
+                          ? "border-violet-300 bg-violet-50 text-violet-700"
                           : "border-zinc-200 bg-white text-zinc-700",
                       )}
                     >
@@ -755,7 +750,7 @@ export function AddGuestDialog({
           <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
             <h3 className="text-base font-semibold text-zinc-900">{t("weddingGuestsPage.addGuest.preview.title")}</h3>
             <div className="flex items-center gap-3">
-              <div className="inline-flex size-12 items-center justify-center rounded-full bg-rose-100 text-base font-semibold text-rose-700">
+              <div className="inline-flex size-12 items-center justify-center rounded-full bg-violet-100 text-base font-semibold text-violet-700">
                 {getInitials(mainFirstName, mainLastName)}
               </div>
               <p className="text-sm font-medium text-zinc-900">
@@ -790,7 +785,7 @@ export function AddGuestDialog({
         <Button
           type="submit"
           form="add-guest-form"
-          className="bg-rose-500 hover:bg-rose-400"
+          variant="primary"
           disabled={isSubmitting}
         >
           {isSubmitting ? t("common.loading") : t("weddingGuestsPage.addGuest.actions.submit")}

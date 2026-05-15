@@ -24,7 +24,7 @@ export function GuestStatsCards({ stats, shares, isLoading }: GuestStatsCardsPro
       value: stats.totalGuests,
       title: t("weddingGuestsPage.stats.total.title"),
       subtitle: t("weddingGuestsPage.stats.total.subtitle", { count: stats.deltaSinceUpdate }),
-      iconClassName: "bg-rose-100 text-rose-600",
+      iconClassName: "bg-violet-100 text-violet-600",
     },
     {
       id: "confirmed",
@@ -48,7 +48,7 @@ export function GuestStatsCards({ stats, shares, isLoading }: GuestStatsCardsPro
       value: stats.notAttending,
       title: t("weddingGuestsPage.stats.notAttending.title"),
       subtitle: t("weddingGuestsPage.stats.notAttending.subtitle", { percent: shares.notAttending }),
-      iconClassName: "bg-rose-100 text-rose-600",
+      iconClassName: "bg-red-100 text-red-600",
     },
   ];
 

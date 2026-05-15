@@ -365,6 +365,7 @@
   "dashboard": {
     "states": {
       "loading": "Loading wedding dashboard...",
+      "loadingWorkspace": "Loading wedding workspace...",
       "loadError": "Failed to load wedding dashboard"
     },
     "header": {
@@ -417,6 +418,24 @@
       "guestsCount": "{{count}} guests",
       "totalBudget": "Total budget",
       "spent": "Spent",
+      "cover": {
+        "title": "Cover photo",
+        "description": "Upload a header image for this wedding dashboard.",
+        "previewAlt": "Wedding cover photo preview",
+        "upload": "Upload photo",
+        "replace": "Replace photo",
+        "remove": "Remove photo",
+        "uploading": "Uploading photo...",
+        "errors": {
+          "invalidType": "Only JPG, PNG, and WEBP files are supported.",
+          "maxSize": "Maximum file size is 8 MB.",
+          "signFailed": "Failed to prepare upload.",
+          "uploadFailed": "Failed to upload image.",
+          "saveFailed": "Uploaded image but failed to save it to this wedding.",
+          "removeFailed": "Failed to remove cover photo.",
+          "generic": "Failed to update cover photo."
+        }
+      },
       "edit": {
         "title": "Edit wedding details",
         "description": "Update the core wedding information used across the workspace.",
@@ -511,6 +530,25 @@
       "description": "Create a wedding day timeline so everyone knows what happens and when.",
       "cta": "Create schedule",
       "dismiss": "Dismiss tip"
+    },
+    "workspace": {
+      "vendors": {
+        "subtitle": "Manage wedding vendors and payment progress.",
+        "namePlaceholder": "Vendor name",
+        "add": "Add vendor",
+        "adding": "Adding...",
+        "statusLabel": "status",
+        "totalLabel": "total",
+        "paidLabel": "paid"
+      },
+      "expenses": {
+        "totalTracked": "Total tracked: {{total}}",
+        "titlePlaceholder": "Expense title",
+        "categoryPlaceholder": "Category",
+        "amountPlaceholder": "Amount (minor)",
+        "add": "Add expense",
+        "adding": "Adding..."
+      }
     },
     "placeholders": {
       "title": "Coming soon",

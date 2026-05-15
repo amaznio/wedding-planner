@@ -66,6 +66,7 @@ export type WeddingOverviewData = {
   budgetMinor: number;
   spentMinor: number;
   currency: string;
+  coverImageUrl?: string | null;
 };
 
 export type WeddingDashboardData = {

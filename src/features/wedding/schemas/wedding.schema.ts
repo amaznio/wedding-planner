@@ -190,3 +190,10 @@ export const updateWeddingMemberSchema = z.object({
 export const transferWeddingOwnershipSchema = z.object({
   userId: z.string().min(1),
 });
+
+export const updateWeddingCoverSchema = z.object({
+  secureUrl: z.url().max(1000),
+  publicId: z.string().trim().min(1).max(300),
+  width: z.int().min(1).max(10000),
+  height: z.int().min(1).max(10000),
+});

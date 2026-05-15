@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useI18n } from "@/i18n/provider";
+import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
+import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 
 type Vendor = {
   id: string;
@@ -25,12 +28,13 @@ type WeddingAccessResponse = {
 };
 
 export default function WeddingVendorsPage() {
+  const { t } = useI18n();
   const params = useParams<{ weddingId: string }>();
   const weddingId = params.weddingId;
-  const { openSidebar } = useWeddingWorkspaceShell();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
 
@@ -51,12 +55,15 @@ export default function WeddingVendorsPage() {
   useEffect(() => {
     let active = true;
     const run = async () => {
+      setIsLoading(true);
       try {
         await load();
       } catch (e) {
         if (active) {
           setError(e instanceof Error ? e.message : "Failed to load vendors");
         }
+      } finally {
+        if (active) setIsLoading(false);
       }
     };
     void run();
@@ -64,6 +71,10 @@ export default function WeddingVendorsPage() {
       active = false;
     };
   }, [load]);
+
+  if (isLoading) {
+    return <WorkspaceRouteLoading maxWidthClassName="max-w-5xl" />;
+  }
 
   const onCreate = async () => {
     if (!canEdit) return;
@@ -87,55 +98,55 @@ export default function WeddingVendorsPage() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-      <header className="rounded-lg border border-zinc-200 bg-white p-4">
-        <div className="mb-3 lg:hidden">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={openSidebar}
-            aria-label="Open sidebar"
-          >
-            <Menu className="size-4" />
-          </Button>
-        </div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Vendors</h1>
-      </header>
+    <main className="mx-auto flex w-full max-w-5xl flex-col">
+      <WorkspacePageHeader
+        title={t("dashboard.sidebar.nav.vendors")}
+        subtitle={t("dashboard.workspace.vendors.subtitle")}
+      />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <div className="flex gap-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Vendor name"
-            disabled={!canEdit}
-            className="h-10 flex-1 rounded-md border border-zinc-300 px-3 text-sm"
-          />
-          <button
-            type="button"
-            onClick={onCreate}
-            disabled={!canEdit || isSaving || !name.trim()}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {isSaving ? "Adding..." : "Add vendor"}
-          </button>
-        </div>
-        {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-      </section>
+      <div className="mt-5 flex flex-col gap-5">
+        <Card className="gap-0 py-0">
+          <CardContent className="p-4">
+            <div className="flex gap-2">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("dashboard.workspace.vendors.namePlaceholder")}
+                disabled={!canEdit}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={onCreate}
+                disabled={!canEdit || isSaving || !name.trim()}
+                variant="primary"
+              >
+                {isSaving ? t("dashboard.workspace.vendors.adding") : t("dashboard.workspace.vendors.add")}
+              </Button>
+            </div>
+            {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+          </CardContent>
+        </Card>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <ul className="space-y-2">
-          {vendors.map((vendor) => (
-            <li key={vendor.id} className="rounded-md border border-zinc-200 p-3">
-              <p className="text-sm font-semibold text-zinc-900">{vendor.name}</p>
-              <p className="text-xs text-zinc-600">
-                status: {vendor.paymentStatus} • total: {vendor.totalCostMinor} • paid: {vendor.amountPaidMinor}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <Card className="gap-0 py-0">
+          <CardContent className="p-4">
+            <ul className="space-y-2">
+              {vendors.map((vendor) => (
+                <li key={vendor.id} className="rounded-md border border-zinc-200 p-3">
+                  <p className="text-sm font-semibold text-zinc-900">{vendor.name}</p>
+                  <p className="text-xs text-zinc-600">
+                    {t("dashboard.workspace.vendors.statusLabel")}: {vendor.paymentStatus}
+                    {" • "}
+                    {t("dashboard.workspace.vendors.totalLabel")}: {vendor.totalCostMinor}
+                    {" • "}
+                    {t("dashboard.workspace.vendors.paidLabel")}: {vendor.amountPaidMinor}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

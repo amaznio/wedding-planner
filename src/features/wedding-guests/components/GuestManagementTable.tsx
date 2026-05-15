@@ -71,8 +71,7 @@ export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestMa
             <Button
               key={tab.value}
               type="button"
-              variant={statusTab === tab.value ? "default" : "outline"}
-              className={statusTab === tab.value ? "bg-rose-500 hover:bg-rose-400" : ""}
+              variant={statusTab === tab.value ? "primary" : "outline"}
               onClick={() => setStatusTab(tab.value)}
             >
               {tab.label}
@@ -220,7 +219,7 @@ export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestMa
           <Button type="button" variant="outline" size="icon" disabled>
             {"<"}
           </Button>
-          <Button type="button" variant="outline" className="border-rose-300 text-rose-600" disabled>
+          <Button type="button" variant="outline" className="border-violet-300 text-violet-600" disabled>
             1
           </Button>
           <Button type="button" variant="outline" disabled>

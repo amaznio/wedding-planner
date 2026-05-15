@@ -9,6 +9,7 @@ import { CollaboratorsHeader } from "./CollaboratorsHeader";
 import { InvitePeopleCard } from "./InvitePeopleCard";
 import { PeopleWithAccessCard } from "./PeopleWithAccessCard";
 import { RemoveCollaboratorDialog } from "./RemoveCollaboratorDialog";
+import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 
 type WeddingCollaboratorsPageProps = {
   weddingId: string;
@@ -201,62 +202,60 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
     }
   }, [loadMembers, removeTarget, t, weddingId]);
 
+  if (isLoading) {
+    return <WorkspaceRouteLoading />;
+  }
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-2">
+    <main className="mx-auto flex w-full max-w-6xl flex-col">
       <CollaboratorsHeader />
 
-      {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      <div className="mt-5 flex flex-col gap-5">
+        {error ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
 
-      {!isLoading && !canManageMembers ? (
-        <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          {t("weddingCollaboratorsPage.readOnlyBanner")}
-        </div>
-      ) : null}
+        {!canManageMembers ? (
+          <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+            {t("weddingCollaboratorsPage.readOnlyBanner")}
+          </div>
+        ) : null}
 
-      {isLoading ? (
-        <p className="rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          {t("dashboard.states.loading")}
-        </p>
-      ) : (
-        <>
-          <PeopleWithAccessCard
-            collaborators={collaborators}
-            stats={stats}
-            currentUserId={currentUserId}
-            canManageMembers={canManageMembers}
-            updatingUserId={updatingUserId}
-            removingUserId={removingUserId}
-            onChangeRole={(userId, role) => {
-              void updateRole(userId, role);
-            }}
-            onRemove={(collaborator) => setRemoveTarget(collaborator)}
-          />
-          <InvitePeopleCard
-            canManageMembers={canManageMembers}
-            query={query}
-            globalRole={globalInviteRole}
-            selectedUserId={selectedInviteUserId}
-            users={searchUsers}
-            pendingInviteUserId={pendingInviteUserId}
-            roleByUserId={inviteRoleByUserId}
-            onQueryChange={setQuery}
-            onGlobalRoleChange={setGlobalInviteRole}
-            onRowRoleChange={(userId, role) =>
-              setInviteRoleByUserId((prev) => ({ ...prev, [userId]: role }))
-            }
-            onSelectedUserChange={setSelectedInviteUserId}
-            onInvite={(user, role) => {
-              void inviteUser(user, role);
-            }}
-            isSearching={isSearching}
-          />
-          <AccessInfoCallout />
-        </>
-      )}
+        <PeopleWithAccessCard
+          collaborators={collaborators}
+          stats={stats}
+          currentUserId={currentUserId}
+          canManageMembers={canManageMembers}
+          updatingUserId={updatingUserId}
+          removingUserId={removingUserId}
+          onChangeRole={(userId, role) => {
+            void updateRole(userId, role);
+          }}
+          onRemove={(collaborator) => setRemoveTarget(collaborator)}
+        />
+        <InvitePeopleCard
+          canManageMembers={canManageMembers}
+          query={query}
+          globalRole={globalInviteRole}
+          selectedUserId={selectedInviteUserId}
+          users={searchUsers}
+          pendingInviteUserId={pendingInviteUserId}
+          roleByUserId={inviteRoleByUserId}
+          onQueryChange={setQuery}
+          onGlobalRoleChange={setGlobalInviteRole}
+          onRowRoleChange={(userId, role) =>
+            setInviteRoleByUserId((prev) => ({ ...prev, [userId]: role }))
+          }
+          onSelectedUserChange={setSelectedInviteUserId}
+          onInvite={(user, role) => {
+            void inviteUser(user, role);
+          }}
+          isSearching={isSearching}
+        />
+        <AccessInfoCallout />
+      </div>
 
       <RemoveCollaboratorDialog
         collaborator={removeTarget}

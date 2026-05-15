@@ -365,6 +365,7 @@
   "dashboard": {
     "states": {
       "loading": "Ładowanie panelu ślubnego...",
+      "loadingWorkspace": "Ładowanie przestrzeni ślubnej...",
       "loadError": "Nie udało się załadować panelu ślubnego"
     },
     "header": {
@@ -417,6 +418,24 @@
       "guestsCount": "{{count}} gości",
       "totalBudget": "Budżet całkowity",
       "spent": "Wydano",
+      "cover": {
+        "title": "Zdjęcie nagłówkowe",
+        "description": "Wgraj zdjęcie do nagłówka panelu ślubnego.",
+        "previewAlt": "Podgląd zdjęcia nagłówkowego wesela",
+        "upload": "Wgraj zdjęcie",
+        "replace": "Zmień zdjęcie",
+        "remove": "Usuń zdjęcie",
+        "uploading": "Wgrywanie zdjęcia...",
+        "errors": {
+          "invalidType": "Obsługiwane są tylko pliki JPG, PNG i WEBP.",
+          "maxSize": "Maksymalny rozmiar pliku to 8 MB.",
+          "signFailed": "Nie udało się przygotować wgrywania.",
+          "uploadFailed": "Nie udało się wgrać zdjęcia.",
+          "saveFailed": "Zdjęcie zostało wgrane, ale nie udało się zapisać go dla tego wesela.",
+          "removeFailed": "Nie udało się usunąć zdjęcia nagłówkowego.",
+          "generic": "Nie udało się zaktualizować zdjęcia nagłówkowego."
+        }
+      },
       "edit": {
         "title": "Edytuj dane ślubu",
         "description": "Zaktualizuj główne informacje o ślubie używane w całej przestrzeni.",
@@ -511,6 +530,25 @@
       "description": "Stwórz harmonogram dnia ślubu, aby wszyscy wiedzieli, co i kiedy się wydarzy.",
       "cta": "Utwórz harmonogram",
       "dismiss": "Ukryj wskazówkę"
+    },
+    "workspace": {
+      "vendors": {
+        "subtitle": "Zarządzaj dostawcami weselnymi i postępem płatności.",
+        "namePlaceholder": "Nazwa dostawcy",
+        "add": "Dodaj dostawcę",
+        "adding": "Dodawanie...",
+        "statusLabel": "status",
+        "totalLabel": "łączny koszt",
+        "paidLabel": "zapłacono"
+      },
+      "expenses": {
+        "totalTracked": "Łącznie ujęte: {{total}}",
+        "titlePlaceholder": "Tytuł wydatku",
+        "categoryPlaceholder": "Kategoria",
+        "amountPlaceholder": "Kwota (jednostka mniejsza)",
+        "add": "Dodaj wydatek",
+        "adding": "Dodawanie..."
+      }
     },
     "placeholders": {
       "title": "Wkrótce",

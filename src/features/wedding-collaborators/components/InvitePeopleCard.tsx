@@ -88,12 +88,13 @@ export function InvitePeopleCard({
           {canManageMembers ? (
             <Button
               type="button"
+              variant="primary"
               disabled={!selectedUser || pendingInviteUserId === selectedUser.id}
               onClick={() => {
                 if (!selectedUser) return;
                 onInvite(selectedUser, selectedRole);
               }}
-              className="bg-violet-600 text-white hover:bg-violet-500 md:min-w-[170px]"
+              className="md:min-w-[170px]"
             >
               {t("weddingCollaboratorsPage.actions.sendInvitation")}
             </Button>

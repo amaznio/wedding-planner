@@ -10,6 +10,7 @@ type BuildDashboardDataInput = {
   weddingName: string;
   weddingDate?: Date | null;
   venue?: string;
+  coverImageUrl?: string | null;
   currency?: string;
   guestCount?: number;
   budgetMinor?: number;
@@ -95,6 +96,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       coupleNames: input.weddingName,
       weddingDate,
       venue: input.venue?.trim() || "Folwark W\u0105sowo",
+      coverImageUrl: input.coverImageUrl ?? null,
       guestEstimate: guestCount,
       budgetMinor,
       spentMinor,

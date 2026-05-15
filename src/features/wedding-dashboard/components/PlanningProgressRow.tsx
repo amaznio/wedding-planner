@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight, CircleCheck, FileText, ListChecks, Users, Wallet, CalendarClock, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { PlanningProgressRow } from "../types";
 
@@ -93,10 +94,11 @@ export function PlanningProgressRowItem({
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onPlaceholderAction(row.id)}
-      className="block w-full border-b border-zinc-200 text-left last:border-b-0 hover:bg-zinc-50"
+      className="h-auto w-full justify-start rounded-none border-b border-zinc-200 p-0 text-left font-normal hover:bg-zinc-50 last:border-b-0"
     >
       <RowBody
         row={row}
@@ -105,6 +107,6 @@ export function PlanningProgressRowItem({
         detailLabel={detailLabel}
         progressLabel={progressLabel}
       />
-    </button>
+    </Button>
   );
 }

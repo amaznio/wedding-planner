@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin, UsersRound, Wallet } from "lucide-react";
+import Image from "next/image";
 import { useI18n } from "@/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,17 +24,27 @@ export function WeddingOverviewHero({ overview, locale, onOpenDetails }: Wedding
     : 0;
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 bg-white">
+    <Card className="overflow-hidden border-zinc-200/80 bg-white py-0">
       <CardContent className="p-0">
-        <div className="grid gap-0 md:grid-cols-[280px_1fr]">
-          <div className="relative min-h-[220px] bg-gradient-to-br from-rose-100 via-amber-50 to-violet-100">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_50%)]" />
+        <div className="flex flex-col gap-0 md:flex-row md:items-stretch">
+          <div className="relative min-h-[220px] overflow-hidden bg-gradient-to-br from-rose-100 via-amber-50 to-violet-100 md:w-[280px] md:flex-none md:self-stretch md:min-h-0">
+            {overview.coverImageUrl ? (
+              <Image
+                src={overview.coverImageUrl}
+                alt={overview.coupleNames}
+                fill
+                sizes="(max-width: 768px) 100vw, 280px"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.7),transparent_50%)]" />
+            )}
             <div className="absolute bottom-4 left-4 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-zinc-700">
               {t("dashboard.overview.heroTag")}
             </div>
           </div>
 
-          <div className="p-5 sm:p-6">
+          <div className="flex-1 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-semibold text-zinc-900">{overview.coupleNames}</h2>

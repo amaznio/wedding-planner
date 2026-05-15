@@ -30,7 +30,7 @@ export function DashboardTipBanner({ onAction }: DashboardTipBannerProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button type="button" className="bg-violet-600 hover:bg-violet-500" onClick={onAction}>
+          <Button type="button" variant="primary" onClick={onAction}>
             {t("dashboard.tip.cta")}
           </Button>
           <Button

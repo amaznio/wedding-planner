@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
-import { useWeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
+import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
 import type { GuestRsvpStatus, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
 import { AddGuestDialog } from "./AddGuestDialog";
@@ -64,7 +64,6 @@ type WeddingEventType = "wedding" | "afterparty" | "bachelorette" | "bachelor" |
 export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const { locale } = useI18n();
   const router = useRouter();
-  const { openSidebar } = useWeddingWorkspaceShell();
   const baseData = useMemo(() => buildWeddingGuestsMockData(weddingId), [weddingId]);
 
   const [data, setData] = useState<WeddingGuestsData>({
@@ -203,25 +202,28 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     }
   };
 
+  if (isLoading) {
+    return <WorkspaceRouteLoading />;
+  }
+
   return (
     <>
       <GuestsPageHeader
         notificationCount={data.notificationCount}
-        onOpenSidebar={openSidebar}
         onAction={handleQuickAction}
       />
       <div className="mt-5 flex flex-col gap-5">
-        <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={isLoading} />
+        <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={false} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <GuestManagementTable
             guests={data.guests}
             totalGuests={data.stats.totalGuests}
-            isLoading={isLoading}
+            isLoading={false}
           />
           <GuestInsightsPanel
             stats={data.stats}
             shares={rsvpShare}
-            isLoading={isLoading}
+            isLoading={false}
             onAction={handleQuickAction}
           />
         </div>

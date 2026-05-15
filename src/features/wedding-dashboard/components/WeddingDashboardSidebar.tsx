@@ -166,7 +166,7 @@ export function WeddingDashboardSidebar({
                           <Icon className="size-4" />
                           <span className="truncate">{label}</span>
                           {item.counter ? (
-                            <Badge className="ml-auto bg-rose-100 text-rose-700 group-data-[collapsible=icon]:hidden">
+                            <Badge className="ml-auto bg-violet-100 text-violet-700 group-data-[collapsible=icon]:hidden">
                               {item.counter}
                             </Badge>
                           ) : null}

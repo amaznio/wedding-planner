@@ -28,8 +28,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
+import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
@@ -351,70 +354,73 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
     data.event.guests.total > 0 ? Math.round((data.event.guests.confirmed / data.event.guests.total) * 100) : 0;
 
   if (isLoading) {
-    return <div className="p-6 text-sm text-zinc-600">{t("events.detail.states.loading")}</div>;
+    return <WorkspaceRouteLoading />;
   }
 
   return (
     <>
-      <header className="flex flex-col gap-4 px-4 py-4 sm:px-6">
-        <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" size="icon" aria-label={t("dashboard.header.notifications")}>
-            <Bell className="size-4" />
-          </Button>
-          <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
-            {t("events.detail.actions.guestPreview")}
-          </Button>
-          <Button
-            type="button"
-            className="bg-rose-500 hover:bg-rose-400"
-            onClick={() => undefined}
-            disabled={!canEditWedding}
-          >
-            <Edit3 className="size-4" />
-            {t("events.detail.actions.editEvent")}
-          </Button>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-semibold text-zinc-900">{data.event.name}</h1>
-              {data.event.isMainEvent ? (
-                <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                  {t("events.detail.badges.mainEvent")}
-                </Badge>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-600">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="size-4" />
-                {eventDateLabel}
-              </span>
-              <Separator orientation="vertical" className="hidden h-4 md:block" />
-              <span className="inline-flex items-center gap-1.5">
-                <Clock3 className="size-4" />
-                {eventTimeLabel}
-              </span>
-              <Separator orientation="vertical" className="hidden h-4 md:block" />
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="size-4" />
-                {data.event.venue.name}
-              </span>
-            </div>
-          </div>
-      </header>
+      <WorkspacePageHeader
+        title={(
+          <span className="flex flex-wrap items-center gap-3">
+            <span>{data.event.name}</span>
+            {data.event.isMainEvent ? (
+              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                {t("events.detail.badges.mainEvent")}
+              </Badge>
+            ) : null}
+          </span>
+        )}
+        subtitle={(
+          <span className="flex flex-wrap items-center gap-3 text-sm text-zinc-600">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays className="size-4" />
+              {eventDateLabel}
+            </span>
+            <Separator orientation="vertical" className="hidden h-4 md:block" />
+            <span className="inline-flex items-center gap-1.5">
+              <Clock3 className="size-4" />
+              {eventTimeLabel}
+            </span>
+            <Separator orientation="vertical" className="hidden h-4 md:block" />
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-4" />
+              {data.event.venue.name}
+            </span>
+          </span>
+        )}
+        actions={(
+          <>
+            <Button type="button" variant="outline" size="icon" aria-label={t("dashboard.header.notifications")}>
+              <Bell className="size-4" />
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
+              {t("events.detail.actions.guestPreview")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => undefined}
+              disabled={!canEditWedding}
+            >
+              <Edit3 className="size-4" />
+              {t("events.detail.actions.editEvent")}
+            </Button>
+          </>
+        )}
+      />
       <div className="mt-5 flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-1">
           {eventTabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
-              <Button
-                key={tab.id}
-                type="button"
-                variant="ghost"
-                className={`h-9 gap-2 rounded-none border-b-2 px-2 text-sm ${active ? "border-rose-500 text-rose-600" : "border-transparent text-zinc-600"}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
+                <Button
+                  key={tab.id}
+                  type="button"
+                  variant="ghost"
+                  className={`h-9 gap-2 rounded-none border-b-2 px-2 text-sm ${active ? "border-violet-500 text-violet-600" : "border-transparent text-zinc-600"}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
                 <Icon className="size-4" />
                 {t(tab.key)}
               </Button>
@@ -468,9 +474,9 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                         <p className="pt-0.5 text-[18px] leading-none text-zinc-900">{item.time}</p>
                         <div className="relative flex h-full justify-center">
                           {index < data.event.timeline.length - 1 ? (
-                            <span className="absolute bottom-[-22px] top-3 z-0 w-px bg-rose-200" />
+                            <span className="absolute bottom-[-22px] top-3 z-0 w-px bg-violet-200" />
                           ) : null}
-                          <span className="relative z-10 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-rose-500 shadow-[0_0_0_1px_rgba(251,113,133,0.35)]" />
+                          <span className="relative z-10 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.35)]" />
                         </div>
                         <div>
                           <p className="text-[16px] font-medium leading-tight text-zinc-900">{t(item.titleKey)}</p>
@@ -535,7 +541,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                     <div className="self-center space-y-3 text-sm">
                       <LegendRow colorClass="text-green-500" label={t("events.detail.cards.guests.confirmed")} value={data.event.guests.confirmed} />
                       <LegendRow colorClass="text-amber-400" label={t("events.detail.cards.guests.pending")} value={data.event.guests.pending} />
-                      <LegendRow colorClass="text-rose-500" label={t("events.detail.cards.guests.notAttending")} value={data.event.guests.notAttending} />
+                      <LegendRow colorClass="text-red-500" label={t("events.detail.cards.guests.notAttending")} value={data.event.guests.notAttending} />
                     </div>
                   </div>
                 </CardContent>
@@ -677,18 +683,18 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input
+                <Input
                   value={planName}
                   onChange={(event) => setPlanName(event.target.value)}
                   placeholder={t("events.detail.seatingTab.planNamePlaceholder")}
                   disabled={!canEditWedding}
-                  className="h-10 flex-1 rounded-md border border-zinc-300 px-3 text-sm"
+                  className="h-10 flex-1"
                 />
                 <Button
                   type="button"
                   onClick={onCreatePlan}
                   disabled={!canEditWedding || isCreatingPlan || !planName.trim()}
-                  className="bg-rose-500 hover:bg-rose-400"
+                  variant="primary"
                 >
                   {isCreatingPlan ? t("events.detail.seatingTab.creating") : t("events.detail.seatingTab.create")}
                 </Button>
@@ -726,7 +732,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
             <CardContent>
               <Button
                 type="button"
-                className="bg-rose-500 hover:bg-rose-400"
+                variant="primary"
                 onClick={() => setActiveTab("overview")}
               >
                 {t("events.detail.tabs.backToOverview")}

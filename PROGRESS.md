@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 217 - Collaborators header action removal (completed)
+Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+) (completed)
 
 ## Completed Phases
 
@@ -229,8 +229,251 @@ Phase 217 - Collaborators header action removal (completed)
 - Phase 215 - Seating plan public-read sharing + viewer-only editor enforcement
 - Phase 216 - Seating plan access-denied UX states
 - Phase 217 - Collaborators header action removal
+- Phase 218 - Wedding workspace UI cleanup (shared header + purple primary + shadcn control alignment)
+- Phase 219 - Wedding workspace spacing/card polish + no-drift guardrails
+- Phase 220 - Workspace primitive parity + vendors/expenses localization cleanup
+- Phase 221 - Workspace final stabilization smoke pass (build + route health + primitive cleanup)
+- Phase 222 - Workspace release-candidate QA pass (automated runtime + manual visual checklist)
+- Phase 223 - Workspace subroute loading-state unification
+- Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+)
 
 ## Completed Work
+
+- Implemented Phase 224 wedding dashboard cover photo upload (Cloudinary, editor+):
+  - data model and migration:
+    - added nullable cover image metadata fields to `Wedding`:
+      - `coverImageUrl`
+      - `coverImagePublicId`
+      - `coverImageWidth`
+      - `coverImageHeight`
+      - `coverImageUploadedAt`
+    - added migration:
+      - `prisma/migrations/20260514231500_add_wedding_cover_image/migration.sql`
+  - cloudinary server integration:
+    - added `src/lib/cloudinary.ts` helper for:
+      - signed upload payload generation
+      - cloudinary URL validation
+      - best-effort asset deletion via Cloudinary API
+  - wedding cover APIs (authz: `editor+`):
+    - `POST /api/weddings/[weddingId]/cover/sign`
+    - `PATCH /api/weddings/[weddingId]/cover`
+    - `DELETE /api/weddings/[weddingId]/cover`
+    - replaced-cover behavior now best-effort deletes previous Cloudinary asset after successful save
+  - dashboard UI wiring:
+    - hero image now renders uploaded cover photo when present; gradient fallback remains otherwise
+    - wedding details dialog now includes cover management section:
+      - preview
+      - upload/replace (JPEG/PNG/WEBP, max 8MB)
+      - remove
+      - upload/save/remove error feedback
+    - local dashboard state updates cover image immediately after PATCH/DELETE success
+  - i18n + config updates:
+    - added EN/PL strings under `dashboard.overview.cover.*`
+    - added Cloudinary env vars to `.env.example`
+    - enabled `next/image` remote host support for `res.cloudinary.com` in `next.config.ts`
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260514231500_add_wedding_cover_image/migration.sql`
+    - `src/lib/cloudinary.ts`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/app/api/weddings/[weddingId]/cover/route.ts`
+    - `src/app/api/weddings/[weddingId]/cover/sign/route.ts`
+    - `src/features/wedding-dashboard/components/WeddingOverviewHero.tsx`
+    - `src/features/wedding-dashboard/types.ts`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `.env.example`
+    - `next.config.ts`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma:validate` (pass)
+    - `corepack pnpm prisma generate` (pass)
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+  - known issues:
+    - migration must be applied to the target database before runtime usage (`Wedding.coverImage*` columns are required by new APIs/UI)
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - set Cloudinary env vars, run migration on your active DB, then verify upload/replace/remove flow on `/weddings/{weddingId}`
+
+- Implemented Phase 223 workspace subroute loading-state unification:
+  - added shared workspace loading primitive:
+    - `WorkspaceRouteLoading` to standardize loading visuals and spacing
+  - aligned loading behavior across wedding workspace subroutes:
+    - dashboard (`/weddings/[weddingId]`)
+    - guests
+    - collaborators
+    - events
+    - vendors
+    - expenses
+  - updated vendors/expenses to include explicit initial loading state (they previously rendered page UI before data load)
+  - updated i18n messages with unified loader copy:
+    - `dashboard.states.loadingWorkspace` in EN/PL
+  - files changed:
+    - `src/features/wedding-dashboard/components/WorkspaceRouteLoading.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+    - `rg` audit confirming all target subroutes now use `WorkspaceRouteLoading`
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - quick manual verification in browser for perceived loading transitions between workspace routes (especially guests/collaborators/events)
+
+- Implemented Phase 222 workspace release-candidate QA pass:
+  - executed release-candidate runtime checks for workspace stability:
+    - route health checks for public and protected workspace routes (expected `200` and `307` redirect behavior)
+    - validated production build output and route generation via `next build`
+    - re-verified static quality gates:
+      - `pnpm typecheck` pass
+      - `pnpm lint` pass with unchanged pre-existing warnings outside workspace scope
+  - performed final workspace drift scan:
+    - confirmed no remaining raw `<input>/<button>/<select>` controls in workspace/guests/events/collaborators scope
+    - confirmed primary action styling is standardized to semantic purple variant usage in workspace pages
+  - documented manual visual signoff checklist as remaining release gate:
+    - authenticated workspace pages (`dashboard`, `guests`, `collaborators`, `events`, `vendors`, `expenses`)
+    - EN + PL locale rendering
+    - desktop/tablet/mobile layout checks
+    - role-gated action visibility checks (owner/editor/viewer)
+  - files changed:
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+    - `corepack pnpm build` (pass)
+    - route health checks via `Invoke-WebRequest` for workspace/public URLs
+    - workspace code scans via `rg` for primitive and style drift
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+    - full authenticated screenshot automation was not finalized without introducing new browser automation dependency tooling to the repo
+  - next recommended step:
+    - complete the final authenticated visual QA in-browser using this checklist:
+      1) login as owner and verify header/action alignment across all workspace pages
+      2) switch locale EN/PL and verify no clipping/overflow/regressions
+      3) test mobile/tablet responsive states for collaborators/events pages
+      4) verify role-gated controls for editor/viewer accounts remain correct
+
+- Implemented Phase 221 workspace final stabilization smoke pass:
+  - replaced final raw control in workspace feature scope:
+    - converted dashboard planning-progress row fallback action from raw `<button>` to shadcn `Button` (`variant="ghost"`) while preserving row click behavior and visual hierarchy
+  - completed workspace vendors/expenses localization stabilization:
+    - moved remaining hardcoded workspace text to i18n-backed keys and wired pages to those keys
+  - executed full build + runtime route health smoke checks:
+    - `next build` succeeded
+    - public route checks returned expected statuses:
+      - `200` for `/`, `/sign-in`, `/weddings`
+      - `307` redirects for protected wedding workspace routes when unauthenticated
+  - files changed:
+    - `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+    - `corepack pnpm build` (pass)
+    - route health checks via `Invoke-WebRequest` to workspace/public URLs (expected status codes)
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - perform authenticated in-browser manual QA for workspace pages in EN/PL (desktop/tablet/mobile) to visually validate spacing, interactions, and role-gated actions end to end
+
+- Implemented Phase 220 workspace primitive parity + vendors/expenses localization cleanup:
+  - removed the remaining raw `<button>` in workspace dashboard progress rows by switching to shadcn `Button` (`variant="ghost"`) while preserving row-click behavior
+  - localized hardcoded vendors/expenses workspace copy into EN/PL i18n messages:
+    - vendors subtitle, input placeholder, add/loading labels, and row metadata labels
+    - expenses total-tracked subtitle, input placeholders, and add/loading labels
+  - updated vendors/expenses pages to consume new `dashboard.workspace.*` translation keys
+  - files changed:
+    - `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - run an in-browser visual smoke pass for workspace pages in PL/EN (desktop + tablet/mobile) and capture any final UX defects before commit/release
+
+- Implemented Phase 219 workspace spacing/card polish + no-drift guardrails:
+  - aligned collaborators page vertical rhythm to workspace standard:
+    - header followed by `mt-5` content stack with `gap-5`
+  - replaced vendors/expenses one-off bordered section wrappers with shadcn `Card` + `CardContent` structure
+  - kept existing behavior, permissions, and API wiring unchanged
+  - documented workspace UI guardrails to prevent style drift:
+    - use `WorkspacePageHeader` for wedding workspace page headings
+    - use semantic button variants (`primary`, `outline`, `ghost`, `destructive`) instead of one-off action color classes
+    - use shadcn form primitives (`Input`, `Select`, `Button`, `Card`, `Badge`) for new/updated workspace UI
+    - keep red palette for destructive/error semantics only, not primary actions
+  - files changed:
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - run a browser visual smoke pass across workspace routes (dashboard, guests, collaborators, events, vendors, expenses) in EN/PL and capture any final spacing or mobile overflow defects
+
+- Implemented Phase 218 wedding workspace UI cleanup:
+  - added reusable workspace heading primitive:
+    - `WorkspacePageHeader` with unified title/subtitle/actions structure
+  - added semantic button variant:
+    - `Button` now supports `variant="primary"` for purple primary actions
+  - aligned workspace page headings to shared component:
+    - collaborators, dashboard, guests, events, vendors, and expenses now use consistent heading hierarchy
+  - normalized primary action styling in workspace pages:
+    - replaced rose/one-off primary action styling with semantic purple primary actions
+    - updated event tabs active styling to purple
+  - replaced remaining raw controls in workspace and wedding-events scope:
+    - vendors/expenses/event seating input and action controls now use shadcn `Input`/`Button`
+  - kept permission logic, API flows, and route behavior unchanged
+  - files changed:
+    - `src/components/ui/button.tsx`
+    - `src/features/wedding-dashboard/components/WorkspacePageHeader.tsx`
+    - `src/features/wedding-collaborators/components/CollaboratorsHeader.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardHeader.tsx`
+    - `src/features/wedding-dashboard/components/DashboardTipBanner.tsx`
+    - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+    - `src/features/wedding-guests/components/GuestsPageHeader.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+    - `src/features/wedding-guests/components/GuestStatsCards.tsx`
+    - `src/features/wedding-guests/components/GuestTipCard.tsx`
+    - `src/features/wedding-guests/components/AddGuestDialog.tsx`
+    - `src/features/wedding-collaborators/components/InvitePeopleCard.tsx`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings in seating-plan/editor files outside this phase)
+  - known issues:
+    - pre-existing lint warnings remain in seating-plan/editor files (unchanged by this phase)
+  - next recommended step:
+    - run a focused visual QA on workspace pages (EN/PL, desktop/tablet/mobile) and then optionally extract shared “workspace card section” primitives for deeper UI consistency
 
 - Implemented Phase 217 collaborators header action removal:
   - removed header-right notification bell and invite button from collaborators page heading

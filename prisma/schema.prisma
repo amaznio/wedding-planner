@@ -74,6 +74,11 @@ model Wedding {
   location  String?
   currency  String   @default("PLN")
   notes     String?
+  coverImageUrl        String?
+  coverImagePublicId   String?
+  coverImageWidth      Int?
+  coverImageHeight     Int?
+  coverImageUploadedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
