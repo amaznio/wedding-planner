@@ -11,7 +11,10 @@ type RectTableProps = {
   isSelected?: boolean;
   onSelect?: (tableId: string) => void;
   onMove?: (tableId: string, nextX: number, nextY: number) => void;
-  screenToCanvas?: (clientX: number, clientY: number) => { x: number; y: number };
+  screenToCanvas?: (
+    clientX: number,
+    clientY: number,
+  ) => { x: number; y: number };
   seatOccupants?: Record<
     number,
     {
@@ -34,7 +37,12 @@ type RectTableProps = {
   enableTableDrag?: boolean;
   enableSeatDrag?: boolean;
   showHoverSeatNames?: boolean;
-  onSeatClick?: (tableId: string, seatNumber: number, clientX: number, clientY: number) => void;
+  onSeatClick?: (
+    tableId: string,
+    seatNumber: number,
+    clientX: number,
+    clientY: number,
+  ) => void;
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
   onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
   onSeatDrop?: (tableId: string, seatNumber: number, guestId: string) => void;
@@ -78,7 +86,10 @@ function RectTableComponent({
   onDragStateChange,
 }: RectTableProps) {
   const { t } = useI18n();
-  const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
+  const dimensions = getRectangleTableDimensions(
+    table.seatCount,
+    table.seatLayout,
+  );
   const seatPositions = getSeatPositions(
     table.seatCount,
     dimensions.width,
@@ -112,7 +123,10 @@ function RectTableComponent({
         zIndex: showHoverSeatNames && isHovered ? 80 : isSelected ? 30 : 1,
       }}
     >
-      <div className="relative" style={{ width: dimensions.width, height: dimensions.height }}>
+      <div
+        className="relative"
+        style={{ width: dimensions.width, height: dimensions.height }}
+      >
         <div
           role="button"
           tabIndex={0}
@@ -216,15 +230,18 @@ function RectTableComponent({
           <div className="flex h-full flex-col items-center justify-center gap-1 text-zinc-700">
             <span className="text-sm font-semibold">{table.label}</span>
             <span className="text-xs text-zinc-500">
-              {t("table.occupied", { occupied: occupiedSeatCount, total: table.seatCount })}
+              {t("table.occupied", {
+                occupied: occupiedSeatCount,
+                total: table.seatCount,
+              })}
             </span>
-            <span
+            {/* <span
               className={`text-[11px] ${
                 isPlannedOverCapacity ? "font-semibold text-amber-700" : "text-zinc-500"
               }`}
             >
               {t("table.planned", { planned: plannedGuestCount, total: table.seatCount })}
-            </span>
+            </span> */}
           </div>
         </div>
 
@@ -236,8 +253,12 @@ function RectTableComponent({
             y={seat.y}
             occupantGuestId={seatOccupants?.[seat.seatNumber]?.guestId ?? null}
             occupantName={seatOccupants?.[seat.seatNumber]?.guestName ?? null}
-            occupantGroupColor={seatOccupants?.[seat.seatNumber]?.guestGroupColor ?? null}
-            occupantGroupName={seatOccupants?.[seat.seatNumber]?.guestGroupName ?? null}
+            occupantGroupColor={
+              seatOccupants?.[seat.seatNumber]?.guestGroupColor ?? null
+            }
+            occupantGroupName={
+              seatOccupants?.[seat.seatNumber]?.guestGroupName ?? null
+            }
             showGroupColors={showGroupColors}
             isSelectedGuestSeat={
               seatOccupants?.[seat.seatNumber]?.guestId === selectedGuestId
@@ -245,14 +266,20 @@ function RectTableComponent({
             isSelected={selectedSeatNumber === seat.seatNumber}
             isConflict={conflictSeatNumber === seat.seatNumber}
             isDropTarget={dropTargetSeatNumber === seat.seatNumber}
-            isLinkedDropPreview={linkedDropPreviewSeatNumbers.includes(seat.seatNumber)}
+            isLinkedDropPreview={linkedDropPreviewSeatNumbers.includes(
+              seat.seatNumber,
+            )}
             isDragActive={isDragActive}
             enableSeatDrag={enableSeatDrag}
             onClick={(seatNumber, clientX, clientY) =>
               onSeatClick?.(table.id, seatNumber, clientX, clientY)
             }
-            onDragEnter={(seatNumber) => onSeatDragEnter?.(table.id, seatNumber)}
-            onDragLeave={(seatNumber) => onSeatDragLeave?.(table.id, seatNumber)}
+            onDragEnter={(seatNumber) =>
+              onSeatDragEnter?.(table.id, seatNumber)
+            }
+            onDragLeave={(seatNumber) =>
+              onSeatDragLeave?.(table.id, seatNumber)
+            }
             onDropGuest={(seatNumber, guestId) =>
               onSeatDrop?.(table.id, seatNumber, guestId)
             }
@@ -263,7 +290,8 @@ function RectTableComponent({
         {showHoverSeatNames && isHovered ? (
           <div className="pointer-events-none absolute inset-0 z-[90]">
             {seatPositions.map((seat) => {
-              const occupantName = seatOccupants?.[seat.seatNumber]?.guestName ?? null;
+              const occupantName =
+                seatOccupants?.[seat.seatNumber]?.guestName ?? null;
               if (!occupantName) return null;
               const centerY = dimensions.height / 2;
               const isTopSideSeat = seat.y <= centerY;
@@ -301,7 +329,10 @@ function RectTableComponent({
   );
 }
 
-function areNumberArraysEqual(a: number[] | undefined, b: number[] | undefined) {
+function areNumberArraysEqual(
+  a: number[] | undefined,
+  b: number[] | undefined,
+) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.length !== b.length) return false;
@@ -358,7 +389,10 @@ function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
     prev.enableTableDrag === next.enableTableDrag &&
     prev.showHoverSeatNames === next.showHoverSeatNames &&
     prev.enableSeatDrag === next.enableSeatDrag &&
-    areNumberArraysEqual(prev.linkedDropPreviewSeatNumbers, next.linkedDropPreviewSeatNumbers) &&
+    areNumberArraysEqual(
+      prev.linkedDropPreviewSeatNumbers,
+      next.linkedDropPreviewSeatNumbers,
+    ) &&
     areSeatOccupantsEqual(prev.seatOccupants, next.seatOccupants)
   );
 }
