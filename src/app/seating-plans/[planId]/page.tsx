@@ -63,6 +63,7 @@ import { resolveCursorColorKey, type CursorColorKey } from "@/features/seating-e
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type GuestSex = "male" | "female" | "unknown";
+type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
 
 type ApiPlan = {
   id: string;
@@ -88,6 +89,7 @@ type ApiGuest = {
   id: string;
   name: string;
   sex: GuestSex;
+  ageCategory: GuestAgeCategory;
   groupId: string | null;
   plannedTableId: string | null;
   group: {
@@ -240,9 +242,10 @@ export function SeatingPlanEditorScreen() {
   const [guestForm, setGuestForm] = useState<{
     name: string;
     sex: GuestSex;
+    ageCategory: GuestAgeCategory;
     groupId: string | null;
     notes: string;
-  }>({ name: "", sex: "unknown", groupId: null, notes: "" });
+  }>({ name: "", sex: "unknown", ageCategory: "adult", groupId: null, notes: "" });
   const [showGroupColors, setShowGroupColors] = useState(false);
   const [planAccess, setPlanAccess] = useState<ApiPlanAccess | null>(null);
   const [isPublicRead, setIsPublicRead] = useState(false);
@@ -337,6 +340,7 @@ export function SeatingPlanEditorScreen() {
       setGuestForm({
         name: guest?.name ?? "",
         sex: guest?.sex ?? "unknown",
+        ageCategory: guest?.ageCategory ?? "adult",
         groupId: guest?.groupId ?? null,
         notes: guest?.notes ?? "",
       });
@@ -1443,6 +1447,7 @@ export function SeatingPlanEditorScreen() {
       body: JSON.stringify({
         name: trimmedName,
         sex: "unknown",
+        ageCategory: "adult",
         groupId: payload.groupId ?? undefined,
         notes: payload.notes?.trim() ? payload.notes.trim() : undefined,
       }),
@@ -1680,6 +1685,7 @@ export function SeatingPlanEditorScreen() {
     payload: {
       name: string;
       sex: GuestSex;
+      ageCategory: GuestAgeCategory;
       groupId: string | null;
       notes: string;
       plannedTableId?: string | null;
@@ -1691,6 +1697,7 @@ export function SeatingPlanEditorScreen() {
       body: JSON.stringify({
         name: payload.name,
         sex: payload.sex,
+        ageCategory: payload.ageCategory,
         groupId: payload.groupId,
         notes: payload.notes || null,
         ...(payload.plannedTableId !== undefined
@@ -1745,6 +1752,7 @@ export function SeatingPlanEditorScreen() {
         await handleUpdateGuest(guestId, {
           name: guest.name,
           sex: guest.sex,
+          ageCategory: guest.ageCategory,
           groupId,
           notes: guest.notes ?? "",
         });
@@ -1798,6 +1806,7 @@ export function SeatingPlanEditorScreen() {
             handleUpdateGuest(guest.id, {
               name: guest.name,
               sex: guest.sex,
+              ageCategory: guest.ageCategory,
               groupId: guest.groupId,
               notes: guest.notes ?? "",
               plannedTableId: tableId,

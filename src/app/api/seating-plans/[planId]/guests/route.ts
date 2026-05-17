@@ -156,6 +156,7 @@ export async function POST(request: Request, context: RouteContext) {
           weddingId: existingPlan.event?.weddingId ?? null,
           name: payload.name,
           sex: payload.sex,
+          ageCategory: payload.ageCategory,
           groupId: payload.groupId ?? null,
           plannedTableId: payload.plannedTableId ?? null,
           notes: payload.notes,

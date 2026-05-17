@@ -23,6 +23,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type GuestGender = "female" | "male" | "other" | "prefer_not_to_say";
+type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
 type RelationshipMode = "none" | "with_partner";
 type RelationshipType = "partner" | "plus_one";
 type RelationshipGuestMode = "existing" | "new";
@@ -43,6 +44,7 @@ type ChildGuestInput = {
   firstName: string;
   lastName: string;
   isChild: true;
+  ageCategory: Exclude<GuestAgeCategory, "adult">;
   needsSeat: boolean;
 };
 
@@ -51,6 +53,7 @@ export type AddGuestFormPayload = {
     firstName: string;
     lastName: string;
     gender?: GuestGender;
+    ageCategory: GuestAgeCategory;
     eventIds: string[];
   };
   relationship:
@@ -62,6 +65,7 @@ export type AddGuestFormPayload = {
           firstName: string;
           lastName: string;
           gender?: GuestGender;
+          ageCategory: GuestAgeCategory;
           eventIds: string[];
         };
       };
@@ -69,6 +73,7 @@ export type AddGuestFormPayload = {
     firstName: string;
     lastName: string;
     isChild: true;
+    ageCategory: Exclude<GuestAgeCategory, "adult">;
     needsSeat: boolean;
     eventIds: string[];
   }>;
@@ -94,6 +99,7 @@ function createChildDraft(): ChildGuestInput {
     firstName: "",
     lastName: "",
     isChild: true,
+    ageCategory: "child",
     needsSeat: true,
   };
 }
@@ -135,6 +141,7 @@ export function AddGuestDialog({
   const [mainFirstName, setMainFirstName] = useState("");
   const [mainLastName, setMainLastName] = useState("");
   const [mainGender, setMainGender] = useState<GuestGender | undefined>("female");
+  const [mainAgeCategory, setMainAgeCategory] = useState<GuestAgeCategory>("adult");
   const [relationshipMode, setRelationshipMode] = useState<RelationshipMode>("none");
   const [relationshipType, setRelationshipType] = useState<RelationshipType>("partner");
   const [relationshipGuestMode, setRelationshipGuestMode] = useState<RelationshipGuestMode>("existing");
@@ -143,6 +150,7 @@ export function AddGuestDialog({
   const [linkedFirstName, setLinkedFirstName] = useState("");
   const [linkedLastName, setLinkedLastName] = useState("");
   const [linkedGender, setLinkedGender] = useState<GuestGender | undefined>("female");
+  const [linkedAgeCategory, setLinkedAgeCategory] = useState<GuestAgeCategory>("adult");
   const [children, setChildren] = useState<ChildGuestInput[]>([]);
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>(getInitialSelectedEventIds(availableEvents));
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -265,6 +273,7 @@ export function AddGuestDialog({
         firstName: mainFirstName.trim(),
         lastName: mainLastName.trim(),
         gender: mainGender,
+        ageCategory: mainAgeCategory,
         eventIds: persistableEventIds,
       },
       relationship:
@@ -281,6 +290,7 @@ export function AddGuestDialog({
                   firstName: linkedFirstName.trim(),
                   lastName: linkedLastName.trim(),
                   gender: linkedGender,
+                  ageCategory: linkedAgeCategory,
                   eventIds: persistableEventIds,
                 },
               },
@@ -288,19 +298,30 @@ export function AddGuestDialog({
         firstName: child.firstName.trim(),
         lastName: child.lastName.trim(),
         isChild: true,
+        ageCategory: child.ageCategory,
         needsSeat: child.needsSeat,
         eventIds: persistableEventIds,
       })),
     };
   };
 
-  const createGuest = async (input: { firstName: string; lastName: string; gender?: GuestGender }): Promise<CreatedGuest> => {
+  const createGuest = async (
+    input: {
+      firstName: string;
+      lastName: string;
+      gender?: GuestGender;
+      ageCategory: GuestAgeCategory;
+      guardianGuestId?: string | null;
+    },
+  ): Promise<CreatedGuest> => {
     const response = await fetch(`/api/weddings/${weddingId}/guests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: `${input.firstName} ${input.lastName}`.trim(),
         sex: mapGenderToApiSex(input.gender),
+        ageCategory: input.ageCategory,
+        guardianGuestId: input.guardianGuestId ?? null,
       }),
     });
     const json = (await response.json().catch(() => null)) as { error?: string; guest?: CreatedGuest } | null;
@@ -373,6 +394,8 @@ export function AddGuestDialog({
         const childGuest = await createGuest({
           firstName: child.firstName,
           lastName: child.lastName,
+          ageCategory: child.ageCategory,
+          guardianGuestId: mainGuest.id,
         });
         createdGuestIds.push(childGuest.id);
         await assignEvents(childGuest.id, child.eventIds, child.needsSeat);
@@ -454,6 +477,21 @@ export function AddGuestDialog({
                     <SelectItem value="male">{t("weddingGuestsPage.addGuest.genders.male")}</SelectItem>
                     <SelectItem value="other">{t("weddingGuestsPage.addGuest.genders.other")}</SelectItem>
                     <SelectItem value="prefer_not_to_say">{t("weddingGuestsPage.addGuest.genders.preferNotToSay")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex max-w-sm flex-col gap-1.5">
+                <label className="text-sm font-medium text-zinc-800">Age group</label>
+                <Select value={mainAgeCategory} onValueChange={(value) => setMainAgeCategory(value as GuestAgeCategory)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adult">Adult (18+)</SelectItem>
+                    <SelectItem value="teen">Teen (13-17)</SelectItem>
+                    <SelectItem value="child">Child (6-12)</SelectItem>
+                    <SelectItem value="small_child">Small child (3-5)</SelectItem>
+                    <SelectItem value="toddler_0_2">Toddler / infant (0-2)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -608,6 +646,24 @@ export function AddGuestDialog({
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="flex max-w-sm flex-col gap-1.5 md:col-span-2">
+                          <label className="text-sm font-medium text-zinc-800">Age group</label>
+                          <Select
+                            value={linkedAgeCategory}
+                            onValueChange={(value) => setLinkedAgeCategory(value as GuestAgeCategory)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="adult">Adult (18+)</SelectItem>
+                              <SelectItem value="teen">Teen (13-17)</SelectItem>
+                              <SelectItem value="child">Child (6-12)</SelectItem>
+                              <SelectItem value="small_child">Small child (3-5)</SelectItem>
+                              <SelectItem value="toddler_0_2">Toddler / infant (0-2)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -634,7 +690,7 @@ export function AddGuestDialog({
                 <div className="flex flex-col gap-2">
                   {children.map((child) => (
                     <div key={child.id} className="flex flex-col gap-3 rounded-md border border-zinc-200 p-3">
-                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
+                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_220px_auto_auto] md:items-end">
                         <div className="flex flex-col gap-1.5">
                           <label className="text-sm font-medium text-zinc-800">
                             {t("weddingGuestsPage.addGuest.firstName")}
@@ -672,6 +728,34 @@ export function AddGuestDialog({
                           {formErrors[`child-${child.id}-lastName`] ? (
                             <p className="text-xs text-red-600">{formErrors[`child-${child.id}-lastName`]}</p>
                           ) : null}
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-medium text-zinc-800">Age group</label>
+                          <Select
+                            value={child.ageCategory}
+                            onValueChange={(value) => {
+                              setChildren((prev) =>
+                                prev.map((item) =>
+                                  item.id === child.id
+                                    ? {
+                                        ...item,
+                                        ageCategory: value as Exclude<GuestAgeCategory, "adult">,
+                                      }
+                                    : item,
+                                ),
+                              );
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="teen">Teen (13-17)</SelectItem>
+                              <SelectItem value="child">Child (6-12)</SelectItem>
+                              <SelectItem value="small_child">Small child (3-5)</SelectItem>
+                              <SelectItem value="toddler_0_2">Toddler / infant (0-2)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <Badge variant="secondary">{t("weddingGuestsPage.addGuest.children.childBadge")}</Badge>

@@ -26,6 +26,7 @@ type Guest = {
   id: string;
   name: string;
   sex: "male" | "female" | "unknown";
+  ageCategory: "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
   groupId: string | null;
   plannedTableId: string | null;
   group: {
@@ -67,6 +68,7 @@ type InspectorPanelProps = {
   guestForm: {
     name: string;
     sex: "male" | "female" | "unknown";
+    ageCategory: "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
     groupId: string | null;
     notes: string;
   };
@@ -79,6 +81,7 @@ type InspectorPanelProps = {
   onGuestFormChange: (next: {
     name: string;
     sex: "male" | "female" | "unknown";
+    ageCategory: "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
     groupId: string | null;
     notes: string;
   }) => void;
@@ -87,6 +90,7 @@ type InspectorPanelProps = {
     payload: {
       name: string;
       sex: "male" | "female" | "unknown";
+      ageCategory: "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
       groupId: string | null;
       notes: string;
       plannedTableId?: string | null;
@@ -362,6 +366,25 @@ export function InspectorPanel({
                     <option value="unknown">{t("guestPanel.sexUnknown")}</option>
                   </select>
                 </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-zinc-500">{t("guestPanel.ageCategory")}</span>
+                  <select
+                    value={guestForm.ageCategory}
+                    onChange={(event) =>
+                      onGuestFormChange({
+                        ...guestForm,
+                        ageCategory: event.target.value as "adult" | "teen" | "child" | "small_child" | "toddler_0_2",
+                      })
+                    }
+                    className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  >
+                    <option value="adult">{t("guestPanel.ageCategoryAdult")}</option>
+                    <option value="teen">{t("guestPanel.ageCategoryTeen")}</option>
+                    <option value="child">{t("guestPanel.ageCategoryChild")}</option>
+                    <option value="small_child">{t("guestPanel.ageCategorySmallChild")}</option>
+                    <option value="toddler_0_2">{t("guestPanel.ageCategoryToddler")}</option>
+                  </select>
+                </label>
                 <div className="space-y-1.5">
                   <span className="text-xs font-medium text-zinc-500">
                     {t("guestPanel.createGroupInline")}
@@ -429,6 +452,7 @@ export function InspectorPanel({
                     void onUpdateGuest(selectedGuest.id, {
                       name: guestForm.name,
                       sex: guestForm.sex,
+                      ageCategory: guestForm.ageCategory,
                       groupId: guestForm.groupId,
                       notes: guestForm.notes,
                     })

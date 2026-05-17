@@ -12,6 +12,14 @@ enum GuestSex {
   unknown
 }
 
+enum GuestAgeCategory {
+  adult
+  teen
+  child
+  small_child
+  toddler_0_2
+}
+
 enum WeddingEventType {
   wedding
   afterparty
@@ -165,6 +173,7 @@ model Guest {
   wedding   Wedding?    @relation(fields: [weddingId], references: [id], onDelete: SetNull)
   name      String
   sex       GuestSex    @default(unknown)
+  ageCategory GuestAgeCategory @default(adult)
   groupId   String?
   group     SeatingGuestGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   plannedTableId String?
@@ -175,6 +184,9 @@ model Guest {
   plusOneHostGuestId String?
   plusOneHostGuest Guest? @relation("PlusOneHost", fields: [plusOneHostGuestId], references: [id], onDelete: SetNull)
   plusOneGuests Guest[] @relation("PlusOneHost")
+  guardianGuestId String?
+  guardianGuest Guest? @relation("GuestGuardian", fields: [guardianGuestId], references: [id], onDelete: SetNull)
+  childGuests Guest[] @relation("GuestGuardian")
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -187,8 +199,10 @@ model Guest {
   @@index([planId])
   @@index([weddingId])
   @@index([groupId])
+  @@index([ageCategory])
   @@index([plannedTableId])
   @@index([plusOneHostGuestId])
+  @@index([guardianGuestId])
 }
 
 model Household {

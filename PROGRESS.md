@@ -4919,3 +4919,167 @@ Phase 236-HF1 - Remove duplicate save toasts from seating editor
 - Open a protected page (for example /weddings/{weddingId}/seating/{planId}) and confirm /api/auth/get-session no longer returns 500.
 - Confirm login/session-dependent pages load without the previous Session.findFirst timeout.
 
+
+## Current Phase
+
+Phase 237 - Guest age-category model expansion (adult/teen/child/small-child/toddler)
+
+## Completed Work
+
+- Added a dedicated guest age-category domain in persistence:
+  - new Prisma enum `GuestAgeCategory` with values:
+    - `adult`
+    - `teen`
+    - `child`
+    - `small_child`
+    - `toddler_0_2`
+  - added `Guest.ageCategory` with default `adult`
+  - added DB/model index on `ageCategory`
+- Added migration to persist this schema change:
+  - `20260517123000_add_guest_age_category`
+- Wired API validation and CRUD contracts:
+  - wedding guest create/update Zod schemas now accept `ageCategory`
+  - guest create/update API routes now persist `ageCategory`
+- Updated CSV pipelines:
+  - export now includes `ageCategory` column
+  - import now reads `ageCategory` when present and remains backward-compatible with older CSV layout (without the new column)
+- Updated Add Guest modal flow:
+  - main guest age group selector
+  - linked guest age group selector
+  - per-child age group selector (teen/child/small child/toddler)
+  - guest creation payload now sends `ageCategory`
+
+## Files Changed
+
+- `prisma/schema.prisma`
+- `prisma/migrations/20260517123000_add_guest_age_category/migration.sql`
+- `src/features/wedding/schemas/wedding.schema.ts`
+- `src/app/api/weddings/[weddingId]/guests/route.ts`
+- `src/app/api/weddings/[weddingId]/guests/[guestId]/route.ts`
+- `src/app/api/weddings/[weddingId]/guests/import-v2/route.ts`
+- `src/app/api/weddings/[weddingId]/guests/export-v2/route.ts`
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm prisma:validate` (pass)
+- `pnpm prisma generate` (pass)
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Prisma client type declarations exposed in this environment did not immediately reflect the new field in all route files despite regeneration; route-level Prisma `data` payloads use narrow `as any` compatibility casts for now.
+- Existing repository lint baseline issues outside this phase remain unchanged.
+
+## Next Recommended Step
+
+- Phase 238 - Remove compatibility casts and finalize type-safe age-category flow:
+  - align Prisma client type generation visibility across API routes,
+  - replace temporary casts with strict typed inputs,
+  - add age-category controls to guest edit/details surfaces beyond Add Guest modal.
+
+## Current Phase
+
+Phase 238 - Age-category editing in seating inspector + seating guest API parity
+
+## Completed Work
+
+- Extended seating editor guest validation contracts to include age category:
+  - added `guestAgeCategorySchema` (`adult`, `teen`, `child`, `small_child`, `toddler_0_2`)
+  - create payload defaults to `adult`
+  - update payload supports optional `ageCategory`
+- Wired seating-plan guest APIs to persist age category:
+  - `POST /api/seating-plans/[planId]/guests` now writes `ageCategory`
+  - `PATCH /api/seating-plans/[planId]/guests/[guestId]` now updates `ageCategory`
+- Added age-category support to seating editor client state and guest mutation flow:
+  - `ApiGuest` includes `ageCategory`
+  - `guestForm` includes `ageCategory`
+  - guest selection hydrates `guestForm.ageCategory`
+  - all guest update call paths now pass `ageCategory`
+  - quick created guests default to `ageCategory: "adult"`
+- Updated Inspector guest details UI:
+  - added age-group selector in guest details section
+  - save action now persists selected age group
+- Added i18n labels for guest age categories in EN/PL under `guestPanel.*`
+
+## Files Changed
+
+- `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+- `src/app/api/seating-plans/[planId]/guests/route.ts`
+- `src/app/api/seating-plans/[planId]/guests/[guestId]/route.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/InspectorPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm prisma:validate` (pass)
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- The Wedding Guests dashboard management table does not yet display/edit `ageCategory`; this phase focused on seating inspector edit parity.
+- Existing temporary Prisma typing compatibility casts introduced in the prior phase remain unchanged.
+
+## Next Recommended Step
+
+- Phase 239 - Wedding Guests dashboard age-category parity:
+  - include `ageCategory` in dashboard guest API mapping,
+  - show age group in guests table/cards,
+  - add row/details edit flow for age category in wedding dashboard surfaces.
+
+## Current Phase
+
+Phase 239 - Household guest list with linked pairs and no-seat children
+
+## Completed Work
+
+- Added explicit parent/guardian linkage for guests:
+  - Prisma `Guest.guardianGuestId` self-relation (`guardianGuest` / `childGuests`)
+  - migration: `20260517132000_add_guest_guardian_relation`
+- Extended wedding guest API contracts to accept guardian linkage:
+  - create/update wedding guest schema now supports `guardianGuestId`
+  - create/update routes validate guardian belongs to the same wedding
+  - children created via Add Guest modal now persist with `guardianGuestId = mainGuest.id`
+- Implemented grouped household list UX in wedding guest table:
+  - grouped rows for single adult or linked pair
+  - nested child rows under the household (expand/collapse)
+  - children shown even when they do not require a seat
+  - added `Children` summary column with no-seat count indicator
+  - child rows show age category + explicit `No seat required` state when applicable
+- Added new localization keys (EN/PL) for children/no-seat table labels and age-group display.
+
+## Files Changed
+
+- `prisma/schema.prisma`
+- `prisma/migrations/20260517132000_add_guest_guardian_relation/migration.sql`
+- `src/features/wedding/schemas/wedding.schema.ts`
+- `src/app/api/weddings/[weddingId]/guests/route.ts`
+- `src/app/api/weddings/[weddingId]/guests/[guestId]/route.ts`
+- `src/features/wedding-guests/components/AddGuestDialog.tsx`
+- `src/features/wedding-guests/types.ts`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `src/features/wedding-guests/components/GuestManagementTable.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm prisma:validate` (pass)
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Existing historical data created before guardian linkage will not auto-attach children to households unless `guardianGuestId` is backfilled.
+- Wedding guest list table edit actions remain placeholder menu items (pre-existing behavior).
+
+## Next Recommended Step
+
+- Phase 240 - Backfill and household management polish:
+  - optional backfill utility to infer/set `guardianGuestId` for older child records,
+  - add edit UI to reassign child guardian from wedding guests table,
+  - add household-level filters (`has children`, `has no-seat children`).

@@ -40,15 +40,24 @@ export async function PUT(request: Request, context: RouteContext) {
       select: { id: true },
     });
     if (!guest) return NextResponse.json({ error: "Guest not found" }, { status: 404 });
+    if (payload.guardianGuestId) {
+      const guardian = await prisma.guest.findFirst({
+        where: { id: payload.guardianGuestId, weddingId },
+        select: { id: true },
+      });
+      if (!guardian) return NextResponse.json({ error: "Guardian guest not found for wedding" }, { status: 400 });
+    }
 
     const updated = await prisma.guest.update({
       where: { id: guestId },
       data: {
         name: payload.name,
         sex: payload.sex,
+        ageCategory: payload.ageCategory,
+        guardianGuestId: payload.guardianGuestId,
         notes: payload.notes,
         dietaryRestrictions: payload.dietaryRestrictions,
-      },
+      } as any,
     });
     return NextResponse.json({ guest: updated });
   } catch (error) {

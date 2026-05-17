@@ -88,8 +88,14 @@ export async function POST(request: Request, context: RouteContext) {
           continue;
         }
         const sex = cols[1] === "male" || cols[1] === "female" || cols[1] === "unknown" ? cols[1] : "unknown";
-        const dietaryRestrictions = cols[2] || null;
-        const notes = cols[3] || null;
+        const hasAgeCategoryColumn = cols[2] === "adult" ||
+          cols[2] === "teen" ||
+          cols[2] === "child" ||
+          cols[2] === "small_child" ||
+          cols[2] === "toddler_0_2";
+        const ageCategory = hasAgeCategoryColumn ? cols[2] : "adult";
+        const dietaryRestrictions = (hasAgeCategoryColumn ? cols[3] : cols[2]) || null;
+        const notes = (hasAgeCategoryColumn ? cols[4] : cols[3]) || null;
 
         const guest = await tx.guest.create({
           data: {
@@ -97,9 +103,10 @@ export async function POST(request: Request, context: RouteContext) {
             planId: fallbackPlan.id,
             name,
             sex,
+            ageCategory,
             dietaryRestrictions,
             notes,
-          },
+          } as any,
         });
         created += 1;
         createdIds.push(guest.id);

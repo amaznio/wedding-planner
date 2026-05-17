@@ -52,6 +52,8 @@ export const updateWeddingEventSchema = createWeddingEventSchema.partial().refin
 export const createWeddingGuestSchema = z.object({
   name: z.string().trim().min(1).max(120),
   sex: z.enum(["male", "female", "unknown"]).default("unknown"),
+  ageCategory: z.enum(["adult", "teen", "child", "small_child", "toddler_0_2"]).default("adult"),
+  guardianGuestId: z.string().min(1).nullable().optional(),
   notes: z.string().max(2000).optional(),
   dietaryRestrictions: z.string().max(300).optional(),
 });
@@ -59,6 +61,8 @@ export const createWeddingGuestSchema = z.object({
 export const updateWeddingGuestSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   sex: z.enum(["male", "female", "unknown"]).optional(),
+  ageCategory: z.enum(["adult", "teen", "child", "small_child", "toddler_0_2"]).optional(),
+  guardianGuestId: z.string().min(1).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   dietaryRestrictions: z.string().max(300).nullable().optional(),
 }).refine((value) => Object.keys(value).length > 0, {

@@ -73,6 +73,15 @@ export async function POST(request: Request, context: RouteContext) {
         { status: 400 },
       );
     }
+    if (payload.guardianGuestId) {
+      const guardian = await prisma.guest.findFirst({
+        where: { id: payload.guardianGuestId, weddingId },
+        select: { id: true },
+      });
+      if (!guardian) {
+        return NextResponse.json({ error: "Guardian guest not found for wedding" }, { status: 400 });
+      }
+    }
 
     const guest = await prisma.guest.create({
       data: {
@@ -80,9 +89,11 @@ export async function POST(request: Request, context: RouteContext) {
         planId: fallbackPlan.id,
         name: payload.name,
         sex: payload.sex,
+        ageCategory: payload.ageCategory,
+        guardianGuestId: payload.guardianGuestId ?? null,
         notes: payload.notes,
         dietaryRestrictions: payload.dietaryRestrictions,
-      },
+      } as any,
     });
     return NextResponse.json({ guest }, { status: 201 });
   } catch (error) {

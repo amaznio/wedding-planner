@@ -30,15 +30,17 @@ export async function GET(_: Request, context: RouteContext) {
   });
 
   const lines = [
-    "name,sex,dietaryRestrictions,notes,eventName,invitationStatus,rsvpStatus,requiresSeat,eventNotes",
+    "name,sex,ageCategory,dietaryRestrictions,notes,eventName,invitationStatus,rsvpStatus,requiresSeat,eventNotes",
   ];
 
   for (const guest of guests) {
+    const ageCategory = (guest as { ageCategory?: string }).ageCategory ?? "adult";
     if (guest.eventGuests.length === 0) {
       lines.push(
         [
           csvEscape(guest.name),
           guest.sex,
+          ageCategory,
           csvEscape(guest.dietaryRestrictions ?? ""),
           csvEscape(guest.notes ?? ""),
           "",
@@ -55,6 +57,7 @@ export async function GET(_: Request, context: RouteContext) {
         [
           csvEscape(guest.name),
           guest.sex,
+          ageCategory,
           csvEscape(guest.dietaryRestrictions ?? ""),
           csvEscape(guest.notes ?? ""),
           csvEscape(eventGuest.event.name),

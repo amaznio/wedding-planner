@@ -78,6 +78,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: {
         name: payload.name,
         sex: payload.sex,
+        ageCategory: payload.ageCategory,
         groupId: payload.groupId,
         plannedTableId: payload.plannedTableId,
         notes: payload.notes,

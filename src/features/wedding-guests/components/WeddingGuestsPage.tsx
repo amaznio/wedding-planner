@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
-import type { GuestRsvpStatus, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
+import type { GuestAgeCategory, GuestRsvpStatus, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
 import { AddGuestDialog } from "./AddGuestDialog";
 import { GuestInsightsPanel } from "./GuestInsightsPanel";
 import { GuestManagementTable } from "./GuestManagementTable";
@@ -38,6 +38,8 @@ type WeddingDetailsApiResponse = {
 type WeddingGuestsApiGuest = {
   id: string;
   name: string;
+  ageCategory: GuestAgeCategory;
+  guardianGuestId: string | null;
   notes: string | null;
   plusOneHostGuestId: string | null;
   relationshipMembers: Array<{
@@ -45,6 +47,7 @@ type WeddingGuestsApiGuest = {
   }>;
   eventGuests: Array<{
     rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
+    requiresSeat: boolean;
     notes: string | null;
     event: {
       type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
@@ -140,7 +143,14 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
             guestsJson.guests
               .filter((guest) => {
                 const hasRelationshipMembership = guest.relationshipMembers.length > 0;
-                return guest.plusOneHostGuestId === null && !linkedHostIds.has(guest.id) && !hasRelationshipMembership;
+                const isAdult = guest.ageCategory === "adult";
+                return (
+                  isAdult &&
+                  guest.guardianGuestId === null &&
+                  guest.plusOneHostGuestId === null &&
+                  !linkedHostIds.has(guest.id) &&
+                  !hasRelationshipMembership
+                );
               })
               .map((guest) => ({
                 id: guest.id,
@@ -252,26 +262,33 @@ function mapGuestsFromApi(apiGuests: WeddingGuestsApiGuest[]): WeddingGuest[] {
       .filter((value): value is string => typeof value === "string"),
   );
 
-  return apiGuests
-    .filter((guest) => guest.plusOneHostGuestId === null)
-    .map((guest) => {
-      const events = guest.eventGuests
-        .map((eventGuest) => eventGuest.event.type)
-        .filter(isSupportedGuestEvent);
+  return apiGuests.map((guest) => {
+    const events = guest.eventGuests
+      .map((eventGuest) => eventGuest.event.type)
+      .filter(isSupportedGuestEvent);
 
-      const uniqueEvents = Array.from(new Set(events));
-      const eventGuestNotes = guest.eventGuests.filter((eventGuest) => eventGuest.notes).length;
+    const uniqueEvents = Array.from(new Set(events));
+    const eventGuestNotes = guest.eventGuests.filter((eventGuest) => eventGuest.notes).length;
+    const requiresSeat = guest.eventGuests.some((eventGuest) => eventGuest.requiresSeat);
+    const isChild = guest.ageCategory !== "adult";
 
-      return {
-        id: guest.id,
-        name: guest.name,
-        initials: getInitials(guest.name),
-        status: mapGuestStatus(guest.eventGuests.map((eventGuest) => eventGuest.rsvpStatus)),
-        events: uniqueEvents,
-        plusOne: plusOneHostIds.has(guest.id),
-        notesCount: (guest.notes ? 1 : 0) + eventGuestNotes,
-      };
-    });
+    return {
+      id: guest.id,
+      name: guest.name,
+      initials: getInitials(guest.name),
+      status: mapGuestStatus(guest.eventGuests.map((eventGuest) => eventGuest.rsvpStatus)),
+      ageCategory: guest.ageCategory,
+      requiresSeat,
+      isChild,
+      guardianGuestId: guest.guardianGuestId,
+      plusOneHostGuestId: guest.plusOneHostGuestId,
+      events: uniqueEvents,
+      plusOne: plusOneHostIds.has(guest.id),
+      notesCount: (guest.notes ? 1 : 0) + eventGuestNotes,
+      children: [],
+      householdLabel: undefined,
+    };
+  });
 }
 
 function mapGuestStatus(rsvpStatuses: Array<"unknown" | "confirmed" | "declined" | "maybe">): GuestRsvpStatus {

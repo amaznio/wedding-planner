@@ -1,10 +1,12 @@
 import { z } from "zod";
 
 export const guestSexSchema = z.enum(["male", "female", "unknown"]);
+export const guestAgeCategorySchema = z.enum(["adult", "teen", "child", "small_child", "toddler_0_2"]);
 
 export const createGuestSchema = z.object({
   name: z.string().min(1).max(120),
   sex: guestSexSchema.default("unknown"),
+  ageCategory: guestAgeCategorySchema.default("adult"),
   groupId: z.string().min(1).optional(),
   plannedTableId: z.string().min(1).nullable().optional(),
   notes: z.string().max(500).optional(),
@@ -13,6 +15,7 @@ export const createGuestSchema = z.object({
 export const updateGuestSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   sex: guestSexSchema.optional(),
+  ageCategory: guestAgeCategorySchema.optional(),
   groupId: z.string().min(1).nullable().optional(),
   plannedTableId: z.string().min(1).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
