@@ -4548,3 +4548,31 @@ Phase 234 - Events list wrapper removal + inline edit action (completed)
 ## Next Recommended Step
 
 - Wire add-event dialog from the same page and include delete confirmation flow for full events list CRUD.
+
+## Latest Hotfix
+
+- Phase 227-HF1 - Seating editor workspace-layout isolation + sidebar width-class regression fix
+
+### Completed Work (Hotfix)
+
+- Restored shadcn sidebar width utility syntax in `src/components/ui/sidebar.tsx` to valid CSS variable form (`w-[var(--sidebar-width)]`, `w-[var(--sidebar-width-icon)]`) to recover desktop sidebar sizing behavior.
+- Moved wedding seating editor route file from workspace group to non-workspace route path so the editor no longer inherits the wedding shell/sidebar layout:
+  - from `src/app/weddings/[weddingId]/(workspace)/seating/[planId]/page.tsx`
+  - to `src/app/weddings/[weddingId]/seating/[planId]/page.tsx`
+- Kept canonical URL unchanged: `/weddings/[weddingId]/seating/[planId]`.
+
+### Commands Run (Hotfix)
+
+- `pnpm lint`
+- `pnpm build`
+
+### Known Issues (Hotfix)
+
+- `pnpm lint` still reports pre-existing warnings in legacy seating-editor files (unchanged by this hotfix).
+- If `pnpm typecheck` is run while a dev server holds `.next/dev/types` files, stale/locked generated type files can cause transient errors.
+
+### How to Test (Hotfix)
+
+- Open `/weddings/{weddingId}` on desktop and verify sidebar width/collapse behavior is normal.
+- Open `/weddings/{weddingId}/seating/{planId}` and verify the seating editor renders without workspace sidebar/top shell.
+- Confirm navigation to seating editor still works from workspace seating pages.
