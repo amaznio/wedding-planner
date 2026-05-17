@@ -619,11 +619,20 @@ export function SeatingPlanEditorScreen() {
           void loadGuests({ showLoading: false, surfaceErrors: false });
           return;
         }
+        if (
+          processingTableMutationQueueRef.current ||
+          tableMutationQueueRef.current.length > 0
+        ) {
+          return;
+        }
         void fetch(`/api/seating-plans/${planId}`, { cache: "no-store" })
           .then((response) => response.json())
           .then((payload: { plan?: ApiPlan }) => {
             if (!payload.plan) return;
+            const fetchedVersion = payload.plan.planVersion ?? 0;
+            if (fetchedVersion < planVersionRef.current) return;
             setPlan(normalizePlan(payload.plan), { preserveSelection: true });
+            planVersionRef.current = fetchedVersion;
           })
           .catch(() => {});
       }) ?? (() => {});
@@ -837,7 +846,12 @@ export function SeatingPlanEditorScreen() {
           setPlan(queued.applySnapshot, { preserveSelection: true });
         } else {
           planVersionRef.current = result.ack.planVersion;
-          applySnapshotDeltaToPlan(result);
+          const hasNewerQueuedForSameCoalesceKey = tableMutationQueueRef.current
+            .slice(1)
+            .some((item) => item.coalesceKey === queued.coalesceKey);
+          if (!hasNewerQueuedForSameCoalesceKey) {
+            applySnapshotDeltaToPlan(result);
+          }
         }
         tableMutationQueueRef.current.shift();
       }

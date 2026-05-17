@@ -4734,3 +4734,35 @@ Phase 235 - External Socket.IO realtime collaboration wiring (assignments + tabl
 - Open a seating plan and drag one table rapidly several times in succession.
 - Verify the table remains at the latest dropped position and does not jump back 1-2 seconds later.
 - Repeat while realtime transport is enabled to confirm behavior remains stable.
+
+## Latest Hotfix
+
+- Phase 235-HF3 - Stale table ACK/realtime overwrite guard
+
+### Completed Work (Hotfix)
+
+- Added additional stale-overwrite protection for high-latency/reordered table mutation flows.
+- Prevented stale table ACK delta application when a newer queued mutation for the same coalesce key exists:
+  - during table queue processing, successful ACK deltas are skipped if a newer queued mutation with matching `coalesceKey` is pending.
+- Hardened remote table event rehydrate path:
+  - skip table-plan refetch/apply while local table mutation queue is active/in-flight,
+  - gate fetched plan application by `planVersion` so older fetched snapshots cannot overwrite newer local/acknowledged state.
+
+### Files Changed (Hotfix)
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+### Commands Run (Hotfix)
+
+- `pnpm typecheck` (pass)
+
+### Known Issues (Hotfix)
+
+- Existing repository lint warnings outside this hotfix remain unchanged.
+
+### How to Test (Hotfix)
+
+- In a cloud environment with higher latency, drag the same table rapidly to multiple positions.
+- Confirm no snap-back to an older position while queued mutations are still processing.
+- Verify final table position remains at the latest drop after all network requests settle.
