@@ -24,7 +24,7 @@ export function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const next = searchParams.get("next");
-  const nextPath = next?.startsWith("/") ? next : "/seating-plans";
+  const nextPath = next?.startsWith("/") ? next : "/weddings";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -112,3 +112,4 @@ export function SignInForm() {
     </main>
   );
 }
+

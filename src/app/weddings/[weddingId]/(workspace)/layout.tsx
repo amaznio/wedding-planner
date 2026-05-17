@@ -2,9 +2,10 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { WeddingWorkspaceShell } from "@/features/wedding-dashboard/components/WeddingWorkspaceShell";
+import { WeddingShell } from "@/features/wedding-shell/components/WeddingShell";
 import type { DashboardNavItem } from "@/features/wedding-dashboard/types";
 import { auth } from "@/lib/auth";
+import { getWeddingRoutes } from "@/lib/routes";
 
 type WeddingWorkspaceLayoutProps = {
   children: React.ReactNode;
@@ -42,27 +43,25 @@ export default async function WeddingWorkspaceLayout({
     notFound();
   }
 
-  const firstEventId = wedding.events[0]?.id;
   const eventNamesById = Object.fromEntries(wedding.events.map((event) => [event.id, event.name]));
+  const routes = getWeddingRoutes(weddingId);
 
   const navigation: DashboardNavItem[] = [
-    { id: "home", href: `/weddings/${weddingId}` },
-    { id: "schedule", disabled: true },
-    { id: "tasks", disabled: true, counter: 12 },
-    { id: "guests", href: `/weddings/${weddingId}/guests` },
-    { id: "collaborators", href: `/weddings/${weddingId}/collaborators` },
-    firstEventId
-      ? { id: "events", href: `/weddings/${weddingId}/events/${firstEventId}` }
-      : { id: "events", disabled: true },
-    { id: "budget", href: `/weddings/${weddingId}/expenses` },
-    { id: "vendors", href: `/weddings/${weddingId}/vendors` },
-    { id: "notes", disabled: true },
-    { id: "documents", disabled: true },
-    { id: "inspiration", disabled: true },
+    { id: "home", href: routes.root },
+    { id: "guests", href: routes.guests },
+    { id: "events", href: routes.events },
+    { id: "seating", href: routes.seating },
+    { id: "budget", href: routes.budget },
+    { id: "vendors", href: routes.vendors },
+    { id: "tasks", href: routes.tasks, counter: 12 },
+    { id: "notes", href: routes.notes },
+    { id: "documents", href: routes.documents },
+    { id: "collaborators", href: routes.collaborators },
+    { id: "settings", href: routes.settings },
   ];
 
   return (
-    <WeddingWorkspaceShell
+    <WeddingShell
       weddingId={weddingId}
       navigation={navigation}
       eventNamesById={eventNamesById}
@@ -73,6 +72,6 @@ export default async function WeddingWorkspaceLayout({
       }}
     >
       {children}
-    </WeddingWorkspaceShell>
+    </WeddingShell>
   );
 }

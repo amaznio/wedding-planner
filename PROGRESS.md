@@ -4101,3 +4101,450 @@ Legacy regression checks:
   - add `PlanMembership` with `owner|editor|viewer` roles
   - implement authorization checks in seating APIs based on membership role
 - Resolve pre-existing TypeScript `.next/types/validator.ts` `weddings/*` artifacts so `corepack pnpm typecheck` is green again.
+
+## Current Phase
+
+Phase 225 - Wedding workspace route/IA migration foundation (plural-only) (completed)
+
+## Completed Work
+
+- Implemented plural-only wedding workspace migration foundation aligned to the new design direction:
+  - routing and IA:
+    - kept canonical plural route namespace (`/weddings/*`) and added missing workspace routes:
+      - `/weddings/[weddingId]/events`
+      - `/weddings/[weddingId]/seating`
+      - `/weddings/[weddingId]/seating/[planId]` (compat wrapper redirect to legacy editor)
+      - `/weddings/[weddingId]/budget`
+      - `/weddings/[weddingId]/tasks`
+      - `/weddings/[weddingId]/notes`
+      - `/weddings/[weddingId]/documents`
+      - `/weddings/[weddingId]/settings`
+    - added compatibility redirect route:
+      - `/weddings/[weddingId]/expenses` -> `/weddings/[weddingId]/budget`
+    - added centralized route builders:
+      - `src/lib/routes.ts` (`getWeddingRoutes`, `getEventRoutes`)
+  - shell/nav architecture:
+    - migrated workspace nav model to wedding-level tools only (dashboard/guests/events/seating/budget/vendors/tasks/notes/documents/collaborators/settings)
+    - wired workspace layout to new shell alias component (`WeddingShell`)
+    - expanded breadcrumb mapping for new routes
+  - new feature pages/components:
+    - events list page for wedding-level events (`WeddingEventsListPage`)
+    - seating entry page (`WeddingSeatingPage`) with list/stats and editor links
+    - placeholder pages for tasks/notes/documents/settings
+  - event detail scope correction:
+    - reduced event tabs to event-specific set:
+      - Overview, Schedule, Guests, Seating, Notes
+    - replaced custom tab-strip with shadcn `Tabs`
+    - updated seating links in event detail to canonical wedding seating route
+  - shadcn consistency:
+    - added shadcn-style primitives:
+      - `src/components/ui/tabs.tsx`
+      - `src/components/ui/alert-dialog.tsx`
+    - migrated collaborators remove dialog from custom `ConfirmDialog` to `AlertDialog`
+  - shared app UI foundation:
+    - added reusable app component layer (foundation set):
+      - `AppStatCard`, `AppSectionCard`, `AppEmptyState`, `AppStatusBadge`, `AppPageGrid`
+    - stubbed remaining shared app component files for next phases
+  - theme/token baseline:
+    - introduced centralized semantic tokens in `globals.css`
+    - switched body font to Geist variable
+    - set `components.json` `cssVariables` to `true`
+  - homepage/auth flow alignment:
+    - homepage now redirects authenticated users to active wedding (latest membership wedding or `/weddings` fallback)
+    - sign-in/sign-up/account return paths switched from legacy `/seating-plans` to `/weddings`
+
+- files added:
+  - `src/lib/routes.ts`
+  - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+  - `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+  - `src/components/ui/tabs.tsx`
+  - `src/components/ui/alert-dialog.tsx`
+  - `src/features/wedding-shell/components/WeddingShell.tsx`
+  - `src/features/wedding-shell/components/WeddingSidebar.tsx`
+  - `src/features/wedding-shell/components/WeddingMobileNav.tsx`
+  - `src/features/wedding-shell/components/WeddingBreadcrumbs.tsx`
+  - `src/features/wedding-shell/components/WeddingPageHeader.tsx`
+  - `src/features/wedding-shell/components/WeddingActionBar.tsx`
+  - `src/components/app/AppStatCard.tsx`
+  - `src/components/app/AppSectionCard.tsx`
+  - `src/components/app/AppEmptyState.tsx`
+  - `src/components/app/AppStatusBadge.tsx`
+  - `src/components/app/AppPageGrid.tsx`
+  - `src/components/app/AppProgressRow.tsx`
+  - `src/components/app/AppTimeline.tsx`
+  - `src/components/app/AppQuickActionsCard.tsx`
+  - `src/components/app/AppDataTable.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/events/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/seating/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/seating/[planId]/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/tasks/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/notes/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/documents/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/settings/page.tsx`
+- files updated (key):
+  - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+  - `src/features/wedding-dashboard/types.ts`
+  - `src/features/wedding-dashboard/dashboard.mock.ts`
+  - `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardSidebar.tsx`
+  - `src/features/wedding-events/types.ts`
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+  - `src/features/wedding-collaborators/components/RemoveCollaboratorDialog.tsx`
+  - `src/components/ui/button.tsx`
+  - `src/app/page.tsx`
+  - `src/app/sign-in/page.tsx`
+  - `src/app/sign-up/page.tsx`
+  - `src/features/auth/components/SignInForm.tsx`
+  - `src/features/auth/components/SignUpForm.tsx`
+  - `src/features/auth/components/AccountView.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/expenses/page.tsx`
+  - `src/app/globals.css`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `components.json`
+
+## Commands Run
+
+- `corepack pnpm add @radix-ui/react-alert-dialog @radix-ui/react-tabs`
+- `corepack pnpm typecheck` (fail; fixed syntax/type errors)
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (pass with pre-existing warnings)
+- `corepack pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Lint: pass with pre-existing warnings (legacy seating editor hooks/unused vars).
+- Build: pass.
+
+## Known Issues
+
+- `WeddingMobileNav` and some shared app components are scaffolds/placeholders for subsequent migration phases.
+- `/weddings/[weddingId]/seating/[planId]` currently redirects to legacy `/seating-plans/[planId]` to preserve editor behavior.
+- Tasks/notes/documents/settings pages are placeholder pages with unified shell and route contracts; detailed feature UI remains for next phases.
+- Existing lint warnings in legacy seating editor remain unchanged.
+
+## Next Recommended Step
+
+- Phase 226 - Dashboard + events visual migration completion:
+  - migrate dashboard sections to shared app components (`AppStatCard`, `AppSectionCard`, `AppDataTable`)
+  - complete events list interactions/filters and event-specific schedule/guests/notes tab content
+  - migrate seating plan pathing from legacy `/seating-plans/[planId]` to in-workspace route without redirect.
+
+## Current Phase
+
+Phase 226 - Dashboard + events migration completion (completed)
+
+## Completed Work
+
+- Implemented Phase 226 dashboard/events consolidation on top of the plural-only workspace architecture:
+  - dashboard refactor (`/weddings/[weddingId]`):
+    - moved route-page implementation into feature container:
+      - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+    - made route page thin:
+      - `src/app/weddings/[weddingId]/(workspace)/page.tsx` now only resolves `weddingId` and renders feature component
+    - extracted data loader/view-model mapping to dedicated module:
+      - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+      - shared API response typing in `src/features/wedding-dashboard/types.api.ts`
+    - extracted modal/edit action surface into dedicated component:
+      - `src/features/wedding-dashboard/components/WeddingDashboardDetailsDialog.tsx`
+    - dashboard quick route actions now use canonical route builders (`getWeddingRoutes`)
+  - events list completion (`/weddings/[weddingId]/events`):
+    - added search/filter controls:
+      - status filter: all/upcoming/completed
+      - search by name/location
+    - added canonical row/list rendering via shared data table
+    - server route now passes deterministic `nowIso` timestamp for stable upcoming/completed filtering
+  - event detail correction (`/weddings/[weddingId]/events/[eventId]`):
+    - locked tabs to event-scoped set:
+      - `overview`, `schedule`, `guests`, `seating`, `notes`
+    - added query-param deep linking and fallback behavior:
+      - `?tab=overview|schedule|guests|seating|notes`
+      - invalid/missing tab defaults to `overview`
+    - tab interactions now synchronize URL via `router.replace`
+    - seating actions continue to target `/weddings/[weddingId]/seating/[planId]` (compat redirect kept)
+  - shared component hardening:
+    - implemented reusable app primitives:
+      - `src/components/app/AppDataTable.tsx`
+      - `src/components/app/AppQuickActionsCard.tsx`
+    - removed unused scaffolds from prior phase:
+      - removed `src/components/app/AppProgressRow.tsx`
+      - removed `src/components/app/AppTimeline.tsx`
+    - integrated shared primitives into events surfaces:
+      - events list uses `AppDataTable`
+      - event detail quick actions use `AppQuickActionsCard`
+  - i18n consistency:
+    - added events list translation keys in EN/PL:
+      - `events.list.searchPlaceholder`
+      - `events.list.empty`
+      - `events.list.filters.*`
+      - `events.list.table.*`
+
+## Files Changed
+
+- New:
+  - `src/features/wedding-dashboard/types.api.ts`
+  - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardDetailsDialog.tsx`
+- Updated:
+  - `src/app/weddings/[weddingId]/(workspace)/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/events/page.tsx`
+  - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `src/components/app/AppDataTable.tsx`
+  - `src/components/app/AppQuickActionsCard.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+- Removed:
+  - `src/components/app/AppProgressRow.tsx`
+  - `src/components/app/AppTimeline.tsx`
+
+## Commands Run
+
+- `corepack pnpm typecheck` (pass)
+- `corepack pnpm lint` (initial fail due new strict React lint rules in events pages; fixed)
+- `corepack pnpm lint` (pass with existing legacy warnings)
+- `corepack pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Lint: pass with pre-existing warnings in legacy seating editor files.
+- Build: pass.
+
+## Known Issues
+
+- Existing pre-phase legacy lint warnings remain in `src/app/seating-plans/*` and `src/features/seating-editor/*`.
+- `/weddings/[weddingId]/seating/[planId]` still intentionally compatibility-redirects to legacy `/seating-plans/[planId]`.
+- Tasks/notes/documents/settings remain placeholder pages from Phase 225 and were not expanded in Phase 226.
+
+## Next Recommended Step
+
+- Phase 227 - Seating route consolidation and workspace-native editor mounting:
+  - mount editor directly under `/weddings/[weddingId]/seating/[planId]`
+  - keep temporary backward redirect from `/seating-plans/[planId]` to workspace route
+  - finalize seating-related links so all primary navigation stays inside workspace hierarchy.
+
+## Current Phase
+
+Phase 226 - Dashboard + events migration completion (icon spacing hotfix)
+
+## Completed Work
+
+- Applied icon/text spacing hotfix for workspace action buttons by updating shared shadcn `Button` primitive:
+  - added `gap-2` on button content container
+  - added icon safety styles (`[_svg]:shrink-0`, `[_svg]:pointer-events-none`) for consistent icon rendering
+- This fixes visible icon-text crowding on guests header actions and quick action buttons without per-page overrides.
+
+## Files Changed
+
+- `src/components/ui/button.tsx`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+
+## Known Issues
+
+- None introduced by this hotfix.
+
+## Next Recommended Step
+
+- Verify visually across key workspace pages (`dashboard`, `guests`, `events`, `vendors`, `tasks`) that icon-text spacing is now consistent in all buttons.
+
+## Current Phase
+
+Phase 227-231 - Seating route consolidation + workspace tools + shell/mobile consistency (completed)
+
+## Completed Work
+
+- Implemented canonical seating editor routing under workspace:
+  - `/weddings/[weddingId]/seating/[planId]` now renders the seating editor surface directly (no hard redirect to legacy path).
+  - Added wedding/plan guard in canonical seating route:
+    - validates plan access via `requireSeatingPlanRole(planId, "viewer")`
+    - if `weddingId` mismatch, redirects to `/weddings/[weddingId]/seating?planMismatch=1`.
+- Implemented legacy seating compatibility behavior:
+  - `/seating-plans/[planId]` now self-redirects to canonical workspace seating route when `access.weddingId` is available from plan API.
+  - Preserves existing editor internals and `/api/seating-plans/*` contracts.
+- Extended seating plan API access payload:
+  - `GET /api/seating-plans/[planId]` now includes `access.weddingId` for compatibility redirect mapping.
+- Upgraded route builder contract:
+  - added `getWeddingRoutes(weddingId).seatingPlan(planId)` and migrated seating links to route-builder usage in:
+    - seating plans list card links in workspace seating page
+    - event detail seating links and seating quick-open flow
+    - guests page seating quick action source route
+- Replaced placeholder workspace pages with feature-owned UI pages:
+  - `/weddings/[weddingId]/tasks` -> `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `/weddings/[weddingId]/notes` -> `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+  - `/weddings/[weddingId]/documents` -> `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+  - `/weddings/[weddingId]/settings` -> `src/features/wedding-settings/components/WeddingSettingsPage.tsx`
+  - route pages are now thin wrappers that only compose feature page components.
+  - new pages use shared app components (`AppSectionCard`, `AppDataTable`, `AppPageGrid`, `AppStatCard`, `AppStatusBadge`) and shadcn controls (e.g. `Checkbox`).
+- Hardened shell/mobile consistency:
+  - implemented real `WeddingMobileNav` bottom navigation (dashboard/guests/events/seating/budget) for mobile.
+  - wired mobile nav into shared workspace shell (`WeddingDashboardShell` via `mobileNav` prop).
+- i18n additions and cleanup:
+  - added EN/PL keys for new tool pages (`tasks.page.*`, `notes.page.*`, `documents.page.*`, `settings.page.*`).
+  - added EN/PL key for seating mismatch message (`seating.mismatch`).
+
+## Files Changed
+
+- `src/lib/routes.ts`
+- `src/app/weddings/[weddingId]/(workspace)/seating/[planId]/page.tsx`
+- `src/app/weddings/[weddingId]/(workspace)/seating/page.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/app/api/seating-plans/[planId]/route.ts`
+- `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+- `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `src/features/wedding-dashboard/components/WeddingDashboardShell.tsx`
+- `src/features/wedding-dashboard/components/WeddingWorkspaceShell.tsx`
+- `src/features/wedding-shell/components/WeddingMobileNav.tsx`
+- `src/app/weddings/[weddingId]/(workspace)/tasks/page.tsx`
+- `src/app/weddings/[weddingId]/(workspace)/notes/page.tsx`
+- `src/app/weddings/[weddingId]/(workspace)/documents/page.tsx`
+- `src/app/weddings/[weddingId]/(workspace)/settings/page.tsx`
+- `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+- `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+- `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+- `src/features/wedding-settings/components/WeddingSettingsPage.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (pass with pre-existing warnings in legacy seating files)
+- `pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Build: pass.
+- Lint: pass with unchanged pre-existing warnings only.
+
+## Known Issues
+
+- Existing pre-migration lint warnings remain in legacy seating editor/list files and were not expanded in this phase.
+- Legacy `/seating-plans/[planId]` remains as compatibility entry and now redirects to canonical workspace seating route when wedding mapping is available.
+
+## Next Recommended Step
+
+- Phase 232 - Design-system harmonization pass:
+  - replace remaining ad-hoc utility-heavy controls in migrated workspace pages with standardized shadcn composition patterns,
+  - complete semantic token usage audit for migrated routes,
+  - run focused responsive QA on mobile nav/shell across all workspace pages.
+
+## Current Phase
+
+Phase 232 - Events list page refactor to reference board design (completed)
+
+## Completed Work
+
+- Refactored `/weddings/[weddingId]/events` to a single dense list-board UI matching the provided design direction:
+  - one primary card surface
+  - top header with title/subtitle and primary add-event button
+  - horizontal tab-like status filters (`all`, `upcoming`, `completed`)
+  - search input as secondary control
+  - stacked event rows with date tile, metadata, guest count, confirmation summary, and overflow menu
+- Removed duplicated lower events table section from the events page.
+- Added reusable row component:
+  - `WeddingEventListRow` in `src/features/wedding-events/components/WeddingEventListRow.tsx`
+  - supports row-level navigation, highlighted styling, and dropdown actions (`open`, `edit`, `delete`).
+- Added events list mapper utility:
+  - `mapWeddingEventListItem` in `src/features/wedding-events/lib/map-wedding-event-list-item.ts`
+  - derives `day/month/year`, localized display datetime, guest/confirmation metrics, and main-event flag.
+- Route-loader data enhancement without API contract changes:
+  - in workspace events route page, included `eventGuests.rsvpStatus` in Prisma select to compute confirmation stats server-side in page composition.
+- Added/normalized i18n keys for EN/PL:
+  - `events.list.title`, `events.list.subtitle`
+  - `events.list.filters.*`
+  - `events.list.row.*`
+  - `events.list.states.*`
+  - `events.list.actions.*`
+  - `events.actions.addEvent`
+
+## Files Changed
+
+- `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+- `src/features/wedding-events/components/WeddingEventListRow.tsx`
+- `src/features/wedding-events/lib/map-wedding-event-list-item.ts`
+- `src/app/weddings/[weddingId]/(workspace)/events/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (pass with pre-existing warnings only)
+- `pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Build: pass.
+- Lint: pass with unchanged pre-existing warnings in legacy seating files.
+
+## Known Issues
+
+- Existing pre-phase lint warnings remain in legacy seating editor/list files and are unchanged.
+- Add-event/edit/delete actions in the events list remain UI-first placeholders where backend mutation flows are not yet wired.
+
+## Next Recommended Step
+
+- Phase 233 - Event creation/edit flow wiring for the new list board:
+  - connect add/edit actions to existing event APIs via Dialog,
+  - add optimistic row updates for create/edit,
+  - keep delete behind confirmation and role guard.
+
+## Current Phase
+
+Phase 234 - Events list wrapper removal + inline edit action (completed)
+
+## Completed Work
+
+- Removed the outer events-board card wrapper from `/weddings/[weddingId]/events`.
+  - Filters, search, and event rows now render directly in page flow.
+- Added working edit action for events from row overflow menu:
+  - `WeddingEventListRow` now supports `onEdit` callback.
+  - `WeddingEventsListPage` now opens an edit dialog from menu action.
+  - Dialog supports editing: name, type, date, time, location.
+  - Save calls existing `PUT /api/weddings/[weddingId]/events/[eventId]` endpoint.
+  - Updated event row data is applied optimistically in local list state after successful save.
+- Kept route/API contracts unchanged.
+
+## Files Changed
+
+- `src/features/wedding-events/components/WeddingEventListRow.tsx`
+- `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (pass with pre-existing warnings only)
+- `pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Build: pass.
+- Lint: pass with unchanged pre-existing legacy warnings.
+
+## Known Issues
+
+- Existing pre-phase lint warnings remain in legacy seating files and were not modified.
+- Delete action remains disabled in events row menu (edit/open are available).
+
+## Next Recommended Step
+
+- Wire add-event dialog from the same page and include delete confirmation flow for full events list CRUD.

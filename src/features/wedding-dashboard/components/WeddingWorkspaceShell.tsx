@@ -17,6 +17,7 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sid
 import { useI18n } from "@/i18n/provider";
 import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/WeddingDashboardShell";
 import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
+import { WeddingMobileNav } from "@/features/wedding-shell/components/WeddingMobileNav";
 import type { DashboardNavItem } from "../types";
 
 export type WorkspaceBreadcrumbItem = {
@@ -117,6 +118,7 @@ function WeddingWorkspaceShellInner({
     <WeddingWorkspaceShellContext.Provider value={contextValue}>
       <WeddingDashboardShell
         topBar={<WeddingWorkspaceTopBar breadcrumbs={breadcrumbs} />}
+        mobileNav={<WeddingMobileNav weddingId={weddingId} />}
         sidebar={(
           <WeddingDashboardSidebar
             currentPath={currentPath}
@@ -192,15 +194,43 @@ function buildWorkspaceBreadcrumbs({
     return [...home, { label: t("dashboard.sidebar.nav.guests") }];
   }
 
+  if (normalizedPath === `${weddingHomeHref}/events`) {
+    return [...home, { label: t("dashboard.sidebar.nav.events") }];
+  }
+
   if (normalizedPath === `${weddingHomeHref}/collaborators`) {
     return [...home, { label: t("dashboard.sidebar.nav.collaborators") }];
+  }
+
+  if (normalizedPath === `${weddingHomeHref}/seating`) {
+    return [...home, { label: t("dashboard.sidebar.nav.seating") }];
   }
 
   if (normalizedPath === `${weddingHomeHref}/vendors`) {
     return [...home, { label: t("dashboard.sidebar.nav.vendors") }];
   }
 
+  if (normalizedPath === `${weddingHomeHref}/tasks`) {
+    return [...home, { label: t("dashboard.sidebar.nav.tasks") }];
+  }
+
+  if (normalizedPath === `${weddingHomeHref}/notes`) {
+    return [...home, { label: t("dashboard.sidebar.nav.notes") }];
+  }
+
+  if (normalizedPath === `${weddingHomeHref}/documents`) {
+    return [...home, { label: t("dashboard.sidebar.nav.documents") }];
+  }
+
+  if (normalizedPath === `${weddingHomeHref}/settings`) {
+    return [...home, { label: t("dashboard.sidebar.nav.settings") }];
+  }
+
   if (normalizedPath === `${weddingHomeHref}/expenses`) {
+    return [...home, { label: t("dashboard.sidebar.nav.budget") }];
+  }
+
+  if (normalizedPath === `${weddingHomeHref}/budget`) {
     return [...home, { label: t("dashboard.sidebar.nav.budget") }];
   }
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   CalendarClock,
@@ -14,12 +14,8 @@ import {
   MapPin,
   MoreHorizontal,
   NotebookPen,
-  Settings,
   Users,
   UtensilsCrossed,
-  Wallet,
-  ListTodo,
-  Landmark,
   Rows3,
 } from "lucide-react";
 
@@ -31,12 +27,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AppQuickActionsCard } from "@/components/app/AppQuickActionsCard";
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
 import { buildEventDetailMockData } from "@/features/wedding-events/event-detail.mock";
+import { getWeddingRoutes } from "@/lib/routes";
 import type {
   EventCommandCenterData,
   EventSeatingPlanSummary,
@@ -130,14 +129,10 @@ type EventTabItem = {
 
 const eventTabs: EventTabItem[] = [
   { id: "overview", icon: Rows3, key: "events.detail.tabs.overview" },
-  { id: "timeline", icon: CalendarClock, key: "events.detail.tabs.timeline" },
+  { id: "schedule", icon: CalendarClock, key: "events.detail.tabs.timeline" },
   { id: "guests", icon: Users, key: "events.detail.tabs.guests" },
   { id: "seating", icon: UtensilsCrossed, key: "events.detail.tabs.seating" },
-  { id: "vendors", icon: Landmark, key: "events.detail.tabs.vendors" },
-  { id: "budget", icon: Wallet, key: "events.detail.tabs.budget" },
-  { id: "tasks", icon: ListTodo, key: "events.detail.tabs.tasks" },
   { id: "notes", icon: NotebookPen, key: "events.detail.tabs.notes" },
-  { id: "settings", icon: Settings, key: "events.detail.tabs.settings" },
 ];
 
 const categoryKeys = [
@@ -150,6 +145,8 @@ const categoryKeys = [
 export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetailPageProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const mockData = useMemo(
     () =>
@@ -172,13 +169,18 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<EventTabId>("overview");
+  const tabFromQuery = searchParams.get("tab");
+  const allowedTabs = useMemo(() => new Set<EventTabId>(["overview", "schedule", "guests", "seating", "notes"]), []);
+  const activeTab = tabFromQuery && allowedTabs.has(tabFromQuery as EventTabId)
+    ? (tabFromQuery as EventTabId)
+    : "overview";
   const [planName, setPlanName] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [canEditWedding, setCanEditWedding] = useState(false);
+  const weddingRoutes = useMemo(() => getWeddingRoutes(weddingId), [weddingId]);
 
   const firstSeatingPlan = data.seatingPlans[0];
-  const seatingPlanHref = firstSeatingPlan ? `/seating-plans/${firstSeatingPlan.id}` : null;
+  const seatingPlanHref = firstSeatingPlan ? weddingRoutes.seatingPlan(firstSeatingPlan.id) : null;
 
   useEffect(() => {
     let active = true;
@@ -295,6 +297,17 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
     };
   }, [eventId, locale, mockData, t, weddingId]);
 
+  const setActiveTabWithUrl = (nextTab: EventTabId) => {
+    const nextSearch = new URLSearchParams(searchParams.toString());
+    if (nextTab === "overview") {
+      nextSearch.delete("tab");
+    } else {
+      nextSearch.set("tab", nextTab);
+    }
+    const nextQueryString = nextSearch.toString();
+    router.replace(nextQueryString ? `${pathname}?${nextQueryString}` : pathname);
+  };
+
   const onCreatePlan = async () => {
     if (!canEditWedding) return;
     if (!planName.trim()) return;
@@ -335,7 +348,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         ],
       }));
       setPlanName("");
-      setActiveTab("seating");
+      setActiveTabWithUrl("seating");
     } catch {
       setError(t("events.detail.states.createPlanError"));
     } finally {
@@ -393,7 +406,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
             <Button type="button" variant="outline" size="icon" aria-label={t("dashboard.header.notifications")}>
               <Bell className="size-4" />
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push(`/weddings/${weddingId}/guests`)}>
+            <Button type="button" variant="outline" onClick={() => router.push(weddingRoutes.guests)}>
               {t("events.detail.actions.guestPreview")}
             </Button>
             <Button
@@ -409,24 +422,23 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         )}
       />
       <div className="mt-5 flex flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 pb-1">
-          {eventTabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-                <Button
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTabWithUrl(value as EventTabId)}>
+          <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-zinc-200 bg-transparent p-0">
+            {eventTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
                   key={tab.id}
-                  type="button"
-                  variant="ghost"
-                  className={`h-9 gap-2 rounded-none border-b-2 px-2 text-sm ${active ? "border-violet-500 text-violet-600" : "border-transparent text-zinc-600"}`}
-                  onClick={() => setActiveTab(tab.id)}
+                  value={tab.id}
+                  className="h-10 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-violet-500 data-[state=active]:bg-transparent data-[state=active]:text-violet-600 data-[state=active]:shadow-none"
                 >
-                <Icon className="size-4" />
-                {t(tab.key)}
-              </Button>
-            );
-          })}
-        </div>
+                  <Icon className="mr-2 size-4" />
+                  {t(tab.key)}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
 
         {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
@@ -550,7 +562,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                     type="button"
                     variant="outline"
                     className="h-10 w-full"
-                    onClick={() => router.push(`/weddings/${weddingId}/guests`)}
+                    onClick={() => router.push(weddingRoutes.guests)}
                   >
                     {t("events.detail.actions.manageEventGuests")}
                   </Button>
@@ -560,7 +572,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               <Card className="gap-0">
                 <CardHeader className="items-center">
                   <CardTitle>{t("events.detail.cards.vendors.title")}</CardTitle>
-                  <Link href={`/weddings/${weddingId}/vendors`} className="text-sm text-zinc-600 hover:text-zinc-900">
+                  <Link href={weddingRoutes.vendors} className="text-sm text-zinc-600 hover:text-zinc-900">
                     {t("events.detail.actions.viewVendors")}
                   </Link>
                 </CardHeader>
@@ -606,7 +618,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                     type="button"
                     variant="outline"
                     className="w-full"
-                    onClick={() => router.push(`/weddings/${weddingId}/expenses`)}
+                    onClick={() => router.push(weddingRoutes.budget)}
                   >
                     {t("events.detail.actions.viewBudget")}
                   </Button>
@@ -616,7 +628,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               <Card className="gap-0">
                 <CardHeader className="items-center">
                   <CardTitle>{t("events.detail.cards.tasks.title")}</CardTitle>
-                  <Button type="button" variant="ghost" onClick={() => setActiveTab("tasks")}>
+                  <Button type="button" variant="ghost" onClick={() => setActiveTabWithUrl("schedule")}>
                     {t("events.detail.actions.viewAllTasks")}
                   </Button>
                 </CardHeader>
@@ -633,44 +645,52 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                 </CardContent>
               </Card>
 
-              <Card className="gap-0">
-                <CardHeader>
-                  <CardTitle>{t("events.detail.cards.quickActions.title")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-lg border border-zinc-200 p-3">
-                    <p className="text-sm font-medium text-zinc-900">{t("events.detail.cards.seating.title")}</p>
-                    <p className="mt-1 text-xl font-semibold text-zinc-900">
-                      {data.event.seating.seated} / {data.event.seating.total} {t("events.detail.cards.seating.seated")}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-600">
-                      {data.event.seating.unseated} {t("events.detail.cards.seating.unseated")} · {data.event.seating.warnings} {t("events.detail.cards.seating.warnings")}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addTimelineItem")}</Button>
-                  <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addTask")}</Button>
-                  <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addVendor")}</Button>
-                  <Button type="button" variant="outline" onClick={() => undefined}>{t("events.detail.actions.addExpense")}</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="sm:col-span-2"
-                    onClick={() => {
-                      if (seatingPlanHref) {
-                        router.push(seatingPlanHref);
-                        return;
-                      }
-                      setActiveTab("seating");
-                    }}
-                  >
-                    {t("events.detail.actions.openSeatingPlan")}
-                    <ExternalLink className="size-4" />
-                  </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <AppQuickActionsCard
+                title={t("events.detail.cards.quickActions.title")}
+                actions={[
+                  {
+                    id: "timeline",
+                    label: t("events.detail.actions.addTimelineItem"),
+                    action: <Button type="button" variant="outline" className="w-full" onClick={() => undefined}>{t("events.detail.actions.addTimelineItem")}</Button>,
+                  },
+                  {
+                    id: "task",
+                    label: t("events.detail.actions.addTask"),
+                    action: <Button type="button" variant="outline" className="w-full" onClick={() => undefined}>{t("events.detail.actions.addTask")}</Button>,
+                  },
+                  {
+                    id: "vendor",
+                    label: t("events.detail.actions.addVendor"),
+                    action: <Button type="button" variant="outline" className="w-full" onClick={() => undefined}>{t("events.detail.actions.addVendor")}</Button>,
+                  },
+                  {
+                    id: "expense",
+                    label: t("events.detail.actions.addExpense"),
+                    action: <Button type="button" variant="outline" className="w-full" onClick={() => undefined}>{t("events.detail.actions.addExpense")}</Button>,
+                  },
+                  {
+                    id: "seating",
+                    label: t("events.detail.actions.openSeatingPlan"),
+                    action: (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          if (seatingPlanHref) {
+                            router.push(seatingPlanHref);
+                            return;
+                          }
+                          setActiveTabWithUrl("seating");
+                        }}
+                      >
+                        {t("events.detail.actions.openSeatingPlan")}
+                        <ExternalLink className="size-4" />
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
             </div>
           </div>
         ) : null}
@@ -705,7 +725,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                   data.seatingPlans.map((plan) => (
                     <Link
                       key={plan.id}
-                      href={`/seating-plans/${plan.id}`}
+                      href={weddingRoutes.seatingPlan(plan.id)}
                       className="flex items-center justify-between rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50"
                     >
                       <div>
@@ -723,7 +743,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           </Card>
         ) : null}
 
-        {activeTab !== "overview" && activeTab !== "seating" ? (
+        {activeTab !== "overview" && activeTab !== "seating" && activeTab !== "schedule" ? (
           <Card className="gap-0">
             <CardHeader>
               <CardTitle>{t("events.detail.tabs.placeholderTitle")}</CardTitle>
@@ -733,7 +753,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               <Button
                 type="button"
                 variant="primary"
-                onClick={() => setActiveTab("overview")}
+                onClick={() => setActiveTabWithUrl("overview")}
               >
                 {t("events.detail.tabs.backToOverview")}
               </Button>
@@ -887,3 +907,7 @@ function formatCurrency(value: number, locale: string): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+
+
+

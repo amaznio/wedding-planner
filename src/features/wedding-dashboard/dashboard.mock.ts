@@ -4,6 +4,7 @@ import type {
   DashboardQuickActionId,
   PlanningProgressRow,
 } from "./types";
+import { getWeddingRoutes } from "@/lib/routes";
 
 type BuildDashboardDataInput = {
   weddingId: string;
@@ -21,6 +22,7 @@ type BuildDashboardDataInput = {
 const DEFAULT_WEDDING_DATE = new Date("2026-06-20T12:00:00.000Z");
 
 export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingDashboardData {
+  const routes = getWeddingRoutes(input.weddingId);
   const weddingDate = input.weddingDate ?? DEFAULT_WEDDING_DATE;
   const budgetMinor = input.budgetMinor ?? 120_000_00;
   const spentMinor = input.spentMinor ?? 65_000_00;
@@ -32,7 +34,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       id: "guestList",
       progress: 67,
       detailLabel: `81 / ${guestCount}`,
-      href: `/weddings/${input.weddingId}/guests`,
+      href: routes.guests,
     },
     {
       id: "eventGuests",
@@ -44,13 +46,13 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       id: "budgetExpenses",
       progress: 54,
       detailLabel: `${spentMinor / 100} / ${budgetMinor / 100}`,
-      href: `/weddings/${input.weddingId}/expenses`,
+      href: routes.budget,
     },
     {
       id: "vendors",
       progress: 60,
       detailLabel: "6 / 10",
-      href: `/weddings/${input.weddingId}/vendors`,
+      href: routes.vendors,
     },
     {
       id: "schedule",
@@ -80,17 +82,17 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       email: "klaudia@example.com",
     },
     navigation: [
-      { id: "home", href: `/weddings/${input.weddingId}` },
-      { id: "schedule", disabled: true },
-      { id: "tasks", disabled: true, counter: 12 },
-      { id: "guests", href: `/weddings/${input.weddingId}/guests` },
-      { id: "collaborators", href: `/weddings/${input.weddingId}/collaborators` },
-      { id: "events", href: events[0]?.href },
-      { id: "budget", href: `/weddings/${input.weddingId}/expenses` },
-      { id: "vendors", href: `/weddings/${input.weddingId}/vendors` },
-      { id: "notes", disabled: true },
-      { id: "documents", disabled: true },
-      { id: "inspiration", disabled: true },
+      { id: "home", href: routes.root },
+      { id: "guests", href: routes.guests },
+      { id: "events", href: routes.events },
+      { id: "seating", href: routes.seating },
+      { id: "budget", href: routes.budget },
+      { id: "vendors", href: routes.vendors },
+      { id: "tasks", href: routes.tasks, counter: 12 },
+      { id: "notes", href: routes.notes },
+      { id: "documents", href: routes.documents },
+      { id: "collaborators", href: routes.collaborators },
+      { id: "settings", href: routes.settings },
     ],
     overview: {
       coupleNames: input.weddingName,
@@ -159,3 +161,4 @@ function getDefaultEvents(weddingId: string): DashboardEventCard[] {
     },
   ];
 }
+

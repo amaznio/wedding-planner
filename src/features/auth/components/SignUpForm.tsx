@@ -60,7 +60,7 @@ export function SignUpForm() {
       return;
     }
 
-    router.push("/seating-plans");
+    router.push("/weddings");
     router.refresh();
   };
 
@@ -127,3 +127,4 @@ export function SignUpForm() {
     </main>
   );
 }
+

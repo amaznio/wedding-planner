@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { AlertTriangle, Link2Off, LockKeyhole, ShieldAlert } from "lucide-react";
 
 import { InspectorPanel } from "@/features/seating-editor/components/InspectorPanel";
@@ -126,6 +126,7 @@ type ApiRelationship = SeatingRelationship;
 
 type ApiPlanAccess = {
   role: "owner" | "editor" | "viewer" | null;
+  weddingId: string | null;
   canEdit: boolean;
   isPublicRead: boolean;
   isPublicViewer: boolean;
@@ -157,8 +158,9 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
   };
 }
 
-export default function SeatingPlanEditorPage() {
+export function SeatingPlanEditorScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useI18n();
   const params = useParams<{ planId: string }>();
   const planId = params.planId;
@@ -484,6 +486,12 @@ export default function SeatingPlanEditorPage() {
         const planData = (await planResponse.json()) as { plan: ApiPlan; access?: ApiPlanAccess };
         setPlan(normalizePlan(planData.plan));
         setPlanAccess(planData.access ?? null);
+
+        if (pathname.startsWith("/seating-plans") && planData.access?.weddingId) {
+          router.replace(`/weddings/${planData.access.weddingId}/seating/${planId}`);
+          return;
+        }
+
         setIsPublicRead(Boolean(planData.access?.isPublicRead ?? planData.plan.isPublicRead));
         await Promise.all([loadGuests(), loadGroups(), loadRelationships()]);
       } catch (error) {
@@ -497,7 +505,7 @@ export default function SeatingPlanEditorPage() {
     };
 
     if (planId) void loadPlan();
-  }, [loadGroups, loadGuests, loadRelationships, planId, setPlan]);
+  }, [loadGroups, loadGuests, loadRelationships, pathname, planId, router, setPlan]);
 
   const createAssignment = useCallback(async (guestId: string, tableId: string, seatNumber: number) => {
     const response = await fetch(`/api/seating-plans/${planId}/assignments`, {
@@ -2616,5 +2624,9 @@ export default function SeatingPlanEditorPage() {
       ) : null}
     </main>
   );
+}
+
+export default function SeatingPlanEditorPage() {
+  return <SeatingPlanEditorScreen />;
 }
 

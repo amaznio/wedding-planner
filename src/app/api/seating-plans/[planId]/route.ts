@@ -41,6 +41,7 @@ export async function GET(_: Request, context: RouteContext) {
     plan,
     access: {
       role: authz.role,
+      weddingId: authz.weddingId,
       canEdit: authz.canEdit,
       isPublicRead: authz.isPublicRead,
       isPublicViewer: authz.isPublicAccess,

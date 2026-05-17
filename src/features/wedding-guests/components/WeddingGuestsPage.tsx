@@ -13,6 +13,7 @@ import { GuestInsightsPanel } from "./GuestInsightsPanel";
 import { GuestManagementTable } from "./GuestManagementTable";
 import { GuestsPageHeader } from "./GuestsPageHeader";
 import { GuestStatsCards } from "./GuestStatsCards";
+import { getWeddingRoutes } from "@/lib/routes";
 
 type WeddingDetailsApiResponse = {
   access: {
@@ -65,6 +66,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const { locale } = useI18n();
   const router = useRouter();
   const baseData = useMemo(() => buildWeddingGuestsMockData(weddingId), [weddingId]);
+  const routes = useMemo(() => getWeddingRoutes(weddingId), [weddingId]);
 
   const [data, setData] = useState<WeddingGuestsData>({
     ...baseData,
@@ -125,7 +127,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
             weddingDateLabel,
             guests: mappedGuests,
             stats,
-            seatingPlanHref: firstEventId ? `/weddings/${weddingId}/events/${firstEventId}` : baseData.seatingPlanHref,
+            seatingPlanHref: firstEventId ? routes.seating : baseData.seatingPlanHref,
           });
           setAvailableEvents(
             weddingJson.wedding.events.map((event) => ({
@@ -175,7 +177,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     return () => {
       active = false;
     };
-  }, [weddingId, locale, baseData, reloadKey]);
+  }, [weddingId, locale, baseData, reloadKey, routes.seating]);
 
   const rsvpShare = useMemo(() => {
     const total = data.stats.totalGuests || 1;
@@ -289,3 +291,4 @@ function getInitials(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
+

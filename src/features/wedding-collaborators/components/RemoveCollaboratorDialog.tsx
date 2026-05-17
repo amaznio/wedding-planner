@@ -1,6 +1,15 @@
 "use client";
 
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDefaultCancel,
+  AlertDialogDestructiveAction,
+} from "@/components/ui/alert-dialog";
 import { useI18n } from "@/i18n/provider";
 import type { WeddingCollaborator } from "../types";
 
@@ -20,19 +29,23 @@ export function RemoveCollaboratorDialog({
   const { t } = useI18n();
 
   return (
-    <ConfirmDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t("weddingCollaboratorsPage.removeDialog.title")}
-      description={
-        collaborator
-          ? `${collaborator.user.name} (${collaborator.user.email}). ${t("weddingCollaboratorsPage.removeDialog.description")}`
-          : t("weddingCollaboratorsPage.removeDialog.description")
-      }
-      confirmLabel={t("weddingCollaboratorsPage.removeDialog.confirm")}
-      cancelLabel={t("weddingCollaboratorsPage.removeDialog.cancel")}
-      confirmVariant="destructive"
-      onConfirm={onConfirm}
-    />
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("weddingCollaboratorsPage.removeDialog.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {collaborator
+              ? `${collaborator.user.name} (${collaborator.user.email}). ${t("weddingCollaboratorsPage.removeDialog.description")}`
+              : t("weddingCollaboratorsPage.removeDialog.description")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogDefaultCancel>{t("weddingCollaboratorsPage.removeDialog.cancel")}</AlertDialogDefaultCancel>
+          <AlertDialogDestructiveAction onClick={() => void onConfirm()}>
+            {t("weddingCollaboratorsPage.removeDialog.confirm")}
+          </AlertDialogDestructiveAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

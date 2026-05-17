@@ -8,14 +8,10 @@ export type WeddingVendorStatus = "confirmed" | "pending";
 
 export type EventTabId =
   | "overview"
-  | "timeline"
+  | "schedule"
   | "guests"
   | "seating"
-  | "vendors"
-  | "budget"
-  | "tasks"
-  | "notes"
-  | "settings";
+  | "notes";
 
 export type WeddingEventDetail = {
   id: string;

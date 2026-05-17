@@ -15,7 +15,8 @@
   },
   "home": {
     "title": "Wedding Seating Planner MVP",
-    "openEditor": "Otwórz edytor ustawienia stołów"
+    "openEditor": "Otwórz edytor ustawienia stołów",
+    "openWeddings": "Otwórz wesela"
   },
   "auth": {
     "fields": {
@@ -390,16 +391,16 @@
       "logout": "Wyloguj",
       "nav": {
         "home": "Strona główna",
-        "schedule": "Harmonogram",
         "tasks": "Zadania",
         "guests": "Goście",
         "collaborators": "Współpraca",
         "events": "Wydarzenia",
+        "seating": "Seating",
         "budget": "Budżet",
         "vendors": "Dostawcy",
         "notes": "Notatki",
         "documents": "Dokumenty",
-        "inspiration": "Inspiracje"
+        "settings": "Ustawienia"
       }
     },
     "actions": {
@@ -806,6 +807,44 @@
     }
   },
   "events": {
+    "list": {
+      "searchPlaceholder": "Szukaj po nazwie lub lokalizacji",
+      "empty": "Brak wydarzeń dla bieżących filtrów.",
+      "filters": {
+        "all": "Wszystkie",
+        "upcoming": "Nadchodzące",
+        "completed": "Zakończone"
+      },
+      "table": {
+        "name": "Wydarzenie",
+        "date": "Data",
+        "location": "Lokalizacja",
+        "guests": "Goście"
+      },
+      "title": "Wydarzenia",
+      "subtitle": "Zarządzaj wszystkimi wydarzeniami związanymi z Waszym ślubem.",
+      "row": {
+        "guests": "Gości",
+        "confirmed": "Potwierdzeni",
+        "confirmedRatio": "{{confirmed}} ({{percent}}%)"
+      },
+      "states": {
+        "emptyTitle": "Brak wydarzeń",
+        "emptySubtitle": "Brak wydarzeń pasujących do bieżących filtrów."
+      },
+      "actions": {
+        "open": "Otwórz",
+        "edit": "Edytuj wydarzenie",
+        "delete": "Usuń wydarzenie"
+      },
+      "editDialog": {
+        "namePlaceholder": "Nazwa wydarzenia",
+        "locationPlaceholder": "Miejsce lub adres",
+        "nameRequired": "Nazwa wydarzenia jest wymagana.",
+        "dateTimePairRequired": "Uzupełnij jednocześnie datę i godzinę albo wyczyść oba pola.",
+        "saveFailed": "Nie udało się zapisać zmian wydarzenia."
+      }
+    },
     "detail": {
       "states": {
         "loading": "Ładowanie centrum wydarzenia...",
@@ -968,6 +1007,109 @@
         "create": "Utwórz plan",
         "creating": "Tworzenie...",
         "empty": "Brak planów stołów."
+      }
+    },
+    "actions": {
+      "addEvent": "Dodaj wydarzenie"
+    }
+  },
+  "seating": {
+    "mismatch": "Wybrany plan stołów należy do innego wesela. Otworzyliśmy listę planów dla bieżącego wesela."
+  },
+  "tasks": {
+    "page": {
+      "title": "Zadania",
+      "subtitle": "Śledź priorytety i terminy zadań weselnych.",
+      "stats": {
+        "todo": "Do zrobienia",
+        "inProgress": "W trakcie",
+        "done": "Gotowe"
+      },
+      "table": {
+        "title": "Lista zadań",
+        "description": "Bieżące zadania zespołu weselnego.",
+        "columns": {
+          "task": "Zadanie",
+          "assignee": "Osoba",
+          "due": "Termin",
+          "priority": "Priorytet",
+          "status": "Status"
+        }
+      },
+      "priority": {
+        "high": "Wysoki",
+        "medium": "Średni",
+        "low": "Niski"
+      },
+      "status": {
+        "todo": "Do zrobienia",
+        "in_progress": "W trakcie",
+        "done": "Gotowe"
+      },
+      "empty": "Brak zadań."
+    }
+  },
+  "notes": {
+    "page": {
+      "title": "Notatki",
+      "subtitle": "Centralne notatki dla całego wesela.",
+      "stats": {
+        "total": "Łącznie",
+        "updatedThisWeek": "Zmienione w tym tygodniu",
+        "starred": "Wyróżnione"
+      },
+      "updated": "Aktualizacja:"
+    }
+  },
+  "documents": {
+    "page": {
+      "title": "Dokumenty",
+      "subtitle": "Umowy i pliki weselne w jednym miejscu.",
+      "stats": {
+        "total": "Łącznie",
+        "shared": "Udostępnione",
+        "signed": "Podpisane"
+      },
+      "table": {
+        "title": "Rejestr dokumentów",
+        "description": "Najnowsze pliki robocze i umowy.",
+        "columns": {
+          "name": "Nazwa",
+          "category": "Kategoria",
+          "owner": "Właściciel",
+          "status": "Status"
+        }
+      },
+      "status": {
+        "draft": "Szkic",
+        "shared": "Udostępniony",
+        "signed": "Podpisany"
+      },
+      "empty": "Brak dokumentów."
+    }
+  },
+  "settings": {
+    "page": {
+      "title": "Ustawienia",
+      "subtitle": "Preferencje dla przestrzeni wesela.",
+      "preferences": {
+        "title": "Powiadomienia",
+        "description": "Wybierz, które powiadomienia chcesz otrzymywać.",
+        "items": {
+          "notifications": "Powiadomienia systemowe",
+          "weeklyDigest": "Tygodniowe podsumowanie",
+          "guestUpdates": "Aktualizacje gości",
+          "vendorReminders": "Przypomnienia o dostawcach"
+        }
+      },
+      "workspace": {
+        "title": "Konfiguracja przestrzeni",
+        "description": "Kluczowe ustawienia działania przestrzeni.",
+        "rows": {
+          "locale": "Język: Polski/English",
+          "timezone": "Strefa czasowa: Europe/Warsaw",
+          "currency": "Waluta: PLN"
+        }
       }
     }
   }

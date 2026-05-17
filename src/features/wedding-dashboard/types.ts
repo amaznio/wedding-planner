@@ -1,15 +1,15 @@
 export type DashboardNavItemId =
   | "home"
-  | "schedule"
   | "tasks"
   | "guests"
   | "collaborators"
   | "events"
+  | "seating"
   | "budget"
   | "vendors"
   | "notes"
   | "documents"
-  | "inspiration";
+  | "settings";
 
 export type DashboardQuickActionId = "task" | "expense" | "vendor" | "event" | "note";
 

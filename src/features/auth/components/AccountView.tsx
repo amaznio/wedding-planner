@@ -36,7 +36,7 @@ export function AccountView({ name, email }: AccountViewProps) {
       </section>
       <div>
         <Link
-          href="/seating-plans"
+          href="/weddings"
           className="inline-flex rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
         >
           {t("account.backToPlans")}
@@ -45,3 +45,4 @@ export function AccountView({ name, email }: AccountViewProps) {
     </main>
   );
 }
+

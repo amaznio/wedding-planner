@@ -15,7 +15,8 @@
   },
   "home": {
     "title": "Wedding Seating Planner MVP",
-    "openEditor": "Open Seating Editor"
+    "openEditor": "Open Seating Editor",
+    "openWeddings": "Open weddings"
   },
   "auth": {
     "fields": {
@@ -390,16 +391,16 @@
       "logout": "Sign out",
       "nav": {
         "home": "Dashboard",
-        "schedule": "Schedule",
         "tasks": "Tasks",
         "guests": "Guests",
         "collaborators": "Collaborators",
         "events": "Events",
+        "seating": "Seating",
         "budget": "Budget",
         "vendors": "Vendors",
         "notes": "Notes",
         "documents": "Documents",
-        "inspiration": "Inspiration"
+        "settings": "Settings"
       }
     },
     "actions": {
@@ -806,6 +807,44 @@
     }
   },
   "events": {
+    "list": {
+      "searchPlaceholder": "Search by name or location",
+      "empty": "No events match current filters.",
+      "filters": {
+        "all": "All",
+        "upcoming": "Upcoming",
+        "completed": "Completed"
+      },
+      "table": {
+        "name": "Event",
+        "date": "Date",
+        "location": "Location",
+        "guests": "Guests"
+      },
+      "title": "Events",
+      "subtitle": "Manage all wedding-related events in one place.",
+      "row": {
+        "guests": "Guests",
+        "confirmed": "Confirmed",
+        "confirmedRatio": "{{confirmed}} ({{percent}}%)"
+      },
+      "states": {
+        "emptyTitle": "No events found",
+        "emptySubtitle": "No events match your current filters."
+      },
+      "actions": {
+        "open": "Open",
+        "edit": "Edit event",
+        "delete": "Delete event"
+      },
+      "editDialog": {
+        "namePlaceholder": "Event name",
+        "locationPlaceholder": "Venue or address",
+        "nameRequired": "Event name is required.",
+        "dateTimePairRequired": "Provide both date and time, or clear both fields.",
+        "saveFailed": "Failed to save event changes."
+      }
+    },
     "detail": {
       "states": {
         "loading": "Loading event command center...",
@@ -968,6 +1007,109 @@
         "create": "Create plan",
         "creating": "Creating...",
         "empty": "No seating plans yet."
+      }
+    },
+    "actions": {
+      "addEvent": "Add event"
+    }
+  },
+  "seating": {
+    "mismatch": "The selected seating plan belongs to a different wedding. We opened the seating plans list for this workspace."
+  },
+  "tasks": {
+    "page": {
+      "title": "Tasks",
+      "subtitle": "Track wedding task priorities and deadlines.",
+      "stats": {
+        "todo": "To do",
+        "inProgress": "In progress",
+        "done": "Done"
+      },
+      "table": {
+        "title": "Task list",
+        "description": "Current tasks for the wedding team.",
+        "columns": {
+          "task": "Task",
+          "assignee": "Assignee",
+          "due": "Due",
+          "priority": "Priority",
+          "status": "Status"
+        }
+      },
+      "priority": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "status": {
+        "todo": "To do",
+        "in_progress": "In progress",
+        "done": "Done"
+      },
+      "empty": "No tasks yet."
+    }
+  },
+  "notes": {
+    "page": {
+      "title": "Notes",
+      "subtitle": "Central notes for the whole wedding workspace.",
+      "stats": {
+        "total": "Total",
+        "updatedThisWeek": "Updated this week",
+        "starred": "Starred"
+      },
+      "updated": "Updated:"
+    }
+  },
+  "documents": {
+    "page": {
+      "title": "Documents",
+      "subtitle": "Contracts and wedding files in one place.",
+      "stats": {
+        "total": "Total",
+        "shared": "Shared",
+        "signed": "Signed"
+      },
+      "table": {
+        "title": "Document register",
+        "description": "Latest working files and contracts.",
+        "columns": {
+          "name": "Name",
+          "category": "Category",
+          "owner": "Owner",
+          "status": "Status"
+        }
+      },
+      "status": {
+        "draft": "Draft",
+        "shared": "Shared",
+        "signed": "Signed"
+      },
+      "empty": "No documents yet."
+    }
+  },
+  "settings": {
+    "page": {
+      "title": "Settings",
+      "subtitle": "Workspace preferences for this wedding.",
+      "preferences": {
+        "title": "Notifications",
+        "description": "Choose which workspace notifications to receive.",
+        "items": {
+          "notifications": "System notifications",
+          "weeklyDigest": "Weekly digest",
+          "guestUpdates": "Guest updates",
+          "vendorReminders": "Vendor reminders"
+        }
+      },
+      "workspace": {
+        "title": "Workspace setup",
+        "description": "Core workspace configuration values.",
+        "rows": {
+          "locale": "Language: English/Polish",
+          "timezone": "Timezone: Europe/Warsaw",
+          "currency": "Currency: PLN"
+        }
       }
     }
   }

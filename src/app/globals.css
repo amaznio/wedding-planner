@@ -1,8 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: var(--color-zinc-50);
-  --foreground: #171717;
+  --background: hsl(240 33% 98%);
+  --foreground: hsl(240 12% 14%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 12% 14%);
+  --primary: hsl(260 78% 62%);
+  --primary-foreground: hsl(0 0% 100%);
+  --muted: hsl(240 25% 95%);
+  --muted-foreground: hsl(240 8% 42%);
+  --border: hsl(240 22% 90%);
+  --ring: hsl(260 78% 62%);
+  --success: hsl(142 56% 88%);
+  --warning: hsl(40 92% 88%);
+  --danger: hsl(0 78% 92%);
 }
 
 /* @theme inline {
@@ -22,7 +33,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
 }
 
 button:not(:disabled),

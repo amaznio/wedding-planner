@@ -47,7 +47,6 @@ import {
   Bell,
   ChevronsUpDown,
   CheckSquare,
-  Compass,
   CreditCard,
   FileText,
   Gift,
@@ -55,11 +54,13 @@ import {
   HeartIcon,
   LogOut,
   NotebookTabs,
-  Sparkles,
+  Settings,
   Users,
   UserRoundPlus,
   UtensilsCrossed,
   WalletCards,
+  LayoutGrid,
+  Armchair,
   type LucideIcon,
 } from "lucide-react";
 import type { DashboardNavItem, DashboardNavItemId } from "../types";
@@ -76,17 +77,17 @@ type WeddingDashboardSidebarProps = {
 };
 
 const navIconById: Record<DashboardNavItemId, LucideIcon> = {
-  home: Compass,
-  schedule: CalendarDays,
+  home: LayoutGrid,
   tasks: CheckSquare,
   guests: Users,
   collaborators: UserRoundPlus,
   events: UtensilsCrossed,
+  seating: Armchair,
   budget: WalletCards,
   vendors: HeartHandshake,
   notes: NotebookTabs,
   documents: FileText,
-  inspiration: Sparkles,
+  settings: Settings,
 };
 
 export function WeddingDashboardSidebar({
@@ -271,7 +272,7 @@ export function WeddingDashboardSidebar({
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem onSelect={() => onPlaceholderAction("upgrade")}>
-                    <Sparkles className="mr-2 size-4" />
+                    <CalendarDays className="mr-2 size-4" />
                     <span>{t("dashboard.sidebar.upgradePro")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

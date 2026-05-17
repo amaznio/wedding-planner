@@ -10,8 +10,9 @@ export default async function SignUpPage() {
   });
 
   if (session) {
-    redirect("/seating-plans");
+    redirect("/weddings");
   }
 
   return <SignUpForm />;
 }
+
