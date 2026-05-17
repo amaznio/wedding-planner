@@ -568,6 +568,7 @@ export function SeatingPlanEditorScreen() {
     }
     return anonymousDisplayNameRef.current;
   }, [anonNameOverride, locale, session?.user?.name]);
+  const hasAnonNameOverride = anonNameOverride.trim().length > 0;
 
   useEffect(() => {
     anonymousDisplayNameRef.current = "";
@@ -604,7 +605,10 @@ export function SeatingPlanEditorScreen() {
       () => ({
         participantId: participantIdRef.current,
         displayName: getDisplayName(),
-        aliasToken: session?.user?.name ? undefined : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+        aliasToken:
+          session?.user?.name || hasAnonNameOverride
+            ? undefined
+            : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
         colorKey: session?.user?.name ? undefined : anonColorKey,
       }),
     );
@@ -728,7 +732,7 @@ export function SeatingPlanEditorScreen() {
         eventTransportRef.current = null;
       }
     };
-  }, [anonColorKey, getDisplayName, loadGuests, loadRelationships, locale, planId, session?.user?.name, setPlan]);
+  }, [anonColorKey, getDisplayName, hasAnonNameOverride, loadGuests, loadRelationships, locale, planId, session?.user?.name, setPlan]);
 
   const handlePointerPresenceChange = useCallback((x: number, y: number) => {
     const now = Date.now();
@@ -737,9 +741,12 @@ export function SeatingPlanEditorScreen() {
     void eventTransportRef.current?.sendCursorPresence?.({
       x,
       y,
-      aliasToken: session?.user?.name ? undefined : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+      aliasToken:
+        session?.user?.name || hasAnonNameOverride
+          ? undefined
+          : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
     });
-  }, [locale, session?.user?.name]);
+  }, [hasAnonNameOverride, locale, session?.user?.name]);
 
   const viewingAsLabel = session?.user?.name ? null : getDisplayName();
   const anonIdentity = session?.user?.name
