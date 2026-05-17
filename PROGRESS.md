@@ -5083,3 +5083,96 @@ Phase 239 - Household guest list with linked pairs and no-seat children
   - optional backfill utility to infer/set `guardianGuestId` for older child records,
   - add edit UI to reassign child guardian from wedding guests table,
   - add household-level filters (`has children`, `has no-seat children`).
+
+## Current Phase
+
+Phase 240 - Wedding seating list page redesign (table-style management view)
+
+## Completed Work
+
+- Refactored the wedding seating list page (`/weddings/[weddingId]/seating`) to match the provided management-table design direction while preserving existing create/open behavior.
+- Replaced the prior card-grid layout with a structured table-like list containing:
+  - search input,
+  - event filter,
+  - sort selector,
+  - row columns for plan preview, event, seated count, progress, update info, and actions.
+- Added a placeholder visual preview block per plan row (for future real thumbnail/image wiring).
+- Added header create action and kept plan creation flow connected to existing API.
+- Added event selector for new-plan creation in the filter/create controls row.
+- Added/extended i18n copy for new seating page controls and column labels in EN/PL.
+
+## Files Changed
+
+- `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due pre-existing baseline errors outside this phase)
+
+## Known Issues
+
+- Repository lint currently fails due pre-existing issues outside this phase (not introduced by this redesign), including existing errors in:
+  - `src/app/seating-plans/[planId]/page.tsx`
+  - `src/app/api/weddings/[weddingId]/guests/*` routes
+- The row thumbnail is currently a placeholder block by request; no real plan preview image is wired yet.
+
+## Next Recommended Step
+
+- Phase 241 - Seating list visual parity polish + real thumbnail generation:
+  - tune spacing/typography against final approved mock at key breakpoints,
+  - wire real generated thumbnail previews from plan geometry,
+  - optionally add row-level overflow actions menu behavior.
+
+## Current Phase
+
+Phase 241 - Wedding seating page premium polish (desktop table + mobile cards)
+
+## Completed Work
+
+- Implemented a premium-clean UI refactor for `/weddings/[weddingId]/seating` while preserving existing behavior and APIs.
+- Updated visual hierarchy and spacing:
+  - stronger control-row rhythm and consistent 44px control heights,
+  - clearer typography hierarchy for plan title, metrics, and metadata,
+  - unified radius/border/shadow treatment across controls and row surfaces.
+- Refined desktop plan list into polished table-like rows:
+  - card-like row containers with hover lift/tint micro-interaction,
+  - stronger seated/progress readability with tabular numerics and thicker progress tracks,
+  - remaining-seats microcopy shown when progress is below 100%.
+- Replaced plain preview placeholder with styled mini floorplan mock:
+  - subtle grid background,
+  - decorative table markers,
+  - dimensions as secondary caption.
+- Added responsive mobile variant:
+  - desktop table remains for `md+`,
+  - mobile now renders stacked cards with preview, plan metadata, progress, and open action.
+- Preserved create/open/search/filter/sort logic and all existing routes/API integration.
+
+## Files Changed
+
+- `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due existing baseline issues outside this phase)
+
+## Known Issues
+
+- Existing repository lint failures remain unchanged and are outside this phase scope, including:
+  - `src/app/seating-plans/[planId]/page.tsx`
+  - `src/app/api/weddings/[weddingId]/guests/*`
+- Row overflow action remains visual-only (same as prior behavior).
+
+## Next Recommended Step
+
+- Phase 242 - Seating list fidelity QA + interaction polish:
+  - verify spacing and typography at common breakpoints,
+  - add functional overflow menu actions if needed,
+  - optionally tune progress/metadata copy for final product voice.

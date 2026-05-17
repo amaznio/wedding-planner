@@ -1028,7 +1028,26 @@
         "planNamePlaceholder": "Seating plan name",
         "create": "Create plan",
         "creating": "Creating...",
-        "empty": "No seating plans yet."
+        "empty": "No seating plans yet.",
+        "searchPlaceholder": "Search plans...",
+        "filterAllEvents": "All events",
+        "sortUpdated": "Sort: Latest update",
+        "sortName": "Sort: Name",
+        "noEvent": "No event",
+        "thumbnail": "Preview",
+        "moreActions": "More actions",
+        "createInlineCta": "Create a new seating plan",
+        "createInlineHint": "Start from an empty plan or use a template",
+        "columns": {
+          "plan": "Plan",
+          "event": "Event",
+          "seated": "Seated",
+          "progress": "Progress",
+          "updated": "Last updated",
+          "actions": "Actions"
+        },
+        "selectEventForPlan": "Select event",
+        "remainingToSeat": "{count} left to seat"
       }
     },
     "actions": {

@@ -1028,7 +1028,26 @@
         "planNamePlaceholder": "Nazwa planu stołów",
         "create": "Utwórz plan",
         "creating": "Tworzenie...",
-        "empty": "Brak planów stołów."
+        "empty": "Brak planów stołów.",
+        "searchPlaceholder": "Szukaj planu...",
+        "filterAllEvents": "Wszystkie wydarzenia",
+        "sortUpdated": "Sortuj: Ostatnia aktualizacja",
+        "sortName": "Sortuj: Nazwa",
+        "noEvent": "Brak wydarzenia",
+        "thumbnail": "Podgląd",
+        "moreActions": "Więcej akcji",
+        "createInlineCta": "Utwórz nowy plan stołów",
+        "createInlineHint": "Zacznij od pustego planu lub użyj szablonu",
+        "columns": {
+          "plan": "Plan stołów",
+          "event": "Wydarzenie",
+          "seated": "Usadzonych",
+          "progress": "Postęp",
+          "updated": "Ostatnia aktualizacja",
+          "actions": "Akcje"
+        },
+        "selectEventForPlan": "Wybierz wydarzenie",
+        "remainingToSeat": "Pozostało do usadzenia: {count}"
       }
     },
     "actions": {
