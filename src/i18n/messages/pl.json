@@ -84,6 +84,8 @@
     "statusSavedAt": "Zapisano {{time}}",
     "statusUnsaved": "Niezapisane zmiany",
     "statusFailed": "Błąd zapisu",
+    "retrySave": "Spróbuj ponownie",
+    "backToDashboard": "Wróć do panelu",
     "menu": "Menu",
     "navigation": "Nawigacja",
     "seatingPlans": "Plany ustawienia",

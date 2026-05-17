@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, MousePointer2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, Loader2, MousePointer2, OctagonAlert, Pencil, Settings } from "lucide-react";
 
 import { UserMenu } from "@/components/auth/UserMenu";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +24,7 @@ import { authClient } from "@/lib/auth-client";
 import { CURSOR_COLOR_PRESETS, getCursorColorPreset } from "@/features/seating-editor/lib/cursor-colors";
 
 type SeatingToolbarProps = {
+  backHref: string;
   planName: string;
   isDirty: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
@@ -46,6 +46,7 @@ type SeatingToolbarProps = {
 };
 
 export function SeatingToolbar({
+  backHref,
   planName,
   isDirty,
   saveState,
@@ -61,6 +62,7 @@ export function SeatingToolbar({
   const { locale, setLocale, t } = useI18n();
   const { data: session } = authClient.useSession();
   const [isMobileEditingTitle, setIsMobileEditingTitle] = useState(false);
+  const [isDesktopEditingTitle, setIsDesktopEditingTitle] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isMobileAnonOpen, setIsMobileAnonOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -72,9 +74,19 @@ export function SeatingToolbar({
         ? t("toolbar.statusFailed")
         : isDirty
           ? t("toolbar.statusUnsaved")
-          : lastSavedLabel
-            ? t("toolbar.statusSavedAt", { time: lastSavedLabel })
-            : t("toolbar.statusSaved");
+          : saveState === "saved"
+            ? lastSavedLabel
+              ? t("toolbar.statusSavedAt", { time: lastSavedLabel })
+              : t("toolbar.statusSaved")
+            : null;
+  const statusToneClass =
+    saveState === "saving"
+      ? "text-violet-600"
+      : saveState === "error"
+        ? "text-rose-600"
+        : isDirty
+          ? "text-amber-600"
+          : "text-emerald-600";
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -88,50 +100,105 @@ export function SeatingToolbar({
   const anonColorPreset = getCursorColorPreset(anonIdentity?.colorKey);
 
   return (
-    <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
-      <div className="hidden h-12 items-center md:flex">
+    <header className="border-b border-zinc-200/90 bg-white/95 px-3 py-1.5 shadow-[0_1px_0_rgba(24,24,27,0.04)] backdrop-blur md:px-4 md:py-2">
+      <div className="hidden h-12 items-center gap-3 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 w-8 shrink-0 rounded-md border-zinc-200 bg-white p-0 text-zinc-700 hover:bg-zinc-50"
+              onClick={() => router.push(backHref)}
+              aria-label={t("toolbar.backToDashboard")}
+              title={t("toolbar.backToDashboard")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           {readOnly ? (
-            <p className="truncate text-base font-semibold text-zinc-900">{planName}</p>
+            <p className="truncate text-[15px] font-semibold text-zinc-900">{planName}</p>
           ) : (
             <>
-              <Input
-                value={planName}
-                onChange={(event) => onPlanNameChange(event.target.value)}
-                className="h-9 border-transparent bg-zinc-50 text-base font-semibold"
-                style={{ width: `${titleWidthCh}ch` }}
-                aria-label={t("toolbar.planName")}
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-9 px-3 text-xs"
-                    onClick={onSave}
-                    disabled={saveState === "saving"}
-                    aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
-                  >
-                    <svg viewBox="0 0 24 24" className="mr-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                      <path d="M17 21v-8H7v8" />
-                      <path d="M7 3v5h8" />
-                    </svg>
-                    {t("common.save")}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {saveState === "saving" ? t("common.saving") : t("common.save")}
-                </TooltipContent>
-              </Tooltip>
-              <Badge variant="secondary" className="h-6 px-2 text-[11px]">
-                {statusText}
-              </Badge>
+              {isDesktopEditingTitle ? (
+                <Input
+                  value={planName}
+                  onChange={(event) => onPlanNameChange(event.target.value)}
+                  className="h-9 rounded-md border-zinc-200 bg-zinc-50 text-[15px] font-semibold"
+                  style={{ width: `${titleWidthCh}ch` }}
+                  aria-label={t("toolbar.planName")}
+                  autoFocus
+                  onBlur={() => setIsDesktopEditingTitle(false)}
+                />
+              ) : (
+                <p className="max-w-[44ch] truncate text-[15px] font-semibold text-zinc-900">{planName}</p>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-8 w-8 rounded-md border-zinc-200 bg-white p-0 text-zinc-700 hover:bg-zinc-50"
+                aria-label={isDesktopEditingTitle ? t("toolbar.doneEditingTitle") : t("toolbar.editTitle")}
+                title={isDesktopEditingTitle ? t("toolbar.doneEditingTitle") : t("toolbar.editTitle")}
+                onClick={() => setIsDesktopEditingTitle((current) => !current)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              {onOpenPlanSettings ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 w-8 rounded-md border-zinc-200 bg-white p-0 text-zinc-700 hover:bg-zinc-50"
+                  aria-label={t("editor.settings")}
+                  title={t("editor.settings")}
+                  onClick={onOpenPlanSettings}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              ) : null}
             </>
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+          {statusText ? (
+            <p className={`inline-flex items-center text-xs font-medium ${statusToneClass}`}>
+              {saveState === "saving" ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : saveState === "error" ? (
+                <OctagonAlert className="mr-1 h-3.5 w-3.5" />
+              ) : isDirty ? (
+                <span className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-amber-500" />
+              ) : (
+                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              )}
+              {statusText}
+            </p>
+          ) : null}
+          {!readOnly ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="h-9 rounded-md px-3 text-xs font-semibold"
+                  onClick={onSave}
+                  disabled={saveState === "saving"}
+                  aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
+                >
+                  {saveState === "saving" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                      <path d="M17 21v-8H7v8" />
+                      <path d="M7 3v5h8" />
+                    </svg>
+                  )}
+                  {saveState === "error" ? t("toolbar.retrySave") : t("common.save")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {saveState === "saving" ? t("common.saving") : saveState === "error" ? t("toolbar.retrySave") : t("common.save")}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
           {viewingAsLabel ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -197,16 +264,6 @@ export function SeatingToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          {onOpenPlanSettings && !readOnly ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 px-3 text-xs"
-              onClick={onOpenPlanSettings}
-            >
-              {t("editor.settings")}
-            </Button>
-          ) : null}
           <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
             <SelectTrigger className="h-9 w-[150px]" aria-label={t("common.language")}>
               <SelectValue />
@@ -221,20 +278,31 @@ export function SeatingToolbar({
       </div>
 
       <div className="md:hidden">
-        <div className="flex h-10 items-center justify-between px-1">
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-8 w-8 p-0"
-            aria-label={t("toolbar.menu")}
-            onClick={() => setIsMobileNavOpen(true)}
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6h18" />
-              <path d="M3 12h18" />
-              <path d="M3 18h18" />
-            </svg>
-          </Button>
+        <div className="flex h-10 items-center justify-between gap-1 px-1">
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              aria-label={t("toolbar.backToDashboard")}
+              onClick={() => router.push(backHref)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              aria-label={t("toolbar.menu")}
+              onClick={() => setIsMobileNavOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18" />
+                <path d="M3 12h18" />
+                <path d="M3 18h18" />
+              </svg>
+            </Button>
+          </div>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2">
             {isMobileEditingTitle && !readOnly ? (
               <Input
@@ -275,11 +343,15 @@ export function SeatingToolbar({
                 disabled={saveState === "saving"}
                 aria-label={saveState === "saving" ? t("common.saving") : t("common.save")}
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                  <path d="M17 21v-8H7v8" />
-                  <path d="M7 3v5h8" />
-                </svg>
+                {saveState === "saving" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                    <path d="M17 21v-8H7v8" />
+                    <path d="M7 3v5h8" />
+                  </svg>
+                )}
               </Button>
             ) : null}
           </div>

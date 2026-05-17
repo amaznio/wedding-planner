@@ -13,12 +13,17 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const adapter = new PrismaPg({ connectionString });
+const isAccelerateUrl = connectionString.startsWith("prisma+postgres://");
+const adapter = isAccelerateUrl
+  ? undefined
+  : new PrismaPg({ connectionString });
+const accelerateUrl = isAccelerateUrl ? connectionString : undefined;
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
+    accelerateUrl,
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 

@@ -84,6 +84,8 @@
     "statusSavedAt": "Saved {{time}}",
     "statusUnsaved": "Unsaved changes",
     "statusFailed": "Save failed",
+    "retrySave": "Try again",
+    "backToDashboard": "Back to dashboard",
     "menu": "Menu",
     "navigation": "Navigation",
     "seatingPlans": "Seating plans",

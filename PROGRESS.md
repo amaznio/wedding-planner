@@ -4799,3 +4799,123 @@ Phase 235 - External Socket.IO realtime collaboration wiring (assignments + tabl
 - Simulate higher latency and reconnect events while dragging tables repeatedly.
 - Verify reconnect fetches do not snap tables back during active local table queue processing.
 - Verify late save responses do not overwrite newer table positions after subsequent moves.
+
+## Current Phase
+
+Phase 236 - Seating editor top bar redesign (compact + dashboard back navigation)
+
+## Completed Work
+
+- Redesigned seating editor toolbar to a compact, theme-aligned layout inspired by reference design while preserving existing behavior:
+  - desktop toolbar now uses a three-zone structure:
+    - left: dashboard back button + plan title/name field
+    - center: compact separator/spacer (no undo/redo, no filters)
+    - right: save status chip + save action + language switcher + user menu
+  - added stateful save-status presentation tones/icons for:
+    - saved
+    - unsaved
+    - saving
+    - error
+  - save button now surfaces retry copy during error state and loading spinner during saving
+- Added deterministic back navigation wiring:
+  - new `SeatingToolbar` prop: `backHref`
+  - `SeatingPlanEditorScreen` computes `backHref` from `planAccess.weddingId` via `getWeddingRoutes(...).dashboard`
+  - fallback back target when missing wedding context: `/weddings`
+- Added mobile parity for back navigation:
+  - mobile top row now includes back button while preserving existing menu sheet model and save/edit-title behavior
+- Added i18n keys for toolbar copy updates:
+  - `toolbar.backToDashboard`
+  - `toolbar.retrySave`
+
+## Files Changed
+
+- `src/features/seating-editor/components/SeatingToolbar.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due pre-existing baseline errors/warnings outside this phase scope)
+- `pnpm typecheck` (pass after toolbar badge variant fix)
+
+## Check Results
+
+- TypeScript: pass.
+- Lint: fails due existing repo baseline issues in `src/app/seating-plans/[planId]/page.tsx` and other pre-existing files; no new toolbar-specific lint error was introduced by this phase.
+
+## Known Issues
+
+- Existing lint baseline remains in legacy seating editor/page files and is unchanged by this toolbar redesign phase.
+
+## Next Recommended Step
+
+- Phase 237 - Seating editor top bar visual QA and micro-polish:
+  - validate spacing at common desktop breakpoints,
+  - verify mobile top row action density in narrow widths,
+  - optionally tune status chip copy/icon emphasis after UX review.
+
+## Current Phase
+
+Phase 236-HF1 - Remove duplicate save toasts from seating editor
+
+## Completed Work
+
+- Removed duplicate toast notifications from the primary seating plan save flow so save feedback is shown only in the top toolbar status.
+- Removed both:
+  - success toast emitted after manual/auto save success
+  - destructive toast emitted on save failure
+- Kept all save-state logic (`saving` / `saved` / `error`) unchanged; only notification surface was reduced.
+
+## Files Changed
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+
+## Known Issues
+
+- Existing repository lint baseline issues remain unchanged and were not part of this hotfix.
+
+## Next Recommended Step
+
+- Run a quick UX pass to ensure save/error states in the top bar remain clear without toast duplication.
+
+## Latest Hotfix
+
+- Phase 236-HF2 - Prisma runtime connection mode switch for Accelerate/direct Postgres
+
+### Completed Work (Hotfix)
+
+- Fixed Prisma runtime initialization so it chooses the correct Prisma 7 client-engine connection mode from `DATABASE_URL`:
+  - `prisma+postgres://...` -> uses `accelerateUrl` (Prisma Accelerate path).
+  - `postgres://...` / `postgresql://...` -> uses `PrismaPg` adapter (direct Postgres path).
+- This resolves Better Auth session lookup failures (`/api/auth/get-session` 500 with `Session.findFirst` timeout) caused by using `PrismaPg` against an Accelerate URL.
+
+### Files Changed (Hotfix)
+
+- `src/lib/prisma.ts`
+- `PROGRESS.md`
+### Commands Run (Hotfix)
+
+- `pnpm typecheck` (pass)
+
+### Known Issues (Hotfix)
+
+- Existing repository lint baseline issues outside this hotfix remain unchanged.
+
+### How to Test (Hotfix)
+
+- Restart dev server so the updated Prisma client initialization is loaded.
+- Open a protected page (for example /weddings/{weddingId}/seating/{planId}) and confirm /api/auth/get-session no longer returns 500.
+- Confirm login/session-dependent pages load without the previous Session.findFirst timeout.
+

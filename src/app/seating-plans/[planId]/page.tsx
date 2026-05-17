@@ -53,6 +53,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 import { authClient } from "@/lib/auth-client";
+import { getWeddingRoutes } from "@/lib/routes";
 import {
   createRandomCursorAliasToken,
   getStickyCursorAliasToken,
@@ -751,6 +752,7 @@ export function SeatingPlanEditorScreen() {
   }, [anonAliasToken, hasAnonNameOverride, locale, session?.user?.name]);
 
   const viewingAsLabel = session?.user?.name ? null : getDisplayName();
+  const backHref = planAccess?.weddingId ? getWeddingRoutes(planAccess.weddingId).dashboard : "/weddings";
   const anonIdentity = session?.user?.name
     ? null
     : {
@@ -1374,11 +1376,6 @@ export function SeatingPlanEditorScreen() {
           markSaved();
           setSaveState("saved");
           setLastSavedAt(new Date());
-          toast({
-            title: t("toasts.success"),
-            description: source === "auto" ? t("editor.autosaved") : t("editor.savedOk"),
-            variant: "success",
-          });
           setTimeout(() => setSaveState("idle"), 1200);
           if (!isDraggingGuest) {
             void Promise.all([
@@ -1394,11 +1391,6 @@ export function SeatingPlanEditorScreen() {
         }
       } catch {
         setSaveState("error");
-        toast({
-          title: t("editor.saveTitleError"),
-          description: t("editor.saveError"),
-          variant: "destructive",
-        });
       } finally {
         saveInFlightRef.current = false;
         if (
@@ -2281,6 +2273,7 @@ export function SeatingPlanEditorScreen() {
       <main className="bg-zinc-50">
         <div className={`${isDesktopViewport ? "min-h-dvh lg:h-dvh" : "h-dvh"} flex flex-col overflow-hidden`}>
           <SeatingToolbar
+            backHref={backHref}
             planName={plan.name}
             isDirty={false}
             saveState="idle"
@@ -2335,6 +2328,7 @@ export function SeatingPlanEditorScreen() {
       {!isDesktopViewport ? (
       <div className="flex h-dvh flex-col overflow-hidden">
         <SeatingToolbar
+          backHref={backHref}
           planName={plan.name}
           isDirty={isDirty}
           saveState={saveState}
@@ -2884,6 +2878,7 @@ export function SeatingPlanEditorScreen() {
       {isDesktopViewport ? (
       <div className="min-h-dvh flex-col lg:h-dvh flex">
         <SeatingToolbar
+          backHref={backHref}
           planName={plan.name}
           isDirty={isDirty}
           saveState={saveState}
