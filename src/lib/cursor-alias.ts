@@ -142,12 +142,17 @@ export function localizeCursorAlias(token: CursorAliasToken, inputLocale?: strin
 
 export function createRandomCursorAlias(inputLocale?: string): string {
   const locale = resolveLocale(inputLocale);
+  const token = createRandomCursorAliasToken(locale);
+  return localizeCursorAlias(token, locale);
+}
+
+export function createRandomCursorAliasToken(inputLocale?: string): CursorAliasToken {
+  const locale = resolveLocale(inputLocale);
   const words = WORDS[locale];
-  const token: CursorAliasToken = {
+  return {
     adjectiveIndex: randomIndex(words.adjectives.length),
     animalIndex: randomIndex(words.animals.length),
   };
-  return localizeCursorAlias(token, locale);
 }
 
 export function getStickyCursorAlias(inputLocale?: string): string {

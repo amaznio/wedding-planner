@@ -53,7 +53,11 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 import { authClient } from "@/lib/auth-client";
-import { createRandomCursorAlias, getStickyCursorAliasToken, localizeCursorAlias } from "@/lib/cursor-alias";
+import {
+  createRandomCursorAliasToken,
+  getStickyCursorAliasToken,
+  localizeCursorAlias,
+} from "@/lib/cursor-alias";
 import { resolveCursorColorKey, type CursorColorKey } from "@/features/seating-editor/lib/cursor-colors";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -244,6 +248,7 @@ export function SeatingPlanEditorScreen() {
   const [isUpdatingSharing, setIsUpdatingSharing] = useState(false);
   const [remoteCursors, setRemoteCursors] = useState<RemoteCursor[]>([]);
   const [anonNameOverride, setAnonNameOverride] = useState<string>("");
+  const [anonAliasToken, setAnonAliasToken] = useState<CursorAliasToken | null>(null);
   const [anonColorKey, setAnonColorKey] = useState<CursorColorKey>("sky");
   const [, setGuestSyncStateById] = useState<Record<string, GuestSyncState>>({});
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -272,8 +277,6 @@ export function SeatingPlanEditorScreen() {
   const processingTableMutationQueueRef = useRef(false);
   const dragSessionRef = useRef<string | null>(null);
   const participantIdRef = useRef<string>("");
-  const anonymousDisplayNameRef = useRef<string>("");
-  const anonymousAliasTokenRef = useRef<CursorAliasToken | null>(null);
   const cursorEmitThrottleRef = useRef(0);
   const canEdit = planAccess?.canEdit ?? true;
 
@@ -555,24 +558,23 @@ export function SeatingPlanEditorScreen() {
     if (planId) void loadPlan();
   }, [loadGroups, loadGuests, loadRelationships, pathname, planId, router, setPlan]);
 
+  useEffect(() => {
+    if (session?.user?.name) return;
+    if (anonNameOverride.trim()) return;
+    if (anonAliasToken) return;
+    setAnonAliasToken(getStickyCursorAliasToken(locale));
+  }, [anonAliasToken, anonNameOverride, locale, session?.user?.name]);
+
   const getDisplayName = useCallback(() => {
     const sessionName = session?.user?.name?.trim();
     if (sessionName) return sessionName;
     const override = anonNameOverride.trim();
     if (override) return override;
-    if (!anonymousAliasTokenRef.current) {
-      anonymousAliasTokenRef.current = getStickyCursorAliasToken(locale);
-    }
-    if (!anonymousDisplayNameRef.current) {
-      anonymousDisplayNameRef.current = localizeCursorAlias(anonymousAliasTokenRef.current, locale);
-    }
-    return anonymousDisplayNameRef.current;
-  }, [anonNameOverride, locale, session?.user?.name]);
+    return localizeCursorAlias(anonAliasToken ?? getStickyCursorAliasToken(locale), locale);
+  }, [anonAliasToken, anonNameOverride, locale, session?.user?.name]);
   const hasAnonNameOverride = anonNameOverride.trim().length > 0;
 
   useEffect(() => {
-    anonymousDisplayNameRef.current = "";
-    anonymousAliasTokenRef.current = null;
     setRemoteCursors((current) =>
       current.map((cursor) => ({
         ...cursor,
@@ -608,7 +610,7 @@ export function SeatingPlanEditorScreen() {
         aliasToken:
           session?.user?.name || hasAnonNameOverride
             ? undefined
-            : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+            : anonAliasToken ?? getStickyCursorAliasToken(locale),
         colorKey: session?.user?.name ? undefined : anonColorKey,
       }),
     );
@@ -732,7 +734,7 @@ export function SeatingPlanEditorScreen() {
         eventTransportRef.current = null;
       }
     };
-  }, [anonColorKey, getDisplayName, hasAnonNameOverride, loadGuests, loadRelationships, locale, planId, session?.user?.name, setPlan]);
+  }, [anonAliasToken, anonColorKey, getDisplayName, hasAnonNameOverride, loadGuests, loadRelationships, locale, planId, session?.user?.name, setPlan]);
 
   const handlePointerPresenceChange = useCallback((x: number, y: number) => {
     const now = Date.now();
@@ -744,9 +746,9 @@ export function SeatingPlanEditorScreen() {
       aliasToken:
         session?.user?.name || hasAnonNameOverride
           ? undefined
-          : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+          : anonAliasToken ?? getStickyCursorAliasToken(locale),
     });
-  }, [hasAnonNameOverride, locale, session?.user?.name]);
+  }, [anonAliasToken, hasAnonNameOverride, locale, session?.user?.name]);
 
   const viewingAsLabel = session?.user?.name ? null : getDisplayName();
   const anonIdentity = session?.user?.name
@@ -756,9 +758,13 @@ export function SeatingPlanEditorScreen() {
         nameInput: anonNameOverride,
         colorKey: anonColorKey,
         onNameInputChange: (value: string) => setAnonNameOverride(value),
-        onRandomize: () => setAnonNameOverride(createRandomCursorAlias(locale)),
+        onRandomize: () => {
+          setAnonNameOverride("");
+          setAnonAliasToken(createRandomCursorAliasToken(locale));
+        },
         onReset: () => {
           setAnonNameOverride("");
+          setAnonAliasToken(getStickyCursorAliasToken(locale));
           setAnonColorKey("sky");
         },
         onColorKeyChange: (value: string) => setAnonColorKey(resolveCursorColorKey(value)),
