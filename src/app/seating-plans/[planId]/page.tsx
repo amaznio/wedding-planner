@@ -13,7 +13,12 @@ import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
 } from "@/features/seating-editor/lib/group-move";
-import { HttpEventTransport, type EventTransport } from "@/features/seating-editor/lib/event-transport";
+import {
+  CompositeEventTransport,
+  HttpEventTransport,
+  SocketEventTransport,
+  type EventTransport,
+} from "@/features/seating-editor/lib/event-transport";
 import { SeatingToolbar } from "@/features/seating-editor/components/SeatingToolbar";
 import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-editor-store";
 import type {
@@ -26,6 +31,10 @@ import type {
   AssignmentMutation,
   AssignmentMutationPayload,
   AssignmentMutationResponse,
+  CollaborationEvent,
+  TableMutation,
+  TableMutationPayload,
+  TableMutationResponse,
 } from "@/features/seating-editor/types/collaboration.types";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -162,17 +171,17 @@ export function SeatingPlanEditorScreen() {
     markSaved,
     updatePlanName,
     updatePlanPairSidePreference,
-    addTable,
+    addTable: addTableToStore,
     selectGuest,
     selectTable,
     selectSeat,
     clearSelection,
-    updateSelectedTableLabel,
-    updateSelectedTableSeatCount,
-    updateSelectedTableSeatLayout,
-    rotateSelectedTable,
-    deleteSelectedTable,
-    moveTable,
+    updateSelectedTableLabel: updateSelectedTableLabelInStore,
+    updateSelectedTableSeatCount: updateSelectedTableSeatCountInStore,
+    updateSelectedTableSeatLayout: updateSelectedTableSeatLayoutInStore,
+    rotateSelectedTable: rotateSelectedTableInStore,
+    deleteSelectedTable: deleteSelectedTableInStore,
+    moveTable: moveTableInStore,
   } = useSeatingEditorStore();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -229,13 +238,19 @@ export function SeatingPlanEditorScreen() {
   const planRef = useRef(plan);
   const planVersionRef = useRef(0);
   const eventTransportRef = useRef<EventTransport | null>(null);
-  const mutationQueueRef = useRef<Array<{
+  const assignmentMutationQueueRef = useRef<Array<{
     mutation: AssignmentMutation;
     coalesceKey: string;
     applySnapshot: ApiGuest[];
     affectedGuestIds: string[];
   }>>([]);
-  const processingMutationQueueRef = useRef(false);
+  const tableMutationQueueRef = useRef<Array<{
+    mutation: TableMutation;
+    coalesceKey: string;
+    applySnapshot: SeatingPlan;
+  }>>([]);
+  const processingAssignmentMutationQueueRef = useRef(false);
+  const processingTableMutationQueueRef = useRef(false);
   const dragSessionRef = useRef<string | null>(null);
   const canEdit = planAccess?.canEdit ?? true;
 
@@ -514,8 +529,62 @@ export function SeatingPlanEditorScreen() {
   }, [loadGroups, loadGuests, loadRelationships, pathname, planId, router, setPlan]);
 
   useEffect(() => {
-    eventTransportRef.current = new HttpEventTransport(planId);
-  }, [planId]);
+    const httpTransport = new HttpEventTransport(planId);
+    const socketTransport = new SocketEventTransport(planId, async () => {
+      const response = await fetch(`/api/seating-plans/${planId}/realtime-auth`, {
+        method: "POST",
+      });
+      const payload = (await response.json()) as { token?: string };
+      if (!response.ok || !payload.token) {
+        throw new Error("Failed to authorize realtime transport");
+      }
+      return payload.token;
+    });
+    const composite = new CompositeEventTransport(socketTransport, httpTransport);
+    eventTransportRef.current = composite;
+
+    const unsubscribeRemote =
+      composite.subscribeToRemoteEvents?.((event: CollaborationEvent) => {
+        if (event.serverVersion <= planVersionRef.current) return;
+        planVersionRef.current = event.serverVersion;
+        if (event.entityType === "assignment") {
+          void loadGuests({ showLoading: false, surfaceErrors: false });
+          return;
+        }
+        void fetch(`/api/seating-plans/${planId}`, { cache: "no-store" })
+          .then((response) => response.json())
+          .then((payload: { plan?: ApiPlan }) => {
+            if (!payload.plan) return;
+            setPlan(normalizePlan(payload.plan), { preserveSelection: true });
+          })
+          .catch(() => {});
+      }) ?? (() => {});
+
+    const unsubscribeReconnect =
+      composite.onReconnect?.(() => {
+        void Promise.all([
+          fetch(`/api/seating-plans/${planId}`, { cache: "no-store" })
+            .then((response) => response.json())
+            .then((payload: { plan?: ApiPlan }) => {
+              if (!payload.plan) return;
+              setPlan(normalizePlan(payload.plan), { preserveSelection: true });
+              planVersionRef.current = payload.plan.planVersion ?? planVersionRef.current;
+            })
+            .catch(() => {}),
+          loadGuests({ showLoading: false, surfaceErrors: false }),
+          loadRelationships({ surfaceErrors: false }),
+        ]);
+      }) ?? (() => {});
+
+    return () => {
+      unsubscribeRemote();
+      unsubscribeReconnect();
+      composite.dispose?.();
+      if (eventTransportRef.current === composite) {
+        eventTransportRef.current = null;
+      }
+    };
+  }, [loadGuests, loadRelationships, planId, setPlan]);
 
   const markGuestSyncState = useCallback((guestIds: string[], state: GuestSyncState) => {
     setGuestSyncStateById((current) => {
@@ -550,12 +619,41 @@ export function SeatingPlanEditorScreen() {
     );
   }, []);
 
-  const processMutationQueue = useCallback(async () => {
-    if (processingMutationQueueRef.current) return;
-    processingMutationQueueRef.current = true;
+  const applySnapshotDeltaToPlan = useCallback((result: TableMutationResponse) => {
+    const delta = result.snapshotDelta;
+    if (!delta) return;
+
+    setPlan(
+      {
+        ...planRef.current,
+        tables: (() => {
+          let nextTables = [...planRef.current.tables];
+          if (delta.removedTableIds?.length) {
+            const removed = new Set(delta.removedTableIds);
+            nextTables = nextTables.filter((table) => !removed.has(table.id));
+          }
+          for (const item of delta.tables) {
+            if (!item.table) continue;
+            const index = nextTables.findIndex((table) => table.id === item.table!.id);
+            if (index >= 0) {
+              nextTables[index] = item.table;
+            } else {
+              nextTables.push(item.table);
+            }
+          }
+          return nextTables;
+        })(),
+      },
+      { preserveSelection: true },
+    );
+  }, [setPlan]);
+
+  const processAssignmentMutationQueue = useCallback(async () => {
+    if (processingAssignmentMutationQueueRef.current) return;
+    processingAssignmentMutationQueueRef.current = true;
     try {
-      while (mutationQueueRef.current.length > 0) {
-        const queued = mutationQueueRef.current[0];
+      while (assignmentMutationQueueRef.current.length > 0) {
+        const queued = assignmentMutationQueueRef.current[0];
         const result = await eventTransportRef.current!.sendAssignmentMutation(queued.mutation);
         if (result.error || result.ack.status === "rejected") {
           setGuests(queued.applySnapshot);
@@ -567,12 +665,32 @@ export function SeatingPlanEditorScreen() {
           markGuestSyncState(queued.affectedGuestIds, "idle");
           setGuestsError(null);
         }
-        mutationQueueRef.current.shift();
+        assignmentMutationQueueRef.current.shift();
       }
     } finally {
-      processingMutationQueueRef.current = false;
+      processingAssignmentMutationQueueRef.current = false;
     }
   }, [applySnapshotDeltaToGuests, markGuestSyncState, t]);
+
+  const processTableMutationQueue = useCallback(async () => {
+    if (processingTableMutationQueueRef.current) return;
+    processingTableMutationQueueRef.current = true;
+    try {
+      while (tableMutationQueueRef.current.length > 0) {
+        const queued = tableMutationQueueRef.current[0];
+        const result = await eventTransportRef.current!.sendTableMutation(queued.mutation);
+        if (result.error || result.ack.status === "rejected") {
+          setPlan(queued.applySnapshot, { preserveSelection: true });
+        } else {
+          planVersionRef.current = result.ack.planVersion;
+          applySnapshotDeltaToPlan(result);
+        }
+        tableMutationQueueRef.current.shift();
+      }
+    } finally {
+      processingTableMutationQueueRef.current = false;
+    }
+  }, [applySnapshotDeltaToPlan, setPlan]);
 
   const enqueueAssignmentMutation = useCallback((args: {
     intent: AssignmentMutation["intent"];
@@ -589,18 +707,43 @@ export function SeatingPlanEditorScreen() {
       payload: args.payload,
       createdAt: new Date().toISOString(),
     };
-    mutationQueueRef.current = mutationQueueRef.current.filter(
+    assignmentMutationQueueRef.current = assignmentMutationQueueRef.current.filter(
       (item) => item.coalesceKey !== args.coalesceKey,
     );
-    mutationQueueRef.current.push({
+    assignmentMutationQueueRef.current.push({
       mutation,
       coalesceKey: args.coalesceKey,
       affectedGuestIds: args.affectedGuestIds,
       applySnapshot: args.applySnapshot,
     });
     markGuestSyncState(args.affectedGuestIds, "pending");
-    void processMutationQueue();
-  }, [markGuestSyncState, processMutationQueue]);
+    void processAssignmentMutationQueue();
+  }, [markGuestSyncState, processAssignmentMutationQueue]);
+
+  const enqueueTableMutation = useCallback((args: {
+    intent: TableMutation["intent"];
+    payload: TableMutationPayload;
+    coalesceKey: string;
+    applySnapshot: SeatingPlan;
+  }) => {
+    const mutationId = crypto.randomUUID();
+    const mutation: TableMutation = {
+      mutationId,
+      baseVersion: planVersionRef.current,
+      intent: args.intent,
+      payload: args.payload,
+      createdAt: new Date().toISOString(),
+    };
+    tableMutationQueueRef.current = tableMutationQueueRef.current.filter(
+      (item) => item.coalesceKey !== args.coalesceKey,
+    );
+    tableMutationQueueRef.current.push({
+      mutation,
+      coalesceKey: args.coalesceKey,
+      applySnapshot: args.applySnapshot,
+    });
+    void processTableMutationQueue();
+  }, [processTableMutationQueue]);
 
   const handleUnassignGuest = useCallback(async (_assignmentId: string, guestId: string) => {
     setGuestsError(null);
@@ -780,6 +923,120 @@ export function SeatingPlanEditorScreen() {
     },
     [endGuestDrag, handleSeatAssign, isDesktopViewport, t],
   );
+
+  const handleMoveTable = useCallback((tableId: string, nextX: number, nextY: number) => {
+    if (!canEdit) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    moveTableInStore(tableId, nextX, nextY);
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find((table) => table.id === tableId);
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "move_table",
+      payload: { tableId, x: nextTable.x, y: nextTable.y },
+      coalesceKey: `table:${tableId}:position`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, enqueueTableMutation, moveTableInStore]);
+
+  const handleAddTable = useCallback(() => {
+    if (!canEdit) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    addTableToStore();
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find(
+      (table) => !previousPlan.tables.some((current) => current.id === table.id),
+    );
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "add_table",
+      payload: { table: nextTable },
+      coalesceKey: `table:${nextTable.id}:add`,
+      applySnapshot: previousPlan,
+    });
+  }, [addTableToStore, canEdit, enqueueTableMutation]);
+
+  const handleUpdateSelectedTableLabel = useCallback((label: string) => {
+    if (!canEdit || !selectedTableId) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    updateSelectedTableLabelInStore(label);
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find((table) => table.id === selectedTableId);
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "update_table",
+      payload: { tableId: selectedTableId, label: nextTable.label },
+      coalesceKey: `table:${selectedTableId}:meta`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, enqueueTableMutation, selectedTableId, updateSelectedTableLabelInStore]);
+
+  const handleUpdateSelectedTableSeatCount = useCallback((seatCount: number) => {
+    if (!canEdit || !selectedTableId) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    updateSelectedTableSeatCountInStore(seatCount);
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find((table) => table.id === selectedTableId);
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "update_table",
+      payload: {
+        tableId: selectedTableId,
+        seatCount: nextTable.seatCount,
+      },
+      coalesceKey: `table:${selectedTableId}:meta`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, enqueueTableMutation, selectedTableId, updateSelectedTableSeatCountInStore]);
+
+  const handleUpdateSelectedTableSeatLayout = useCallback((seatLayout: "balanced" | "top-only" | "bottom-only") => {
+    if (!canEdit || !selectedTableId) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    updateSelectedTableSeatLayoutInStore(seatLayout);
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find((table) => table.id === selectedTableId);
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "update_table",
+      payload: {
+        tableId: selectedTableId,
+        seatLayout: nextTable.seatLayout,
+      },
+      coalesceKey: `table:${selectedTableId}:meta`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, enqueueTableMutation, selectedTableId, updateSelectedTableSeatLayoutInStore]);
+
+  const handleRotateSelectedTable = useCallback(() => {
+    if (!canEdit || !selectedTableId) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    rotateSelectedTableInStore();
+    const nextPlan = useSeatingEditorStore.getState().plan;
+    const nextTable = nextPlan.tables.find((table) => table.id === selectedTableId);
+    if (!nextTable) return;
+    enqueueTableMutation({
+      intent: "rotate_table",
+      payload: {
+        tableId: selectedTableId,
+        rotation: nextTable.rotation,
+      },
+      coalesceKey: `table:${selectedTableId}:rotation`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, enqueueTableMutation, rotateSelectedTableInStore, selectedTableId]);
+
+  const handleDeleteSelectedTable = useCallback(() => {
+    if (!canEdit || !selectedTableId) return;
+    const previousPlan = useSeatingEditorStore.getState().plan;
+    deleteSelectedTableInStore();
+    enqueueTableMutation({
+      intent: "delete_table",
+      payload: { tableId: selectedTableId },
+      coalesceKey: `table:${selectedTableId}:delete`,
+      applySnapshot: previousPlan,
+    });
+  }, [canEdit, deleteSelectedTableInStore, enqueueTableMutation, selectedTableId]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -799,7 +1056,7 @@ export function SeatingPlanEditorScreen() {
 
       if ((event.key === "Delete" || event.key === "Backspace") && selectedTableId) {
         event.preventDefault();
-        deleteSelectedTable();
+        handleDeleteSelectedTable();
       }
 
       if (event.key === "Escape") {
@@ -832,7 +1089,7 @@ export function SeatingPlanEditorScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     clearSelection,
-    deleteSelectedTable,
+    handleDeleteSelectedTable,
     guests,
     handleSelectGuest,
     canEdit,
@@ -1875,7 +2132,7 @@ export function SeatingPlanEditorScreen() {
             selectedSeat={selectedSeat}
             onSelectTable={handleSelectTableWithMobileInspector}
             onSelectSeat={handleSelectSeatWithMobileInspector}
-            onMoveTable={moveTable}
+            onMoveTable={handleMoveTable}
             seatAssignments={seatAssignments}
             tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
@@ -1893,7 +2150,7 @@ export function SeatingPlanEditorScreen() {
             showGroupColors={showGroupColors}
             onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
-            onAddTable={addTable}
+            onAddTable={handleAddTable}
             enableTableDrag={mobileTableDragEnabled}
             onToggleGroupColors={() => setShowGroupColors((current) => !current)}
             onToggleTableDrag={() =>
@@ -2109,7 +2366,7 @@ export function SeatingPlanEditorScreen() {
               <Button
                 className="w-full justify-start"
                 onClick={() => {
-                  addTable();
+                  handleAddTable();
                   setMobileTablesOpen(false);
                 }}
               >
@@ -2390,11 +2647,11 @@ export function SeatingPlanEditorScreen() {
             setMobileGuestsView("guests");
             setMobileGuestsOpen(true);
           }}
-          onTableLabelChange={updateSelectedTableLabel}
-          onTableSeatCountChange={updateSelectedTableSeatCount}
-          onTableSeatLayoutChange={updateSelectedTableSeatLayout}
-          onRotateTable={rotateSelectedTable}
-          onDeleteTable={deleteSelectedTable}
+          onTableLabelChange={handleUpdateSelectedTableLabel}
+          onTableSeatCountChange={handleUpdateSelectedTableSeatCount}
+          onTableSeatLayoutChange={handleUpdateSelectedTableSeatLayout}
+          onRotateTable={handleRotateSelectedTable}
+          onDeleteTable={handleDeleteSelectedTable}
           onAutoSeatTable={handleAutoSeatTable}
           side="bottom"
           showOverlay
@@ -2443,7 +2700,7 @@ export function SeatingPlanEditorScreen() {
               selectedSeat={selectedSeat}
               onSelectTable={selectTable}
               onSelectSeat={selectSeat}
-              onMoveTable={moveTable}
+              onMoveTable={handleMoveTable}
               seatAssignments={seatAssignments}
               tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
@@ -2461,7 +2718,7 @@ export function SeatingPlanEditorScreen() {
               showGroupColors={showGroupColors}
               onSeatAssign={handleSeatAssign}
               onTableDragStateChange={setIsTableDragging}
-              onAddTable={addTable}
+              onAddTable={handleAddTable}
               enableTableDrag
               onToggleGroupColors={() => setShowGroupColors((current) => !current)}
               draggedGuestId={draggedGuestId}
@@ -2501,11 +2758,11 @@ export function SeatingPlanEditorScreen() {
               onStartLinking={(guestId) => {
                 setLinkingSourceGuestId(guestId);
               }}
-              onTableLabelChange={updateSelectedTableLabel}
-              onTableSeatCountChange={updateSelectedTableSeatCount}
-              onTableSeatLayoutChange={updateSelectedTableSeatLayout}
-              onRotateTable={rotateSelectedTable}
-              onDeleteTable={deleteSelectedTable}
+              onTableLabelChange={handleUpdateSelectedTableLabel}
+              onTableSeatCountChange={handleUpdateSelectedTableSeatCount}
+              onTableSeatLayoutChange={handleUpdateSelectedTableSeatLayout}
+              onRotateTable={handleRotateSelectedTable}
+              onDeleteTable={handleDeleteSelectedTable}
               onAutoSeatTable={handleAutoSeatTable}
             />
           </div>

@@ -11,6 +11,12 @@ export type DomainEvent<EntityType extends string = string, Payload = unknown> =
 };
 
 export type AssignmentMutationIntent = "assign" | "unassign" | "batch_move";
+export type TableMutationIntent =
+  | "move_table"
+  | "update_table"
+  | "add_table"
+  | "delete_table"
+  | "rotate_table";
 
 export type AssignmentMutationPayload =
   | {
@@ -34,11 +40,51 @@ export type AssignmentMutationPayload =
       context: { relationshipIdsConsidered: string[] };
     };
 
+export type TableMutationPayload =
+  | {
+      tableId: string;
+      x: number;
+      y: number;
+    }
+  | {
+      tableId: string;
+      label?: string;
+      seatCount?: number;
+      seatLayout?: "balanced" | "top-only" | "bottom-only";
+    }
+  | {
+      table: {
+        id: string;
+        label: string;
+        type: "rectangle";
+        x: number;
+        y: number;
+        rotation: number;
+        seatCount: number;
+        seatLayout: "balanced" | "top-only" | "bottom-only";
+      };
+    }
+  | {
+      tableId: string;
+    }
+  | {
+      tableId: string;
+      rotation: number;
+    };
+
 export type AssignmentMutation = {
   mutationId: string;
   baseVersion: number;
   intent: AssignmentMutationIntent;
   payload: AssignmentMutationPayload;
+  createdAt: string;
+};
+
+export type TableMutation = {
+  mutationId: string;
+  baseVersion: number;
+  intent: TableMutationIntent;
+  payload: TableMutationPayload;
   createdAt: string;
 };
 
@@ -61,9 +107,38 @@ export type AssignmentEventPayload =
       targetSeatNumber: number;
     };
 
-export type AssignmentDomainEvent = DomainEvent<"assignment", AssignmentEventPayload>;
+export type TableEventPayload =
+  | {
+      intent: "move_table";
+      tableId: string;
+      x: number;
+      y: number;
+    }
+  | {
+      intent: "update_table";
+      tableId: string;
+      label: string;
+      seatCount: number;
+      seatLayout: "balanced" | "top-only" | "bottom-only";
+    }
+  | {
+      intent: "add_table";
+      tableId: string;
+    }
+  | {
+      intent: "delete_table";
+      tableId: string;
+    }
+  | {
+      intent: "rotate_table";
+      tableId: string;
+      rotation: number;
+    };
 
-export type AssignmentMutationAck = {
+export type AssignmentDomainEvent = DomainEvent<"assignment", AssignmentEventPayload>;
+export type TableDomainEvent = DomainEvent<"table", TableEventPayload>;
+
+export type MutationAck = {
   mutationId: string;
   status: "applied" | "rejected" | "transformed";
   planVersion: number;
@@ -84,10 +159,66 @@ export type AssignmentSnapshotDelta = {
   }>;
 };
 
+export type TableSnapshotDelta = {
+  tables: Array<{
+    table: {
+      id: string;
+      label: string;
+      type: "rectangle";
+      x: number;
+      y: number;
+      rotation: number;
+      seatCount: number;
+      seatLayout: "balanced" | "top-only" | "bottom-only";
+    } | null;
+  }>;
+  removedTableIds?: string[];
+};
+
 export type AssignmentMutationResponse = {
-  ack: AssignmentMutationAck;
+  ack: MutationAck;
   events?: AssignmentDomainEvent[];
   snapshotDelta?: AssignmentSnapshotDelta;
   error?: string;
 };
 
+export type TableMutationResponse = {
+  ack: MutationAck;
+  events?: TableDomainEvent[];
+  snapshotDelta?: TableSnapshotDelta;
+  error?: string;
+};
+
+export type CollaborationEvent = AssignmentDomainEvent | TableDomainEvent;
+
+export type CollaborationMutation =
+  | {
+      kind: "assignment";
+      mutation: AssignmentMutation;
+    }
+  | {
+      kind: "table";
+      mutation: TableMutation;
+    };
+
+export type CollaborationMutationResponse =
+  | {
+      kind: "assignment";
+      response: AssignmentMutationResponse;
+    }
+  | {
+      kind: "table";
+      response: TableMutationResponse;
+    };
+
+export type SocketServerAckEnvelope = {
+  kind: "assignment" | "table";
+  ack: MutationAck;
+  error?: string;
+};
+
+export type SocketServerEventsEnvelope = {
+  kind: "assignment" | "table";
+  events: CollaborationEvent[];
+  snapshotDelta?: AssignmentSnapshotDelta | TableSnapshotDelta;
+};

@@ -9,6 +9,7 @@ import type {
   AssignmentSnapshotDelta,
 } from "@/features/seating-editor/types/collaboration.types";
 import { prisma } from "@/lib/prisma";
+import { isTrustedRealtimeServiceRequest } from "@/lib/realtime-service-auth";
 import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
@@ -31,7 +32,10 @@ function conflictResponse(message: string) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { planId } = await context.params;
-  const authz = await requireSeatingPlanRole(planId, "editor");
+  const isTrustedServiceRequest = isTrustedRealtimeServiceRequest(request);
+  const authz = isTrustedServiceRequest
+    ? { response: null, userId: null }
+    : await requireSeatingPlanRole(planId, "editor");
   if (authz.response) return authz.response;
 
   try {
@@ -335,4 +339,3 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-

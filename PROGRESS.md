@@ -4630,3 +4630,74 @@ Phase 234 - Events list wrapper removal + inline edit action (completed)
 - Open `/weddings/{weddingId}` on desktop and verify sidebar width/collapse behavior is normal.
 - Open `/weddings/{weddingId}/seating/{planId}` and verify the seating editor renders without workspace sidebar/top shell.
 - Confirm navigation to seating editor still works from workspace seating pages.
+
+## Current Phase
+
+Phase 235 - External Socket.IO realtime collaboration wiring (assignments + table edits)
+
+## Completed Work
+
+- Implemented external Socket.IO-ready realtime collaboration integration for seating editor:
+  - added extended collaboration contracts for table mutations/events in addition to assignment mutations/events
+  - standardized transport support for both mutation kinds with versioned acknowledgements and snapshot deltas
+- Added table mutation API contract and endpoint:
+  - new route: `POST /api/seating-plans/[planId]/tables/mutate`
+  - intents implemented: `move_table`, `update_table`, `add_table`, `delete_table`, `rotate_table`
+  - each accepted mutation increments `SeatingPlan.planVersion` and returns canonical `ack`, `events`, `snapshotDelta`
+- Added realtime auth token endpoint and signer for external socket service handshake:
+  - new route: `POST /api/seating-plans/[planId]/realtime-auth`
+  - signs short-lived HS256 token with plan/user/role claims using `BETTER_AUTH_SECRET`
+- Implemented Socket.IO client transport with HTTP fallback:
+  - added `socket.io-client` dependency
+  - `SocketEventTransport` emits `client_mutation`, receives ack callback, listens to `server_events`
+  - `CompositeEventTransport` falls back to HTTP mutation routes on socket errors/timeouts
+- Wired editor runtime to realtime transports and remote event ingestion:
+  - editor now initializes composite transport (`socket + http`)
+  - subscribes to remote events and reconnect notifications
+  - resyncs plan/guest/relationship data after reconnect
+- Extended editor mutation queueing to include table edits:
+  - introduced table mutation queue with coalescing keys (position/meta/rotation/delete/add)
+  - table UI actions now run optimistic local updates + queued persistence (`add`, `move`, `label`, `seatCount`, `seatLayout`, `rotate`, `delete`)
+  - server ack reconciles canonical snapshot; rejected mutations roll back from captured snapshot
+
+## Files Changed
+
+- `package.json`
+- `pnpm-lock.yaml`
+- `src/features/seating-editor/types/collaboration.types.ts`
+- `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+- `src/features/seating-editor/lib/event-transport.ts`
+- `src/app/api/seating-plans/[planId]/tables/mutate/route.ts`
+- `src/app/api/seating-plans/[planId]/realtime-auth/route.ts`
+- `src/lib/realtime-collab-token.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `.env.example`
+
+## Commands Run
+
+- `pnpm add socket.io-client`
+- `pnpm typecheck` (pass)
+- `pnpm lint` (pass with pre-existing warnings)
+- `pnpm build` (pass)
+
+## Check Results
+
+- TypeScript: pass.
+- Lint: pass with unchanged pre-existing warnings in legacy seating files/hooks.
+- Build: pass.
+
+## Known Issues
+
+- External Socket.IO server contract must match emitted/listened event names and payload shapes:
+  - emit: `client_mutation`
+  - receive: `server_events`
+  - mutation ack callback envelope expected by client transport
+- Remote table events currently trigger lightweight plan refetch/reconcile for canonical state instead of field-level reducer application.
+- Existing repository lint warnings remain unchanged.
+
+## Next Recommended Step
+
+- Implement and verify the external Node Socket.IO service contract against this client/API wiring:
+  - plan-room join auth via `/api/seating-plans/[planId]/realtime-auth`
+  - mutation proxy to Next APIs
+  - room broadcast of canonical `server_events` payloads.

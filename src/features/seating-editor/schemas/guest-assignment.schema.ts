@@ -66,6 +66,9 @@ const mutationBaseSchema = z.object({
   baseVersion: z.int().min(0),
 });
 
+const seatLayoutSchema = z.enum(["balanced", "top-only", "bottom-only"]);
+const tableTypeSchema = z.literal("rectangle");
+
 export const assignmentMutationSchema = z.discriminatedUnion("intent", [
   mutationBaseSchema.extend({
     intent: z.literal("assign"),
@@ -83,6 +86,54 @@ export const assignmentMutationSchema = z.discriminatedUnion("intent", [
   }),
 ]);
 
+export const tableMutationSchema = z.discriminatedUnion("intent", [
+  mutationBaseSchema.extend({
+    intent: z.literal("move_table"),
+    payload: z.object({
+      tableId: z.string().min(1),
+      x: z.int(),
+      y: z.int(),
+    }),
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("update_table"),
+    payload: z.object({
+      tableId: z.string().min(1),
+      label: z.string().min(1).max(100).optional(),
+      seatCount: z.int().min(1).max(50).optional(),
+      seatLayout: seatLayoutSchema.optional(),
+    }),
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("add_table"),
+    payload: z.object({
+      table: z.object({
+        id: z.string().min(1),
+        label: z.string().min(1).max(100),
+        type: tableTypeSchema,
+        x: z.int(),
+        y: z.int(),
+        rotation: z.int(),
+        seatCount: z.int().min(1).max(50),
+        seatLayout: seatLayoutSchema,
+      }),
+    }),
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("delete_table"),
+    payload: z.object({
+      tableId: z.string().min(1),
+    }),
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("rotate_table"),
+    payload: z.object({
+      tableId: z.string().min(1),
+      rotation: z.int(),
+    }),
+  }),
+]);
+
 export type CreateGuestInput = z.infer<typeof createGuestSchema>;
 export type UpdateGuestInput = z.infer<typeof updateGuestSchema>;
 export type ImportGuestRowsInput = z.infer<typeof importGuestRowsSchema>;
@@ -92,3 +143,4 @@ export type BatchMoveAssignmentsInput = z.infer<
   typeof batchMoveAssignmentsSchema
 >;
 export type AssignmentMutationInput = z.infer<typeof assignmentMutationSchema>;
+export type TableMutationInput = z.infer<typeof tableMutationSchema>;
