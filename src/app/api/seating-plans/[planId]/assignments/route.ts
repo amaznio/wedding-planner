@@ -116,6 +116,10 @@ export async function POST(request: Request, context: RouteContext) {
         where: { id: payload.guestId },
         data: { plannedTableId: payload.tableId },
       });
+      await tx.seatingPlan.update({
+        where: { id: planId },
+        data: { planVersion: { increment: 1 } },
+      });
       return created;
     });
 

@@ -61,6 +61,28 @@ export const batchMoveAssignmentsSchema = z.object({
   }),
 });
 
+const mutationBaseSchema = z.object({
+  mutationId: z.string().min(1),
+  baseVersion: z.int().min(0),
+});
+
+export const assignmentMutationSchema = z.discriminatedUnion("intent", [
+  mutationBaseSchema.extend({
+    intent: z.literal("assign"),
+    payload: assignSeatSchema,
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("unassign"),
+    payload: z.object({
+      guestId: z.string().min(1),
+    }),
+  }),
+  mutationBaseSchema.extend({
+    intent: z.literal("batch_move"),
+    payload: batchMoveAssignmentsSchema,
+  }),
+]);
+
 export type CreateGuestInput = z.infer<typeof createGuestSchema>;
 export type UpdateGuestInput = z.infer<typeof updateGuestSchema>;
 export type ImportGuestRowsInput = z.infer<typeof importGuestRowsSchema>;
@@ -69,3 +91,4 @@ export type AssignSeatInput = z.infer<typeof assignSeatSchema>;
 export type BatchMoveAssignmentsInput = z.infer<
   typeof batchMoveAssignmentsSchema
 >;
+export type AssignmentMutationInput = z.infer<typeof assignmentMutationSchema>;

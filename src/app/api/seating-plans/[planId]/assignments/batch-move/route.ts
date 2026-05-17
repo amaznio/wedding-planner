@@ -286,6 +286,10 @@ export async function POST(request: Request, context: RouteContext) {
           data: { plannedTableId: item.tableId },
         });
       }
+      await tx.seatingPlan.update({
+        where: { id: planId },
+        data: { planVersion: { increment: 1 } },
+      });
 
       return tx.seatAssignment.findMany({
         where: {

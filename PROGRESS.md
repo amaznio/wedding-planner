@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+) (completed)
+Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event contract (completed)
 
 ## Completed Phases
 
@@ -236,8 +236,62 @@ Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+) (complete
 - Phase 222 - Workspace release-candidate QA pass (automated runtime + manual visual checklist)
 - Phase 223 - Workspace subroute loading-state unification
 - Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+)
+- Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event contract
 
 ## Completed Work
+
+- Implemented Phase 225 non-blocking assignment mutation queue + collaboration-ready event contract:
+  - added assignment collaboration/event primitives:
+    - shared domain event + mutation envelope types
+    - transport seam (`EventTransport`) with active HTTP transport + future socket transport stub
+  - added assignment mutation API with optimistic-reconcile contract:
+    - new endpoint: `POST /api/seating-plans/[planId]/assignments/mutate`
+    - supports intents:
+      - `assign`
+      - `unassign`
+      - `batch_move`
+    - response includes:
+      - `ack` (`applied | transformed | rejected`, `planVersion`, `appliedEventIds`)
+      - `events` (canonical domain event envelope)
+      - `snapshotDelta` (authoritative assignment patch for affected guests)
+  - added plan-level mutation versioning:
+    - new `SeatingPlan.planVersion` integer field with default `0`
+    - assignment routes now increment `planVersion` on mutation
+    - plan PUT now increments `planVersion` on layout save
+  - refactored editor seat assignment flow to non-blocking queued persistence:
+    - replaced direct per-action assignment API sequencing with local mutation queue processing
+    - optimistic updates apply immediately; network persistence continues in background
+    - queue coalesces superseded guest mutations by `coalesceKey` (`guest:<id>`)
+    - targeted rollback on mutation rejection using per-mutation pre-apply snapshot
+  - fixed drag/autosave interaction stability:
+    - drag session token introduced; stale async completions cannot clear newer drags
+    - drop now ends drag session synchronously before awaiting assignment logic
+    - removed duplicate drag cleanup ownership from `SeatingCanvas` drop handlers
+    - background save refresh of guests/relationships is deferred while guest drag is active
+  - files changed:
+    - `src/features/seating-editor/types/collaboration.types.ts`
+    - `src/features/seating-editor/lib/event-transport.ts`
+    - `src/features/seating-editor/schemas/guest-assignment.schema.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/mutate/route.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/route.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/[assignmentId]/route.ts`
+    - `src/app/api/seating-plans/[planId]/assignments/batch-move/route.ts`
+    - `src/app/api/seating-plans/[planId]/route.ts`
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260517110000_add_plan_version/migration.sql`
+    - `PROGRESS.md`
+  - commands run:
+    - `corepack pnpm prisma generate` (pass)
+    - `corepack pnpm typecheck` (pass)
+    - `corepack pnpm lint` (pass with pre-existing warnings)
+  - known issues:
+    - repository-wide pre-existing lint warnings remain (unchanged)
+    - mutation queue currently persists only assignment intents; table layout still uses existing autosave lane
+    - socket transport is a seam/stub only in this phase (no live realtime channel yet)
+  - next recommended step:
+    - implement websocket event broadcast/ingest to feed remote events through the same reducer pipeline
 
 - Implemented Phase 224 wedding dashboard cover photo upload (Cloudinary, editor+):
   - data model and migration:

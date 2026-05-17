@@ -24,8 +24,14 @@ export async function DELETE(_: Request, context: RouteContext) {
     return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
   }
 
-  await prisma.seatAssignment.delete({
-    where: { id: assignmentId },
+  await prisma.$transaction(async (tx) => {
+    await tx.seatAssignment.delete({
+      where: { id: assignmentId },
+    });
+    await tx.seatingPlan.update({
+      where: { id: planId },
+      data: { planVersion: { increment: 1 } },
+    });
   });
 
   return NextResponse.json({ success: true });

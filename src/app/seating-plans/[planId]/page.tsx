@@ -13,6 +13,7 @@ import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
 } from "@/features/seating-editor/lib/group-move";
+import { HttpEventTransport, type EventTransport } from "@/features/seating-editor/lib/event-transport";
 import { SeatingToolbar } from "@/features/seating-editor/components/SeatingToolbar";
 import { useSeatingEditorStore } from "@/features/seating-editor/store/seating-editor-store";
 import type {
@@ -21,6 +22,11 @@ import type {
   SeatingRelationship,
 } from "@/features/seating-editor/types/relationship.types";
 import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
+import type {
+  AssignmentMutation,
+  AssignmentMutationPayload,
+  AssignmentMutationResponse,
+} from "@/features/seating-editor/types/collaboration.types";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
@@ -43,6 +49,7 @@ type ApiPlan = {
   id: string;
   name: string;
   isPublicRead: boolean;
+  planVersion: number;
   width: number;
   height: number;
   pairSidePreference?: "auto" | "male-left" | "female-left";
@@ -102,26 +109,6 @@ type GuestImportSummary = {
   warnings: string[];
 };
 
-type SeatAssignmentPayload = {
-  assignment: {
-    id: string;
-    planId: string;
-    tableId: string;
-    guestId: string;
-    seatNumber: number;
-  };
-};
-
-type BatchMoveAssignmentsResponse = {
-  assignments: Array<{
-    id: string;
-    planId: string;
-    tableId: string;
-    guestId: string;
-    seatNumber: number;
-  }>;
-};
-
 type ApiRelationship = SeatingRelationship;
 
 type ApiPlanAccess = {
@@ -137,6 +124,8 @@ type PlanAccessError = {
   kind: "unauthenticated" | "forbidden" | "notFound" | "generic";
   message?: string;
 };
+
+type GuestSyncState = "idle" | "pending" | "failed";
 
 function normalizePlan(plan: ApiPlan): SeatingPlan {
   return {
@@ -228,14 +217,26 @@ export function SeatingPlanEditorScreen() {
   const [planAccess, setPlanAccess] = useState<ApiPlanAccess | null>(null);
   const [isPublicRead, setIsPublicRead] = useState(false);
   const [isUpdatingSharing, setIsUpdatingSharing] = useState(false);
+  const [, setGuestSyncStateById] = useState<Record<string, GuestSyncState>>({});
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const savePlanRef = useRef<(source: "manual" | "auto") => Promise<void>>(async () => {});
   const pendingAutosaveRef = useRef(false);
+  const pendingBackgroundRefreshRef = useRef(false);
   const shouldAutosaveGuestsRef = useRef(false);
   const isTableDraggingRef = useRef(false);
   const isDirtyRef = useRef(isDirty);
   const planRef = useRef(plan);
+  const planVersionRef = useRef(0);
+  const eventTransportRef = useRef<EventTransport | null>(null);
+  const mutationQueueRef = useRef<Array<{
+    mutation: AssignmentMutation;
+    coalesceKey: string;
+    applySnapshot: ApiGuest[];
+    affectedGuestIds: string[];
+  }>>([]);
+  const processingMutationQueueRef = useRef(false);
+  const dragSessionRef = useRef<string | null>(null);
   const canEdit = planAccess?.canEdit ?? true;
 
   useEffect(() => {
@@ -315,10 +316,14 @@ export function SeatingPlanEditorScreen() {
     [selectSeat],
   );
   const startGuestDrag = useCallback((guestId: string) => {
+    const sessionId = crypto.randomUUID();
+    dragSessionRef.current = sessionId;
     setDraggedGuestId(guestId);
     setIsDraggingGuest(true);
   }, []);
-  const endGuestDrag = useCallback(() => {
+  const endGuestDrag = useCallback((sessionId?: string | null) => {
+    if (sessionId && dragSessionRef.current !== sessionId) return;
+    dragSessionRef.current = null;
     setDraggedGuestId(null);
     setIsDraggingGuest(false);
   }, []);
@@ -485,6 +490,7 @@ export function SeatingPlanEditorScreen() {
 
         const planData = (await planResponse.json()) as { plan: ApiPlan; access?: ApiPlanAccess };
         setPlan(normalizePlan(planData.plan));
+        planVersionRef.current = planData.plan.planVersion ?? 0;
         setPlanAccess(planData.access ?? null);
 
         if (pathname.startsWith("/seating-plans") && planData.access?.weddingId) {
@@ -507,78 +513,113 @@ export function SeatingPlanEditorScreen() {
     if (planId) void loadPlan();
   }, [loadGroups, loadGuests, loadRelationships, pathname, planId, router, setPlan]);
 
-  const createAssignment = useCallback(async (guestId: string, tableId: string, seatNumber: number) => {
-    const response = await fetch(`/api/seating-plans/${planId}/assignments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ guestId, tableId, seatNumber }),
-    });
-    if (!response.ok) {
-      const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(errorData?.error ?? "Failed to assign seat");
-    }
-    const data = (await response.json()) as SeatAssignmentPayload;
-    return data.assignment;
+  useEffect(() => {
+    eventTransportRef.current = new HttpEventTransport(planId);
   }, [planId]);
 
-  const deleteAssignment = useCallback(async (assignmentId: string) => {
-    const response = await fetch(`/api/seating-plans/${planId}/assignments/${assignmentId}`, {
-      method: "DELETE",
-    });
-    if (response.status === 404) {
-      // Assignment can already be removed by a prior swap/unassign request; treat as no-op.
-      return;
-    }
-    if (!response.ok) {
-      const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(errorData?.error ?? "Failed to remove assignment");
-    }
-  }, [planId]);
-
-  const executeBatchMoveAssignments = useCallback(
-    async (payload: {
-      initiatorGuestId: string;
-      targetTableId: string;
-      targetSeatNumber: number;
-      moveTogetherEnabled: boolean;
-      plannedAssignments: Array<{
-        guestId: string;
-        tableId: string;
-        seatNumber: number;
-      }>;
-      context: { relationshipIdsConsidered: string[] };
-    }) => {
-      const response = await fetch(
-        `/api/seating-plans/${planId}/assignments/batch-move`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(errorData?.error ?? "Failed to move linked guests");
+  const markGuestSyncState = useCallback((guestIds: string[], state: GuestSyncState) => {
+    setGuestSyncStateById((current) => {
+      const next = { ...current };
+      for (const guestId of guestIds) {
+        next[guestId] = state;
       }
-      const data = (await response.json()) as BatchMoveAssignmentsResponse;
-      return data.assignments;
-    },
-    [planId],
-  );
+      return next;
+    });
+  }, []);
 
-  const handleUnassignGuest = useCallback(async (assignmentId: string, guestId: string) => {
+  const applySnapshotDeltaToGuests = useCallback((result: AssignmentMutationResponse) => {
+    const delta = result.snapshotDelta;
+    if (!delta) return;
+    const byGuestId = Object.fromEntries(delta.guestsAssignments.map((item) => [item.guestId, item]));
+    setGuests((current) =>
+      current.map((guest) => {
+        const next = byGuestId[guest.id];
+        if (!next) return guest;
+        return {
+          ...guest,
+          plannedTableId: next.plannedTableId,
+          assignment: next.assignment
+            ? {
+                id: next.assignment.id,
+                tableId: next.assignment.tableId,
+                seatNumber: next.assignment.seatNumber,
+              }
+            : null,
+        };
+      }),
+    );
+  }, []);
+
+  const processMutationQueue = useCallback(async () => {
+    if (processingMutationQueueRef.current) return;
+    processingMutationQueueRef.current = true;
     try {
-      setGuestsError(null);
-      await deleteAssignment(assignmentId);
-      setGuests((current) =>
-        current.map((guest) => (guest.id === guestId ? { ...guest, assignment: null } : guest)),
-      );
-    } catch (error) {
-      setGuestsError(error instanceof Error ? error.message : t("canvas.failedUnassign"));
+      while (mutationQueueRef.current.length > 0) {
+        const queued = mutationQueueRef.current[0];
+        const result = await eventTransportRef.current!.sendAssignmentMutation(queued.mutation);
+        if (result.error || result.ack.status === "rejected") {
+          setGuests(queued.applySnapshot);
+          markGuestSyncState(queued.affectedGuestIds, "failed");
+          setGuestsError(result.error ?? t("canvas.failedAssign"));
+        } else {
+          planVersionRef.current = result.ack.planVersion;
+          applySnapshotDeltaToGuests(result);
+          markGuestSyncState(queued.affectedGuestIds, "idle");
+          setGuestsError(null);
+        }
+        mutationQueueRef.current.shift();
+      }
+    } finally {
+      processingMutationQueueRef.current = false;
     }
-  }, [deleteAssignment]);
+  }, [applySnapshotDeltaToGuests, markGuestSyncState, t]);
+
+  const enqueueAssignmentMutation = useCallback((args: {
+    intent: AssignmentMutation["intent"];
+    payload: AssignmentMutationPayload;
+    coalesceKey: string;
+    affectedGuestIds: string[];
+    applySnapshot: ApiGuest[];
+  }) => {
+    const mutationId = crypto.randomUUID();
+    const mutation: AssignmentMutation = {
+      mutationId,
+      baseVersion: planVersionRef.current,
+      intent: args.intent,
+      payload: args.payload,
+      createdAt: new Date().toISOString(),
+    };
+    mutationQueueRef.current = mutationQueueRef.current.filter(
+      (item) => item.coalesceKey !== args.coalesceKey,
+    );
+    mutationQueueRef.current.push({
+      mutation,
+      coalesceKey: args.coalesceKey,
+      affectedGuestIds: args.affectedGuestIds,
+      applySnapshot: args.applySnapshot,
+    });
+    markGuestSyncState(args.affectedGuestIds, "pending");
+    void processMutationQueue();
+  }, [markGuestSyncState, processMutationQueue]);
+
+  const handleUnassignGuest = useCallback(async (_assignmentId: string, guestId: string) => {
+    setGuestsError(null);
+    const previousGuests = guests;
+    setGuests((current) =>
+      current.map((guest) =>
+        guest.id === guestId
+          ? { ...guest, assignment: null, plannedTableId: null }
+          : guest,
+      ),
+    );
+    enqueueAssignmentMutation({
+      intent: "unassign",
+      payload: { guestId },
+      coalesceKey: `guest:${guestId}`,
+      affectedGuestIds: [guestId],
+      applySnapshot: previousGuests,
+    });
+  }, [enqueueAssignmentMutation, guests]);
 
   const handleSeatAssign = useCallback(async (
     tableId: string,
@@ -590,36 +631,34 @@ export function SeatingPlanEditorScreen() {
     const clickedGuest = guests.find(
       (guest) => guest.assignment?.tableId === tableId && guest.assignment?.seatNumber === seatNumber,
     );
+
     if (!guestId) {
-      if (!clickedGuest?.assignment) return { level: "info" as const, message: t("inspector.unassigned") };
+      if (!clickedGuest) return { level: "info" as const, message: t("inspector.unassigned") };
       setGuests((current) =>
-        current.map((guest) => (guest.id === clickedGuest.id ? { ...guest, assignment: null } : guest)),
+        current.map((guest) =>
+          guest.id === clickedGuest.id ? { ...guest, assignment: null, plannedTableId: null } : guest,
+        ),
       );
-      try {
-        await deleteAssignment(clickedGuest.assignment.id);
-      } catch (error) {
-        setGuests(previousGuests);
-        throw error;
-      }
+      enqueueAssignmentMutation({
+        intent: "unassign",
+        payload: { guestId: clickedGuest.id },
+        coalesceKey: `guest:${clickedGuest.id}`,
+        affectedGuestIds: [clickedGuest.id],
+        applySnapshot: previousGuests,
+      });
       return { level: "success" as const, message: t("canvas.unassignSeat") };
     }
 
     const targetGuest = guests.find((guest) => guest.id === guestId);
     if (!targetGuest) throw new Error("Guest not found");
 
-    const autoMoveRelationships = getAutoMoveTogetherRelationships(
-      targetGuest.id,
-      relationshipsByGuestId,
-    );
-    const moveTogetherEnabled = autoMoveRelationships.length > 0;
-
-    if (moveTogetherEnabled) {
+    const autoMoveRelationships = getAutoMoveTogetherRelationships(targetGuest.id, relationshipsByGuestId);
+    if (autoMoveRelationships.length > 0) {
       const planResult = buildGroupMovePlan({
         initiatorGuestId: targetGuest.id,
         targetTableId: tableId,
         targetSeatNumber: seatNumber,
-        pairSidePreference:
-          plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference,
+        pairSidePreference: plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference,
         tables: plan.tables.map((table) => ({
           id: table.id,
           x: table.x,
@@ -630,22 +669,17 @@ export function SeatingPlanEditorScreen() {
           id: guest.id,
           sex: guest.sex,
           assignment: guest.assignment
-            ? {
-                tableId: guest.assignment.tableId,
-                seatNumber: guest.assignment.seatNumber,
-              }
+            ? { tableId: guest.assignment.tableId, seatNumber: guest.assignment.seatNumber }
             : null,
         })),
         relationships: autoMoveRelationships,
       });
-
-      if (!planResult.ok) {
-        throw new Error(planResult.error);
-      }
+      if (!planResult.ok) throw new Error(planResult.error);
 
       const plannedAssignmentsByGuestId = Object.fromEntries(
         planResult.assignments.map((assignment) => [assignment.guestId, assignment]),
       );
+      const affectedGuestIds = planResult.assignments.map((assignment) => assignment.guestId);
       setGuests((current) =>
         current.map((guest) => {
           const assignment = plannedAssignmentsByGuestId[guest.id];
@@ -661,142 +695,76 @@ export function SeatingPlanEditorScreen() {
           };
         }),
       );
-
-      try {
-        const assignments = await executeBatchMoveAssignments({
+      enqueueAssignmentMutation({
+        intent: "batch_move",
+        payload: {
           initiatorGuestId: targetGuest.id,
           targetTableId: tableId,
           targetSeatNumber: seatNumber,
           moveTogetherEnabled: true,
           plannedAssignments: planResult.assignments,
-          context: {
-            relationshipIdsConsidered: planResult.relationshipIdsConsidered,
-          },
-        });
-
-        const assignmentsByGuestId = Object.fromEntries(
-          assignments.map((assignment) => [assignment.guestId, assignment]),
-        );
-        setGuests((current) =>
-          current.map((guest) => {
-            const assignment = assignmentsByGuestId[guest.id];
-            if (!assignment) return guest;
-            return {
-              ...guest,
-              plannedTableId: assignment.tableId,
-              assignment: {
-                id: assignment.id,
-                tableId: assignment.tableId,
-                seatNumber: assignment.seatNumber,
-              },
-            };
-          }),
-        );
-      } catch (error) {
-        setGuests(previousGuests);
-        throw error;
-      }
-
+          context: { relationshipIdsConsidered: planResult.relationshipIdsConsidered },
+        },
+        coalesceKey: `guest:${targetGuest.id}`,
+        affectedGuestIds,
+        applySnapshot: previousGuests,
+      });
       return {
         level: "success" as const,
         message: t("canvas.groupMove", { count: planResult.assignments.length }),
       };
     }
 
-    const targetGuestAssignment = targetGuest.assignment;
-    const clickedGuestAssignment = clickedGuest?.assignment ?? null;
     if (
-      targetGuestAssignment?.tableId === tableId &&
-      targetGuestAssignment?.seatNumber === seatNumber
+      targetGuest.assignment?.tableId === tableId &&
+      targetGuest.assignment?.seatNumber === seatNumber
     ) {
       return { level: "info" as const, message: t("canvas.selectedSeat") };
     }
 
-    const optimisticTargetAssignment: ApiGuest["assignment"] = {
-      id: targetGuestAssignment?.id ?? `optimistic-${targetGuest.id}`,
-      tableId,
-      seatNumber,
-    };
-    const optimisticClickedAssignment: ApiGuest["assignment"] =
-      clickedGuest && targetGuestAssignment
-        ? {
-            id: clickedGuestAssignment?.id ?? `optimistic-${clickedGuest.id}`,
-            tableId: targetGuestAssignment.tableId,
-            seatNumber: targetGuestAssignment.seatNumber,
-          }
-        : null;
     setGuests((current) =>
       current.map((guest) => {
         if (guest.id === targetGuest.id) {
           return {
             ...guest,
             plannedTableId: tableId,
-            assignment: optimisticTargetAssignment,
+            assignment: {
+              id: guest.assignment?.id ?? `optimistic-${guest.id}`,
+              tableId,
+              seatNumber,
+            },
           };
         }
-        if (clickedGuest && guest.id === clickedGuest.id) {
+        if (clickedGuest && guest.id === clickedGuest.id && targetGuest.assignment) {
           return {
             ...guest,
-            plannedTableId: targetGuestAssignment?.tableId ?? guest.plannedTableId,
-            assignment: optimisticClickedAssignment,
+            plannedTableId: targetGuest.assignment.tableId,
+            assignment: {
+              id: guest.assignment?.id ?? `optimistic-${guest.id}`,
+              tableId: targetGuest.assignment.tableId,
+              seatNumber: targetGuest.assignment.seatNumber,
+            },
           };
         }
         return guest;
       }),
     );
-    try {
-      if (clickedGuestAssignment) await deleteAssignment(clickedGuestAssignment.id);
-      if (targetGuestAssignment) await deleteAssignment(targetGuestAssignment.id);
-
-      const targetToClickedSeat = await createAssignment(targetGuest.id, tableId, seatNumber);
-      let clickedToTargetSeat: SeatAssignmentPayload["assignment"] | null = null;
-      if (clickedGuest && targetGuestAssignment) {
-        clickedToTargetSeat = await createAssignment(
-          clickedGuest.id,
-          targetGuestAssignment.tableId,
-          targetGuestAssignment.seatNumber,
-        );
-      }
-
-      setGuests((current) =>
-        current.map((guest) => {
-          if (guest.id === targetGuest.id) {
-            return {
-              ...guest,
-              plannedTableId: tableId,
-              assignment: targetToClickedSeat,
-            };
-          }
-          if (clickedGuest && guest.id === clickedGuest.id) {
-            return {
-              ...guest,
-              plannedTableId: targetGuestAssignment?.tableId ?? guest.plannedTableId,
-              assignment: clickedToTargetSeat,
-            };
-          }
-          return guest;
-        }),
-      );
-    } catch (error) {
-      setGuests(previousGuests);
-      throw error;
-    }
-
-    if (clickedGuest && targetGuestAssignment) return { level: "success" as const, message: t("editor.occupied") };
+    enqueueAssignmentMutation({
+      intent: "assign",
+      payload: { guestId: targetGuest.id, tableId, seatNumber },
+      coalesceKey: `guest:${targetGuest.id}`,
+      affectedGuestIds: clickedGuest ? [targetGuest.id, clickedGuest.id] : [targetGuest.id],
+      applySnapshot: previousGuests,
+    });
+    if (clickedGuest && targetGuest.assignment) return { level: "success" as const, message: t("editor.occupied") };
     return { level: "success" as const, message: t("editor.seatAssigned") };
-  }, [
-    createAssignment,
-    deleteAssignment,
-    executeBatchMoveAssignments,
-    guests,
-    plan.pairSidePreference,
-    plan.tables,
-    relationshipsByGuestId,
-  ]);
+  }, [enqueueAssignmentMutation, guests, plan.pairSidePreference, plan.tables, relationshipsByGuestId, t]);
   const dropGuestOnSeat = useCallback(
     async (tableId: string, seatNumber: number, guestId: string) => {
       if (!isDesktopViewport) return;
       if (isTableDraggingRef.current) return;
+      const dragSession = dragSessionRef.current;
+      endGuestDrag(dragSession);
       try {
         const result = await handleSeatAssign(tableId, seatNumber, guestId);
         if (result?.message) {
@@ -808,11 +776,9 @@ export function SeatingPlanEditorScreen() {
         }
       } catch (error) {
         setGuestsError(error instanceof Error ? error.message : t("canvas.failedAssign"));
-      } finally {
-        endGuestDrag();
       }
     },
-    [endGuestDrag, handleSeatAssign, isDesktopViewport],
+    [endGuestDrag, handleSeatAssign, isDesktopViewport, t],
   );
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -843,19 +809,7 @@ export function SeatingPlanEditorScreen() {
 
       if (event.key.toLowerCase() === "u" && selectedGuest?.assignment) {
         event.preventDefault();
-        void (async () => {
-          try {
-            setGuestsError(null);
-            await deleteAssignment(selectedGuest.assignment!.id);
-            setGuests((current) =>
-              current.map((guest) =>
-                guest.id === selectedGuest.id ? { ...guest, assignment: null } : guest,
-              ),
-            );
-          } catch (error) {
-            setGuestsError(error instanceof Error ? error.message : t("canvas.failedUnassign"));
-          }
-        })();
+        void handleUnassignGuest(selectedGuest.assignment.id, selectedGuest.id);
       }
 
       if (event.key === "]" && guests.length > 0) {
@@ -878,7 +832,6 @@ export function SeatingPlanEditorScreen() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     clearSelection,
-    deleteAssignment,
     deleteSelectedTable,
     guests,
     handleSelectGuest,
@@ -886,6 +839,7 @@ export function SeatingPlanEditorScreen() {
     selectedGuest,
     selectedGuestId,
     selectedTableId,
+    handleUnassignGuest,
   ]);
 
   const savePlan = async (source: "manual" | "auto") => {
@@ -942,6 +896,7 @@ export function SeatingPlanEditorScreen() {
         const didPlanChangeDuringSave = planRef.current !== nextPlan;
         if (payload.plan && !didPlanChangeDuringSave) {
           setPlan(normalizePlan(payload.plan), { preserveSelection: true });
+          planVersionRef.current = payload.plan.planVersion ?? planVersionRef.current;
         }
         if (!didPlanChangeDuringSave) {
           shouldAutosaveGuestsRef.current = false;
@@ -954,10 +909,14 @@ export function SeatingPlanEditorScreen() {
             variant: "success",
           });
           setTimeout(() => setSaveState("idle"), 1200);
-          void Promise.all([
-            loadGuests({ showLoading: false, surfaceErrors: false }),
-            loadRelationships({ surfaceErrors: false }),
-          ]);
+          if (!isDraggingGuest) {
+            void Promise.all([
+              loadGuests({ showLoading: false, surfaceErrors: false }),
+              loadRelationships({ surfaceErrors: false }),
+            ]);
+          } else {
+            pendingBackgroundRefreshRef.current = true;
+          }
         } else {
           // User kept editing while the request was in-flight; don't clobber local state.
           setSaveState("idle");
@@ -1403,6 +1362,8 @@ export function SeatingPlanEditorScreen() {
     async (tableId: string, guestId: string) => {
       if (!isDesktopViewport) return;
       if (isTableDraggingRef.current) return;
+      const dragSession = dragSessionRef.current;
+      endGuestDrag(dragSession);
       try {
         const moveTogetherRelationships = getAutoMoveTogetherRelationships(
           guestId,
@@ -1429,8 +1390,6 @@ export function SeatingPlanEditorScreen() {
         handleSelectGuest(guestId);
       } catch (error) {
         setGuestsError(error instanceof Error ? error.message : t("canvas.failedPlanAssign"));
-      } finally {
-        endGuestDrag();
       }
     },
     [
@@ -1734,6 +1693,16 @@ export function SeatingPlanEditorScreen() {
       scheduleAutosave();
     }
   }, [isTableDragging, scheduleAutosave]);
+
+  useEffect(() => {
+    if (isDraggingGuest) return;
+    if (!pendingBackgroundRefreshRef.current) return;
+    pendingBackgroundRefreshRef.current = false;
+    void Promise.all([
+      loadGuests({ showLoading: false, surfaceErrors: false }),
+      loadRelationships({ surfaceErrors: false }),
+    ]);
+  }, [isDraggingGuest, loadGuests, loadRelationships]);
 
   useEffect(() => {
     return () => {

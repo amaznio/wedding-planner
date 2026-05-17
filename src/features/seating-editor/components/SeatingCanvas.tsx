@@ -1213,8 +1213,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
                 await onGuestDropToSeat?.(tableId, seatNumber, effectiveGuestId);
-                setDraggedSeatGuestId(null);
-                onSeatGuestDragEnd?.();
               }}
               onTableDragEnter={(tableId) => {
                 if (!isAnyGuestDragActive) return;
@@ -1233,8 +1231,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                 const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
                 await onGuestDropToTable?.(tableId, effectiveGuestId);
-                setDraggedSeatGuestId(null);
-                onSeatGuestDragEnd?.();
               }}
               onSeatGuestDragStart={(guestId) => {
                 setSeatMenu(null);

@@ -81,6 +81,7 @@ export async function PUT(request: Request, context: RouteContext) {
           width: payload.width,
           height: payload.height,
           pairSidePreference: payload.pairSidePreference,
+          planVersion: { increment: 1 },
         },
       });
 

@@ -1,0 +1,2 @@
+ALTER TABLE "SeatingPlan"
+ADD COLUMN "planVersion" INTEGER NOT NULL DEFAULT 0;
