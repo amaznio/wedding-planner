@@ -861,15 +861,26 @@ export function SeatingPlanEditorScreen() {
       payload: args.payload,
       createdAt: new Date().toISOString(),
     };
-    assignmentMutationQueueRef.current = assignmentMutationQueueRef.current.filter(
-      (item) => item.coalesceKey !== args.coalesceKey,
-    );
-    assignmentMutationQueueRef.current.push({
+    const nextItem = {
       mutation,
       coalesceKey: args.coalesceKey,
       affectedGuestIds: args.affectedGuestIds,
       applySnapshot: args.applySnapshot,
-    });
+    };
+    const currentQueue = assignmentMutationQueueRef.current;
+    if (processingAssignmentMutationQueueRef.current && currentQueue.length > 0) {
+      const [activeItem, ...pendingItems] = currentQueue;
+      assignmentMutationQueueRef.current = [
+        activeItem,
+        ...pendingItems.filter((item) => item.coalesceKey !== args.coalesceKey),
+        nextItem,
+      ];
+    } else {
+      assignmentMutationQueueRef.current = [
+        ...currentQueue.filter((item) => item.coalesceKey !== args.coalesceKey),
+        nextItem,
+      ];
+    }
     markGuestSyncState(args.affectedGuestIds, "pending");
     void processAssignmentMutationQueue();
   }, [markGuestSyncState, processAssignmentMutationQueue]);
@@ -888,14 +899,25 @@ export function SeatingPlanEditorScreen() {
       payload: args.payload,
       createdAt: new Date().toISOString(),
     };
-    tableMutationQueueRef.current = tableMutationQueueRef.current.filter(
-      (item) => item.coalesceKey !== args.coalesceKey,
-    );
-    tableMutationQueueRef.current.push({
+    const nextItem = {
       mutation,
       coalesceKey: args.coalesceKey,
       applySnapshot: args.applySnapshot,
-    });
+    };
+    const currentQueue = tableMutationQueueRef.current;
+    if (processingTableMutationQueueRef.current && currentQueue.length > 0) {
+      const [activeItem, ...pendingItems] = currentQueue;
+      tableMutationQueueRef.current = [
+        activeItem,
+        ...pendingItems.filter((item) => item.coalesceKey !== args.coalesceKey),
+        nextItem,
+      ];
+    } else {
+      tableMutationQueueRef.current = [
+        ...currentQueue.filter((item) => item.coalesceKey !== args.coalesceKey),
+        nextItem,
+      ];
+    }
     void processTableMutationQueue();
   }, [processTableMutationQueue]);
 

@@ -4701,3 +4701,36 @@ Phase 235 - External Socket.IO realtime collaboration wiring (assignments + tabl
   - plan-room join auth via `/api/seating-plans/[planId]/realtime-auth`
   - mutation proxy to Next APIs
   - room broadcast of canonical `server_events` payloads.
+
+## Latest Hotfix
+
+- Phase 235-HF2 - Drag mutation queue coalescing race fix
+
+### Completed Work (Hotfix)
+
+- Fixed a mutation queue coalescing race in the seating editor that caused optimistic table drag positions to snap back to older positions.
+- Root cause:
+  - coalescing by `coalesceKey` removed queue entries indiscriminately, including the active in-flight head item while it was awaiting ACK.
+  - when that stale ACK returned, its older snapshot delta could be applied while the latest coalesced move had already been removed and never sent.
+- Fix implemented:
+  - updated assignment and table enqueue coalescing logic to preserve the active in-flight queue head when processing is in progress.
+  - coalescing now only removes duplicate pending tail items and appends the newest mutation.
+
+### Files Changed (Hotfix)
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+### Commands Run (Hotfix)
+
+- `pnpm typecheck` (pass)
+
+### Known Issues (Hotfix)
+
+- Existing repository lint warnings outside this hotfix remain unchanged.
+
+### How to Test (Hotfix)
+
+- Open a seating plan and drag one table rapidly several times in succession.
+- Verify the table remains at the latest dropped position and does not jump back 1-2 seconds later.
+- Repeat while realtime transport is enabled to confirm behavior remains stable.
