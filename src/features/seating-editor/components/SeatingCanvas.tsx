@@ -1,5 +1,6 @@
 import type { PointerEvent, WheelEvent } from "react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { MousePointer2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import {
   getAutoMoveTogetherRelationships,
   type PairSidePreference,
 } from "../lib/group-move";
+import { getCursorColorPreset } from "../lib/cursor-colors";
 import { resolveEffectiveGuestGroup } from "../lib/guest-group";
 import { getSeatPositions } from "../lib/seat-positioning";
 import { getRectangleTableDimensions } from "../lib/table-dimensions";
@@ -88,6 +90,16 @@ type SeatingCanvasProps = {
   pairSidePreference?: PairSidePreference;
   relationshipsByGuestId?: Record<string, SeatingRelationship[]>;
   readOnly?: boolean;
+  remoteCursors?: Array<{
+    participantId: string;
+    displayName: string;
+    colorKey?: string;
+    x: number;
+    y: number;
+    updatedAt: number;
+    lastMovementAt: number;
+  }>;
+  onPointerPresenceChange?: (x: number, y: number) => void;
 };
 
 export type SeatingCanvasHandle = {
@@ -126,6 +138,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   pairSidePreference,
   relationshipsByGuestId = {},
   readOnly = false,
+  remoteCursors = [],
+  onPointerPresenceChange,
 }, ref) {
   const { t } = useI18n();
   const relationshipTypeLabel: Record<SeatingRelationship["type"], string> = {
@@ -408,6 +422,9 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const canvasPoint = screenToCanvas(event.clientX, event.clientY);
+    onPointerPresenceChange?.(canvasPoint.x, canvasPoint.y);
+
     if (event.pointerType === "touch" && activeTouchPointersRef.current.has(event.pointerId)) {
       activeTouchPointersRef.current.set(event.pointerId, {
         clientX: event.clientX,
@@ -1248,6 +1265,29 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             />
           ))}
         </div>
+        {remoteCursors.map((cursor) => {
+          const now = Date.now();
+          const screenX = view.x + cursor.x * view.scale;
+          const screenY = view.y + cursor.y * view.scale;
+          const showLabel = now - cursor.lastMovementAt >= 1000;
+          const colorPreset = getCursorColorPreset(cursor.colorKey);
+          return (
+            <div
+              key={cursor.participantId}
+              className="pointer-events-none absolute z-30"
+              style={{ left: screenX, top: screenY }}
+            >
+              <MousePointer2 className={`-translate-x-1/2 -translate-y-1/2 drop-shadow-sm ${colorPreset.markerClass}`} size={18} />
+              <div
+                className={`absolute left-3 top-0 -translate-y-1/2 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold shadow-sm ring-1 transition-opacity ${colorPreset.labelClass} ${
+                  showLabel ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {cursor.displayName}
+              </div>
+            </div>
+          );
+        })}
         {plan.tables.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <div className="rounded-md border border-dashed border-zinc-300 bg-white/80 px-4 py-3 text-sm text-zinc-600">

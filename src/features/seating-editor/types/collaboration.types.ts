@@ -222,3 +222,20 @@ export type SocketServerEventsEnvelope = {
   events: CollaborationEvent[];
   snapshotDelta?: AssignmentSnapshotDelta | TableSnapshotDelta;
 };
+
+export type CursorPresenceKind = "update" | "leave";
+export type CursorAliasToken = {
+  adjectiveIndex: number;
+  animalIndex: number;
+};
+
+export type CursorPresencePayload = {
+  kind: CursorPresenceKind;
+  participantId: string;
+  displayName: string;
+  aliasToken?: CursorAliasToken;
+  colorKey?: string;
+  x: number;
+  y: number;
+  updatedAt: string;
+};

@@ -32,6 +32,8 @@ import type {
   AssignmentMutationPayload,
   AssignmentMutationResponse,
   CollaborationEvent,
+  CursorAliasToken,
+  CursorPresencePayload,
   TableMutation,
   TableMutationPayload,
   TableMutationResponse,
@@ -50,6 +52,9 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
+import { authClient } from "@/lib/auth-client";
+import { createRandomCursorAlias, getStickyCursorAliasToken, localizeCursorAlias } from "@/lib/cursor-alias";
+import { resolveCursorColorKey, type CursorColorKey } from "@/features/seating-editor/lib/cursor-colors";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type GuestSex = "male" | "female" | "unknown";
@@ -135,6 +140,16 @@ type PlanAccessError = {
 };
 
 type GuestSyncState = "idle" | "pending" | "failed";
+type RemoteCursor = {
+  participantId: string;
+  displayName: string;
+  aliasToken?: CursorAliasToken;
+  colorKey?: string;
+  x: number;
+  y: number;
+  updatedAt: number;
+  lastMovementAt: number;
+};
 
 function normalizePlan(plan: ApiPlan): SeatingPlan {
   return {
@@ -159,7 +174,8 @@ function normalizePlan(plan: ApiPlan): SeatingPlan {
 export function SeatingPlanEditorScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { data: session } = authClient.useSession();
   const params = useParams<{ planId: string }>();
   const planId = params.planId;
 
@@ -226,6 +242,9 @@ export function SeatingPlanEditorScreen() {
   const [planAccess, setPlanAccess] = useState<ApiPlanAccess | null>(null);
   const [isPublicRead, setIsPublicRead] = useState(false);
   const [isUpdatingSharing, setIsUpdatingSharing] = useState(false);
+  const [remoteCursors, setRemoteCursors] = useState<RemoteCursor[]>([]);
+  const [anonNameOverride, setAnonNameOverride] = useState<string>("");
+  const [anonColorKey, setAnonColorKey] = useState<CursorColorKey>("sky");
   const [, setGuestSyncStateById] = useState<Record<string, GuestSyncState>>({});
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
@@ -252,7 +271,15 @@ export function SeatingPlanEditorScreen() {
   const processingAssignmentMutationQueueRef = useRef(false);
   const processingTableMutationQueueRef = useRef(false);
   const dragSessionRef = useRef<string | null>(null);
+  const participantIdRef = useRef<string>("");
+  const anonymousDisplayNameRef = useRef<string>("");
+  const anonymousAliasTokenRef = useRef<CursorAliasToken | null>(null);
+  const cursorEmitThrottleRef = useRef(0);
   const canEdit = planAccess?.canEdit ?? true;
+
+  if (!participantIdRef.current) {
+    participantIdRef.current = crypto.randomUUID();
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -528,18 +555,59 @@ export function SeatingPlanEditorScreen() {
     if (planId) void loadPlan();
   }, [loadGroups, loadGuests, loadRelationships, pathname, planId, router, setPlan]);
 
+  const getDisplayName = useCallback(() => {
+    const sessionName = session?.user?.name?.trim();
+    if (sessionName) return sessionName;
+    const override = anonNameOverride.trim();
+    if (override) return override;
+    if (!anonymousAliasTokenRef.current) {
+      anonymousAliasTokenRef.current = getStickyCursorAliasToken(locale);
+    }
+    if (!anonymousDisplayNameRef.current) {
+      anonymousDisplayNameRef.current = localizeCursorAlias(anonymousAliasTokenRef.current, locale);
+    }
+    return anonymousDisplayNameRef.current;
+  }, [anonNameOverride, locale, session?.user?.name]);
+
+  useEffect(() => {
+    anonymousDisplayNameRef.current = "";
+    anonymousAliasTokenRef.current = null;
+    setRemoteCursors((current) =>
+      current.map((cursor) => ({
+        ...cursor,
+        displayName: cursor.aliasToken ? localizeCursorAlias(cursor.aliasToken, locale) : cursor.displayName,
+      })),
+    );
+  }, [locale]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRemoteCursors((current) => (current.length === 0 ? current : [...current]));
+    }, 250);
+    return () => window.clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const httpTransport = new HttpEventTransport(planId);
-    const socketTransport = new SocketEventTransport(planId, async () => {
-      const response = await fetch(`/api/seating-plans/${planId}/realtime-auth`, {
-        method: "POST",
-      });
-      const payload = (await response.json()) as { token?: string };
-      if (!response.ok || !payload.token) {
-        throw new Error("Failed to authorize realtime transport");
-      }
-      return payload.token;
-    });
+    const socketTransport = new SocketEventTransport(
+      planId,
+      async () => {
+        const response = await fetch(`/api/seating-plans/${planId}/realtime-auth`, {
+          method: "POST",
+        });
+        const payload = (await response.json()) as { token?: string };
+        if (!response.ok || !payload.token) {
+          throw new Error("Failed to authorize realtime transport");
+        }
+        return payload.token;
+      },
+      () => ({
+        participantId: participantIdRef.current,
+        displayName: getDisplayName(),
+        aliasToken: session?.user?.name ? undefined : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+        colorKey: session?.user?.name ? undefined : anonColorKey,
+      }),
+    );
     const composite = new CompositeEventTransport(socketTransport, httpTransport);
     eventTransportRef.current = composite;
 
@@ -576,15 +644,101 @@ export function SeatingPlanEditorScreen() {
         ]);
       }) ?? (() => {});
 
+    const unsubscribeCursors =
+      composite.subscribeToCursorPresence?.((presence: CursorPresencePayload) => {
+        if (!presence?.participantId || presence.participantId === participantIdRef.current) return;
+        if (presence.kind === "leave") {
+          setRemoteCursors((current) =>
+            current.filter((cursor) => cursor.participantId !== presence.participantId),
+          );
+          return;
+        }
+
+        const now = Date.now();
+        setRemoteCursors((current) => {
+          const next = [...current];
+          const existingIndex = next.findIndex(
+            (cursor) => cursor.participantId === presence.participantId,
+          );
+
+          if (existingIndex < 0) {
+            next.push({
+              participantId: presence.participantId,
+              displayName: presence.aliasToken
+                ? localizeCursorAlias(presence.aliasToken, locale)
+                : presence.displayName,
+              aliasToken: presence.aliasToken,
+              colorKey: resolveCursorColorKey(presence.colorKey),
+              x: presence.x,
+              y: presence.y,
+              updatedAt: now,
+              lastMovementAt: now,
+            });
+            return next;
+          }
+
+          const existing = next[existingIndex];
+          const moved =
+            Math.abs(existing.x - presence.x) > 0.01 || Math.abs(existing.y - presence.y) > 0.01;
+          next[existingIndex] = {
+            ...existing,
+            displayName: presence.aliasToken
+              ? localizeCursorAlias(presence.aliasToken, locale)
+              : presence.displayName,
+            aliasToken: presence.aliasToken ?? existing.aliasToken,
+            colorKey: resolveCursorColorKey(presence.colorKey) ?? existing.colorKey,
+            x: presence.x,
+            y: presence.y,
+            updatedAt: now,
+            lastMovementAt: moved ? now : existing.lastMovementAt,
+          };
+          return next;
+        });
+      }) ?? (() => {});
+
+    const staleCursorCleanup = window.setInterval(() => {
+      const cutoff = Date.now() - 10_000;
+      setRemoteCursors((current) => current.filter((cursor) => cursor.updatedAt >= cutoff));
+    }, 2_000);
+
     return () => {
       unsubscribeRemote();
       unsubscribeReconnect();
+      unsubscribeCursors();
+      window.clearInterval(staleCursorCleanup);
       composite.dispose?.();
       if (eventTransportRef.current === composite) {
         eventTransportRef.current = null;
       }
     };
-  }, [loadGuests, loadRelationships, planId, setPlan]);
+  }, [anonColorKey, getDisplayName, loadGuests, loadRelationships, locale, planId, session?.user?.name, setPlan]);
+
+  const handlePointerPresenceChange = useCallback((x: number, y: number) => {
+    const now = Date.now();
+    if (now - cursorEmitThrottleRef.current < 60) return;
+    cursorEmitThrottleRef.current = now;
+    void eventTransportRef.current?.sendCursorPresence?.({
+      x,
+      y,
+      aliasToken: session?.user?.name ? undefined : anonymousAliasTokenRef.current ?? getStickyCursorAliasToken(locale),
+    });
+  }, [locale, session?.user?.name]);
+
+  const viewingAsLabel = session?.user?.name ? null : getDisplayName();
+  const anonIdentity = session?.user?.name
+    ? null
+    : {
+        label: viewingAsLabel ?? "",
+        nameInput: anonNameOverride,
+        colorKey: anonColorKey,
+        onNameInputChange: (value: string) => setAnonNameOverride(value),
+        onRandomize: () => setAnonNameOverride(createRandomCursorAlias(locale)),
+        onReset: () => {
+          setAnonNameOverride("");
+          setAnonColorKey("sky");
+        },
+        onColorKeyChange: (value: string) => setAnonColorKey(resolveCursorColorKey(value)),
+      };
 
   const markGuestSyncState = useCallback((guestIds: string[], state: GuestSyncState) => {
     setGuestSyncStateById((current) => {
@@ -2074,6 +2228,8 @@ export function SeatingPlanEditorScreen() {
             onPlanNameChange={() => {}}
             onSave={() => {}}
             readOnly
+            viewingAsLabel={viewingAsLabel}
+            anonIdentity={anonIdentity}
           />
           <div className="relative min-h-0 flex-1 overflow-hidden border-t border-zinc-200 bg-zinc-100/40">
             <SeatingCanvas
@@ -2103,6 +2259,8 @@ export function SeatingPlanEditorScreen() {
                 plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
               }
               relationshipsByGuestId={relationshipsByGuestId}
+              remoteCursors={remoteCursors}
+              onPointerPresenceChange={handlePointerPresenceChange}
               mobileMode={!isDesktopViewport}
               readOnly
             />
@@ -2124,6 +2282,8 @@ export function SeatingPlanEditorScreen() {
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
           onOpenPlanSettings={() => setMobileMoreView("settings")}
+          viewingAsLabel={viewingAsLabel}
+          anonIdentity={anonIdentity}
         />
         <div className="relative min-h-0 flex-1 overflow-hidden border-t border-zinc-200 bg-zinc-100/40">
           <SeatingCanvas
@@ -2160,6 +2320,8 @@ export function SeatingPlanEditorScreen() {
               plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
             }
             relationshipsByGuestId={relationshipsByGuestId}
+            remoteCursors={remoteCursors}
+            onPointerPresenceChange={handlePointerPresenceChange}
             mobileMode
           />
           <Button
@@ -2669,6 +2831,8 @@ export function SeatingPlanEditorScreen() {
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
           onOpenPlanSettings={() => setDesktopPlanSettingsOpen(true)}
+          viewingAsLabel={viewingAsLabel}
+          anonIdentity={anonIdentity}
         />
         <div className="flex min-h-0 flex-1 flex-row">
           <GuestPanel
@@ -2732,6 +2896,8 @@ export function SeatingPlanEditorScreen() {
                 plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
               }
               relationshipsByGuestId={relationshipsByGuestId}
+              remoteCursors={remoteCursors}
+              onPointerPresenceChange={handlePointerPresenceChange}
             />
             <InspectorPanel
               selection={desktopInspectorSelection}

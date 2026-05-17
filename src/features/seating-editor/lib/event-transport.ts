@@ -4,6 +4,8 @@ import type {
   AssignmentMutation,
   AssignmentMutationResponse,
   CollaborationEvent,
+  CursorAliasToken,
+  CursorPresencePayload,
   SocketServerEventsEnvelope,
   TableMutation,
   TableMutationResponse,
@@ -27,6 +29,8 @@ export interface EventTransport {
   sendAssignmentMutation(mutation: AssignmentMutation): Promise<AssignmentMutationResponse>;
   sendTableMutation(mutation: TableMutation): Promise<TableMutationResponse>;
   subscribeToRemoteEvents?(onEvent: (event: CollaborationEvent) => void): () => void;
+  sendCursorPresence?(payload: { x: number; y: number; aliasToken?: CursorAliasToken }): Promise<void> | void;
+  subscribeToCursorPresence?(onPresence: (presence: CursorPresencePayload) => void): () => void;
   onReconnect?(onReconnect: () => void): () => void;
   dispose?(): void;
 }
@@ -94,7 +98,16 @@ export class HttpEventTransport implements EventTransport {
 export class SocketEventTransport implements EventTransport {
   private socket: Socket | null = null;
 
-  constructor(private readonly planId: string, private readonly getToken: () => Promise<string>) {}
+  constructor(
+    private readonly planId: string,
+    private readonly getToken: () => Promise<string>,
+    private readonly getPresenceIdentity: () => {
+      participantId: string;
+      displayName: string;
+      aliasToken?: CursorAliasToken;
+      colorKey?: string;
+    },
+  ) {}
 
   private async getSocket(): Promise<Socket> {
     if (this.socket) {
@@ -175,6 +188,21 @@ export class SocketEventTransport implements EventTransport {
     return result as TableMutationResponse;
   }
 
+  async sendCursorPresence(payload: { x: number; y: number; aliasToken?: CursorAliasToken }): Promise<void> {
+    const socket = await this.getSocket();
+    const identity = this.getPresenceIdentity();
+    socket.emit("client_cursor_presence", {
+      kind: "update",
+      participantId: identity.participantId,
+      displayName: identity.displayName,
+      aliasToken: payload.aliasToken ?? identity.aliasToken,
+      colorKey: identity.colorKey,
+      x: payload.x,
+      y: payload.y,
+      updatedAt: new Date().toISOString(),
+    } satisfies CursorPresencePayload);
+  }
+
   subscribeToRemoteEvents(onEvent: (event: CollaborationEvent) => void): () => void {
     let active = true;
     void this.getSocket().then((socket) => {
@@ -191,6 +219,21 @@ export class SocketEventTransport implements EventTransport {
       active = false;
       if (this.socket) {
         this.socket.off("server_events");
+      }
+    };
+  }
+
+  subscribeToCursorPresence(onPresence: (presence: CursorPresencePayload) => void): () => void {
+    let active = true;
+    void this.getSocket().then((socket) => {
+      if (!active) return;
+      socket.on("server_cursor_presence", onPresence);
+    });
+
+    return () => {
+      active = false;
+      if (this.socket) {
+        this.socket.off("server_cursor_presence", onPresence);
       }
     };
   }
@@ -254,6 +297,14 @@ export class CompositeEventTransport implements EventTransport {
 
   subscribeToRemoteEvents(onEvent: (event: CollaborationEvent) => void): () => void {
     return this.socketTransport.subscribeToRemoteEvents?.(onEvent) ?? (() => {});
+  }
+
+  sendCursorPresence(payload: { x: number; y: number; aliasToken?: CursorAliasToken }): Promise<void> | void {
+    return this.socketTransport.sendCursorPresence?.(payload);
+  }
+
+  subscribeToCursorPresence(onPresence: (presence: CursorPresencePayload) => void): () => void {
+    return this.socketTransport.subscribeToCursorPresence?.(onPresence) ?? (() => {});
   }
 
   onReconnect(onReconnect: () => void): () => void {

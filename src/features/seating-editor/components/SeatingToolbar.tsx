@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, MousePointer2 } from "lucide-react";
 
 import { UserMenu } from "@/components/auth/UserMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -16,6 +22,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { authClient } from "@/lib/auth-client";
+import { CURSOR_COLOR_PRESETS, getCursorColorPreset } from "@/features/seating-editor/lib/cursor-colors";
 
 type SeatingToolbarProps = {
   planName: string;
@@ -26,6 +33,16 @@ type SeatingToolbarProps = {
   onSave: () => void;
   onOpenPlanSettings?: () => void;
   readOnly?: boolean;
+  viewingAsLabel?: string | null;
+  anonIdentity?: {
+    label: string;
+    nameInput: string;
+    colorKey: string;
+    onNameInputChange: (value: string) => void;
+    onRandomize: () => void;
+    onReset: () => void;
+    onColorKeyChange: (value: string) => void;
+  } | null;
 };
 
 export function SeatingToolbar({
@@ -37,12 +54,15 @@ export function SeatingToolbar({
   onSave,
   onOpenPlanSettings,
   readOnly = false,
+  viewingAsLabel = null,
+  anonIdentity = null,
 }: SeatingToolbarProps) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
   const { data: session } = authClient.useSession();
   const [isMobileEditingTitle, setIsMobileEditingTitle] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isMobileAnonOpen, setIsMobileAnonOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
@@ -64,6 +84,8 @@ export function SeatingToolbar({
     router.push("/sign-in");
     router.refresh();
   };
+
+  const anonColorPreset = getCursorColorPreset(anonIdentity?.colorKey);
 
   return (
     <header className="border-b border-zinc-200 bg-white px-3 py-1.5 md:px-4 md:py-2">
@@ -110,6 +132,71 @@ export function SeatingToolbar({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {viewingAsLabel ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={`inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs font-semibold ${anonColorPreset.chipClass}`}
+                >
+                  <MousePointer2 className={anonColorPreset.markerClass} size={14} />
+                  <span>{t("toolbar.viewingAs", { name: viewingAsLabel })}</span>
+                  <ChevronDown size={14} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[320px] p-3">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                    <MousePointer2 className={anonColorPreset.markerClass} size={16} />
+                    <span className="truncate text-sm font-medium text-zinc-800">{anonIdentity?.label ?? viewingAsLabel}</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-zinc-700">{t("toolbar.displayName")}</p>
+                    <Input
+                      value={anonIdentity?.nameInput ?? ""}
+                      onChange={(event) => anonIdentity?.onNameInputChange(event.target.value)}
+                      placeholder={anonIdentity?.label ?? viewingAsLabel}
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-[11px] text-zinc-500">{t("toolbar.displayNameHelp")}</p>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => anonIdentity?.onRandomize()}>
+                        {t("toolbar.randomizeAnon")}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => anonIdentity?.onReset()}>
+                        {t("toolbar.resetAnon")}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-zinc-700">{t("toolbar.cursorColor")}</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {CURSOR_COLOR_PRESETS.map((preset) => {
+                        const isActive = preset.key === anonIdentity?.colorKey;
+                        return (
+                          <button
+                            key={preset.key}
+                            type="button"
+                            className={`inline-flex h-8 items-center justify-center rounded-md border ${preset.chipClass} ${
+                              isActive ? "ring-2 ring-zinc-300" : ""
+                            }`}
+                            onClick={() => anonIdentity?.onColorKeyChange(preset.key)}
+                            title={preset.label}
+                          >
+                            <MousePointer2 className={preset.markerClass} size={14} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-zinc-500">{t("toolbar.anonSessionNotice")}</p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           {onOpenPlanSettings && !readOnly ? (
             <Button
               type="button"
@@ -203,6 +290,15 @@ export function SeatingToolbar({
               {t("toolbar.navigation")}
             </SheetTitle>
             <div className="mt-3 space-y-2">
+              {anonIdentity ? (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setIsMobileAnonOpen(true)}
+                >
+                  {t("toolbar.viewingAs", { name: anonIdentity.label })}
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 className="w-full justify-start"
@@ -260,6 +356,54 @@ export function SeatingToolbar({
                   <SelectItem value="pl">{t("common.polish")}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={isMobileAnonOpen} onOpenChange={setIsMobileAnonOpen}>
+          <SheetContent side="bottom" className="h-auto max-h-[80dvh] p-4">
+            <SheetTitle className="text-left text-sm font-semibold text-zinc-900">
+              {t("toolbar.anonIdentityTitle")}
+            </SheetTitle>
+            <div className="mt-3 space-y-3">
+              <div className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs font-semibold ${anonColorPreset.chipClass}`}>
+                <MousePointer2 className={anonColorPreset.markerClass} size={14} />
+                <span>{t("toolbar.viewingAs", { name: anonIdentity?.label ?? "" })}</span>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-zinc-700">{t("toolbar.displayName")}</p>
+                <Input
+                  value={anonIdentity?.nameInput ?? ""}
+                  onChange={(event) => anonIdentity?.onNameInputChange(event.target.value)}
+                  placeholder={anonIdentity?.label ?? ""}
+                />
+                <p className="text-[11px] text-zinc-500">{t("toolbar.displayNameHelp")}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => anonIdentity?.onRandomize()}>
+                  {t("toolbar.randomizeAnon")}
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => anonIdentity?.onReset()}>
+                  {t("toolbar.resetAnon")}
+                </Button>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-zinc-700">{t("toolbar.cursorColor")}</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {CURSOR_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      className={`inline-flex h-8 items-center justify-center rounded-md border ${preset.chipClass} ${
+                        preset.key === anonIdentity?.colorKey ? "ring-2 ring-zinc-300" : ""
+                      }`}
+                      onClick={() => anonIdentity?.onColorKeyChange(preset.key)}
+                    >
+                      <MousePointer2 className={preset.markerClass} size={14} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-500">{t("toolbar.anonSessionNotice")}</p>
             </div>
           </SheetContent>
         </Sheet>
