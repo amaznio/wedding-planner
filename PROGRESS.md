@@ -4766,3 +4766,36 @@ Phase 235 - External Socket.IO realtime collaboration wiring (assignments + tabl
 - In a cloud environment with higher latency, drag the same table rapidly to multiple positions.
 - Confirm no snap-back to an older position while queued mutations are still processing.
 - Verify final table position remains at the latest drop after all network requests settle.
+
+## Latest Hotfix
+
+- Phase 235-HF4 - Reconnect/save stale plan apply guards
+
+### Completed Work (Hotfix)
+
+- Closed remaining stale server-to-local overwrite paths for table layout state.
+- Reconnect rehydrate hardening:
+  - skip reconnect plan apply while local table mutation queue is active/in-flight,
+  - reject reconnect fetched plan snapshots when `planVersion` is older than current local known version.
+- Save response hardening:
+  - apply saved plan payload only when response `planVersion` is greater than or equal to current local known version,
+  - prevents late/stale save responses from overwriting newer local/remote state.
+
+### Files Changed (Hotfix)
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+### Commands Run (Hotfix)
+
+- `pnpm typecheck` (pass)
+
+### Known Issues (Hotfix)
+
+- Existing repository lint warnings outside this hotfix remain unchanged.
+
+### How to Test (Hotfix)
+
+- Simulate higher latency and reconnect events while dragging tables repeatedly.
+- Verify reconnect fetches do not snap tables back during active local table queue processing.
+- Verify late save responses do not overwrite newer table positions after subsequent moves.

@@ -644,8 +644,16 @@ export function SeatingPlanEditorScreen() {
             .then((response) => response.json())
             .then((payload: { plan?: ApiPlan }) => {
               if (!payload.plan) return;
+              if (
+                processingTableMutationQueueRef.current ||
+                tableMutationQueueRef.current.length > 0
+              ) {
+                return;
+              }
+              const fetchedVersion = payload.plan.planVersion ?? 0;
+              if (fetchedVersion < planVersionRef.current) return;
               setPlan(normalizePlan(payload.plan), { preserveSelection: true });
-              planVersionRef.current = payload.plan.planVersion ?? planVersionRef.current;
+              planVersionRef.current = fetchedVersion;
             })
             .catch(() => {}),
           loadGuests({ showLoading: false, surfaceErrors: false }),
@@ -1342,8 +1350,11 @@ export function SeatingPlanEditorScreen() {
         const payload = (await response.json()) as { plan?: ApiPlan };
         const didPlanChangeDuringSave = planRef.current !== nextPlan;
         if (payload.plan && !didPlanChangeDuringSave) {
-          setPlan(normalizePlan(payload.plan), { preserveSelection: true });
-          planVersionRef.current = payload.plan.planVersion ?? planVersionRef.current;
+          const savedVersion = payload.plan.planVersion ?? 0;
+          if (savedVersion >= planVersionRef.current) {
+            setPlan(normalizePlan(payload.plan), { preserveSelection: true });
+            planVersionRef.current = savedVersion;
+          }
         }
         if (!didPlanChangeDuringSave) {
           shouldAutosaveGuestsRef.current = false;
