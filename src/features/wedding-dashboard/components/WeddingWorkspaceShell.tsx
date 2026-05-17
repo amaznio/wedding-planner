@@ -17,7 +17,6 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sid
 import { useI18n } from "@/i18n/provider";
 import { WeddingDashboardShell } from "@/features/wedding-dashboard/components/WeddingDashboardShell";
 import { WeddingDashboardSidebar } from "@/features/wedding-dashboard/components/WeddingDashboardSidebar";
-import { WeddingMobileNav } from "@/features/wedding-shell/components/WeddingMobileNav";
 import type { DashboardNavItem } from "../types";
 
 export type WorkspaceBreadcrumbItem = {
@@ -118,7 +117,6 @@ function WeddingWorkspaceShellInner({
     <WeddingWorkspaceShellContext.Provider value={contextValue}>
       <WeddingDashboardShell
         topBar={<WeddingWorkspaceTopBar breadcrumbs={breadcrumbs} />}
-        mobileNav={<WeddingMobileNav weddingId={weddingId} />}
         sidebar={(
           <WeddingDashboardSidebar
             currentPath={currentPath}

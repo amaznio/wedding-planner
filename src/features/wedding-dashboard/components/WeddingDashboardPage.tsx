@@ -353,11 +353,9 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
 
   return (
     <>
-      <WeddingDashboardHeader
-        firstName={greetingName}
-        onQuickAction={handleQuickAction}
-        onPlaceholderAction={handlePlaceholderAction}
-      />
+        <WeddingDashboardHeader
+          firstName={greetingName}
+        />
       <div className="mt-5 flex flex-col gap-5">
         <WeddingOverviewHero
           overview={data.overview}

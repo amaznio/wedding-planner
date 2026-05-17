@@ -170,7 +170,7 @@ function Sidebar({
       <div
         data-slot="sidebar"
         className={cn(
-          "flex h-full w-(--sidebar-width) flex-col bg-oklch(0.985 0 0) text-oklch(0.141 0.005 285.823) dark:bg-oklch(0.21 0.006 285.885) dark:text-oklch(0.985 0 0)",
+          "flex h-full w-[--sidebar-width] flex-col bg-oklch(0.985 0 0) text-oklch(0.141 0.005 285.823) dark:bg-oklch(0.21 0.006 285.885) dark:text-oklch(0.985 0 0)",
           className
         )}
         {...props}
@@ -187,7 +187,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-oklch(0.985 0 0) p-0 text-oklch(0.141 0.005 285.823) [&>button]:hidden dark:bg-oklch(0.21 0.006 285.885) dark:text-oklch(0.985 0 0)"
+          className="w-[--sidebar-width] max-w-[--sidebar-width] overflow-hidden p-0 [--sidebar-background:0_0%_98%] [--sidebar-foreground:240_5.3%_26.1%] [--sidebar-primary:240_5.9%_10%] [--sidebar-primary-foreground:0_0%_98%] [--sidebar-accent:240_4.8%_95.9%] [--sidebar-accent-foreground:240_5.9%_10%] [--sidebar-border:220_13%_91%] [--sidebar-ring:217.2_91.2%_59.8%] [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -199,7 +199,13 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div
+            data-sidebar="sidebar"
+            data-slot="sidebar-inner"
+            className="flex h-full w-full flex-col overflow-y-auto bg-sidebar text-sidebar-foreground"
+          >
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     )
@@ -207,7 +213,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-oklch(0.141 0.005 285.823) md:block dark:text-oklch(0.985 0 0)"
+      className="group peer hidden text-oklch(0.141 0.005 285.823) lg:block dark:text-oklch(0.985 0 0)"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -218,25 +224,25 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
         )}
       />
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear lg:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
         {...props}
@@ -310,7 +316,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
       data-slot="sidebar-inset"
       className={cn(
         "relative flex w-full flex-1 flex-col bg-oklch(1 0 0) dark:bg-oklch(0.141 0.005 285.823)",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        "lg:peer-data-[variant=inset]:m-2 lg:peer-data-[variant=inset]:ml-0 lg:peer-data-[variant=inset]:rounded-xl lg:peer-data-[variant=inset]:shadow-sm lg:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
       {...props}

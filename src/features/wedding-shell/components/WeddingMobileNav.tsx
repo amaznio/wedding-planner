@@ -6,6 +6,7 @@ import { LayoutGrid, Users, UtensilsCrossed, Armchair, WalletCards } from "lucid
 import { cn } from "@/lib/utils";
 import { getWeddingRoutes } from "@/lib/routes";
 import { useI18n } from "@/i18n/provider";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type WeddingMobileNavProps = {
   weddingId: string;
@@ -14,6 +15,7 @@ type WeddingMobileNavProps = {
 export function WeddingMobileNav({ weddingId }: WeddingMobileNavProps) {
   const pathname = usePathname();
   const { t } = useI18n();
+  const { openMobile } = useSidebar();
   const routes = getWeddingRoutes(weddingId);
 
   const items = [
@@ -24,24 +26,28 @@ export function WeddingMobileNav({ weddingId }: WeddingMobileNavProps) {
     { id: "budget", href: routes.budget, icon: WalletCards, label: t("dashboard.sidebar.nav.budget") },
   ] as const;
 
+  if (openMobile) {
+    return null;
+  }
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 overflow-x-hidden border-t border-zinc-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
       <ul className="grid grid-cols-5 gap-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <li key={item.id}>
+            <li key={item.id} className="min-w-0">
               <Link
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium text-zinc-600",
+                  "flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium text-zinc-600",
                   isActive ? "bg-violet-50 text-violet-700" : "hover:bg-zinc-100 hover:text-zinc-900",
                 )}
               >
                 <Icon className="size-4" />
-                <span className="truncate">{item.label}</span>
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             </li>
           );
