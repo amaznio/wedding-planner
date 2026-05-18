@@ -5176,3 +5176,110 @@ Phase 241 - Wedding seating page premium polish (desktop table + mobile cards)
   - verify spacing and typography at common breakpoints,
   - add functional overflow menu actions if needed,
   - optionally tune progress/metadata copy for final product voice.
+
+## Current Phase
+
+Phase 240 - Admin manual password reset for selected users
+
+## Completed Work
+
+- Added SUPERADMIN-only API endpoint to reset a selected user's password:
+  - `PATCH /api/admin/users/[userId]/password`
+  - validates payload with Zod (`password` min 8, max 128)
+  - hashes password using Better Auth's crypto utility (`hashPassword`)
+  - updates existing credential account (`providerId = "credential"`) when present
+  - creates credential account row when missing (for users without local password account yet)
+- Added password reset form controls to `/admin` user list:
+  - per-user password input (`type=password`)
+  - per-user `Reset password` action button
+  - loading/disabled states and basic length guard
+- Kept role security consistent with existing admin controls (`SUPERADMIN` required).
+
+## Files Changed
+
+- `src/app/api/admin/users/[userId]/password/route.ts` (new)
+- `src/app/admin/page.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- UI currently uses an inline per-row password input without strength meter or generated temporary-password flow.
+- No success toast yet; current UX clears the field on success and surfaces errors via existing error banner.
+
+## Next Recommended Step
+
+- Phase 241 - Admin password-reset UX hardening:
+  - add explicit success feedback per row,
+  - add show/hide toggle and optional generated temporary password helper,
+  - optionally add `force password change on next login` flag if desired policy requires it.
+
+## Current Phase
+
+Phase 241 - Server-side admin route guard with homepage redirect
+
+## Completed Work
+
+- Enforced `/admin` access server-side for admin roles only:
+  - added `src/app/admin/layout.tsx` guard
+  - unauthenticated users are redirected to `/`
+  - authenticated non-admin users are redirected to `/`
+  - only users with app role `ADMIN` or `SUPERADMIN` can access `/admin`
+- Refactored role helper exports for shared server usage:
+  - exported `resolveAppRoleForSession(session)`
+  - exported `hasAtLeastAppRole(role, minRole)`
+
+## Files Changed
+
+- `src/app/admin/layout.tsx` (new)
+- `src/lib/app-authz.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- None introduced by this phase.
+
+## Next Recommended Step
+
+- Add an optional "access denied" page route if you prefer showing context instead of immediate homepage redirect for unauthorized users.
+
+## Current Phase
+
+Phase 241-HF1 - Guest panel counters show guest totals (not row items)
+
+## Completed Work
+
+- Fixed guest panel counters to represent real guest totals instead of rendered row/item counts.
+- Added guest-count derivation for merged pair rows:
+  - single row counts as `1` guest
+  - pair row counts as `2` guests
+- Updated counter displays:
+  - compact sheet badge now shows `visibleGuests/totalGuests`
+  - showing label now includes total guests (`count of total`)
+- Updated i18n copy for the guest panel showing label in EN/PL to include total.
+
+## Files Changed
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Existing repository lint baseline issues remain unchanged and were not modified in this hotfix.
+
+## Next Recommended Step
+
+- Run a quick UX wording check with product stakeholders to confirm `Showing X of Y` / `Wyświetlono X z Y` is the preferred phrasing in this panel.

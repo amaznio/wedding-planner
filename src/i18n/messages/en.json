@@ -234,7 +234,7 @@
     "filterAll": "All",
     "filterUnseated": "Unseated",
     "filterAssigned": "Assigned",
-    "showing": "Showing {{count}}",
+    "showing": "Showing {{count}} of {{total}}",
     "loading": "Loading guests...",
     "empty": "No guests match this filter.",
     "tableFallback": "Table",

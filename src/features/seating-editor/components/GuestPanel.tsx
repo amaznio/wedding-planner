@@ -272,7 +272,8 @@ export function GuestPanel({
 
     return rows;
   }, [guests, guestsById, relationshipsByGuestId]);
-  const totalRows = allRows.length;
+  const totalGuestCount = guests.length;
+  const getRowGuestCount = (row: GuestListRow): number => (row.kind === "pair" ? 2 : 1);
   const visibleRows = useMemo(() => {
     const queryLower = query.trim().toLowerCase();
     return allRows.filter((row) => {
@@ -369,6 +370,10 @@ export function GuestPanel({
       );
     });
   }, [allRows, filter, groupFilter, guestsById, query, tableFilter, tableLabelById]);
+  const visibleGuestCount = useMemo(
+    () => visibleRows.reduce((count, row) => count + getRowGuestCount(row), 0),
+    [visibleRows],
+  );
 
   const togglePairExpanded = (rowId: string) => {
     setExpandedPairRowIds((current) =>
@@ -803,13 +808,13 @@ export function GuestPanel({
           </div>
           {variant === "sheet" ? (
             <span className="text-xs text-zinc-500">
-              {visibleRows.length}/{totalRows}
+              {visibleGuestCount}/{totalGuestCount}
             </span>
           ) : null}
         </div>
         {variant === "desktop" || query.trim().length > 0 ? (
           <p className="text-xs text-zinc-500">
-            {t("guestPanel.showing", { count: visibleRows.length })}
+            {t("guestPanel.showing", { count: visibleGuestCount, total: totalGuestCount })}
           </p>
         ) : null}
       </div>

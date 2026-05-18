@@ -38,7 +38,9 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ownerEmailByWeddingId, setOwnerEmailByWeddingId] = useState<Record<string, string>>({});
+  const [newPasswordByUserId, setNewPasswordByUserId] = useState<Record<string, string>>({});
   const [isSavingRoleByUserId, setIsSavingRoleByUserId] = useState<Record<string, boolean>>({});
+  const [isSavingPasswordByUserId, setIsSavingPasswordByUserId] = useState<Record<string, boolean>>({});
   const [isAssigningByWeddingId, setIsAssigningByWeddingId] = useState<Record<string, boolean>>({});
 
   const canManageRoles = currentRole === "SUPERADMIN";
@@ -153,6 +155,38 @@ export default function AdminPage() {
     }
   };
 
+  const onResetUserPassword = async (userId: string) => {
+    if (!canManageRoles) return;
+
+    const password = (newPasswordByUserId[userId] ?? "").trim();
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setIsSavingPasswordByUserId((prev) => ({ ...prev, [userId]: true }));
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Failed to update password");
+      }
+
+      setNewPasswordByUserId((prev) => ({ ...prev, [userId]: "" }));
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Failed to update password");
+    } finally {
+      setIsSavingPasswordByUserId((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-5 bg-zinc-50 p-6">
       <header className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -235,16 +269,39 @@ export default function AdminPage() {
                   <p className="truncate text-sm font-semibold text-zinc-900">{user.name}</p>
                   <p className="truncate text-xs text-zinc-600">{user.email}</p>
                 </div>
-                <select
-                  value={user.role}
-                  onChange={(event) => void onUpdateUserRole(user.id, event.target.value as AppRole)}
-                  disabled={!canManageRoles || isSavingRoleByUserId[user.id]}
-                  className="h-9 rounded-md border border-zinc-300 px-2 text-sm disabled:opacity-50"
-                >
-                  <option value="USER">USER</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="SUPERADMIN">SUPERADMIN</option>
-                </select>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <select
+                    value={user.role}
+                    onChange={(event) => void onUpdateUserRole(user.id, event.target.value as AppRole)}
+                    disabled={!canManageRoles || isSavingRoleByUserId[user.id]}
+                    className="h-9 rounded-md border border-zinc-300 px-2 text-sm disabled:opacity-50"
+                  >
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SUPERADMIN">SUPERADMIN</option>
+                  </select>
+                  <input
+                    type="password"
+                    value={newPasswordByUserId[user.id] ?? ""}
+                    onChange={(event) =>
+                      setNewPasswordByUserId((prev) => ({
+                        ...prev,
+                        [user.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="New password (min 8)"
+                    disabled={!canManageRoles || isSavingPasswordByUserId[user.id]}
+                    className="h-9 w-52 rounded-md border border-zinc-300 px-3 text-sm disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void onResetUserPassword(user.id)}
+                    disabled={!canManageRoles || isSavingPasswordByUserId[user.id] || (newPasswordByUserId[user.id] ?? "").trim().length < 8}
+                    className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {isSavingPasswordByUserId[user.id] ? "Saving..." : "Reset password"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

@@ -234,7 +234,7 @@
     "filterAll": "Wszyscy",
     "filterUnseated": "Nieusadzeni",
     "filterAssigned": "Usadzeni",
-    "showing": "Wyświetlono {{count}}",
+    "showing": "Wyświetlono {{count}} z {{total}}",
     "loading": "Ładowanie gości...",
     "empty": "Brak gości dla tego filtra.",
     "tableFallback": "Stół",

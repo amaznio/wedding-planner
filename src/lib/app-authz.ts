@@ -34,7 +34,7 @@ function hasAtLeastRole(role: AppRole, minRole: AppRole) {
   return ROLE_RANK[role] >= ROLE_RANK[minRole];
 }
 
-async function resolveRoleForSession(session: AuthSession): Promise<AppRole> {
+export async function resolveAppRoleForSession(session: AuthSession): Promise<AppRole> {
   const bootstrapRole = getBootstrapRole(session.user.email);
   if (bootstrapRole) {
     return bootstrapRole;
@@ -64,7 +64,7 @@ export async function requireAppRole(minRole: AppRole): Promise<AppRoleAuthResul
     };
   }
 
-  const role = await resolveRoleForSession(session);
+  const role = await resolveAppRoleForSession(session);
   if (!hasAtLeastRole(role, minRole)) {
     return {
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
@@ -78,4 +78,8 @@ export async function requireAppRole(minRole: AppRole): Promise<AppRoleAuthResul
     session,
     role,
   };
+}
+
+export function hasAtLeastAppRole(role: AppRole, minRole: AppRole) {
+  return hasAtLeastRole(role, minRole);
 }
