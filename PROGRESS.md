@@ -5283,3 +5283,67 @@ Phase 241-HF1 - Guest panel counters show guest totals (not row items)
 ## Next Recommended Step
 
 - Run a quick UX wording check with product stakeholders to confirm `Showing X of Y` / `Wyświetlono X z Y` is the preferred phrasing in this panel.
+
+## Current Phase
+
+Phase 241-HF2 - Group manager counters aligned with effective guest grouping
+
+## Completed Work
+
+- Updated group management sheet counting to use effective group membership (same logic as guest-list filtering).
+- Group counters now include guests inheriting group from linked host (`plusOneHostGuestId`) via `resolveEffectiveGuestGroup`.
+- Aligned related group-sheet sections with the same logic:
+  - selected group members list count
+  - add-guests pool and its total counter
+
+## Files Changed
+
+- `src/features/seating-editor/components/GroupsManager.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Existing repository lint baseline issues remain unchanged and outside this hotfix scope.
+
+## Next Recommended Step
+
+- Run a quick UI verification pass in the seating plan guest panel:
+  - compare group badge counts in Group Manager with filtered guest totals for each group,
+  - confirm linked/inherited guests are counted consistently across both views.
+
+## Current Phase
+
+Phase 241-HF3 - Seating plan Add Guest modal field expansion
+
+## Completed Work
+
+- Expanded the seating plan Add Guest modal to expose more configurable guest fields at creation time.
+- Added new form controls in the modal:
+  - `sex` (`male`, `female`, `unknown`)
+  - `ageCategory` (`adult`, `teen`, `child`, `small_child`, `toddler_0_2`)
+- Wired these values through the existing create flow:
+  - updated `GuestPanel` create payload contract
+  - updated page-level `handleCreateGuest` to forward selected values to `POST /api/seating-plans/[planId]/guests`
+- Preserved existing defaults for quick-add paths (`unknown` + `adult`) when these fields are not provided.
+
+## Files Changed
+
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Existing repository lint baseline issues remain unchanged and outside this hotfix scope.
+
+## Next Recommended Step
+
+- Apply the same expanded field set to the mobile add-guest sheet for parity with the desktop modal.

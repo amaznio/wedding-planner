@@ -67,6 +67,8 @@ type Guest = {
     tableId: string;
   } | null;
 };
+type GuestSex = "male" | "female" | "unknown";
+type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
 
 type PairRowStatus = "assigned" | "unseated" | "split";
 
@@ -115,6 +117,8 @@ type GuestPanelProps = {
   onSelectGuest: (guestId: string | null) => void;
   onCreateGuest: (payload: {
     name: string;
+    sex?: GuestSex;
+    ageCategory?: GuestAgeCategory;
     groupId?: string | null;
     notes?: string;
   }) => Promise<void>;
@@ -183,6 +187,8 @@ export function GuestPanel({
   const [tableFilter, setTableFilter] = useState<string>("all");
   const [newGuestName, setNewGuestName] = useState("");
   const [newGuestGroupId, setNewGuestGroupId] = useState<string>("");
+  const [newGuestSex, setNewGuestSex] = useState<GuestSex>("unknown");
+  const [newGuestAgeCategory, setNewGuestAgeCategory] = useState<GuestAgeCategory>("adult");
   const [newGuestNotes, setNewGuestNotes] = useState("");
   const [isAddGuestDialogOpen, setIsAddGuestDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -404,11 +410,15 @@ export function GuestPanel({
     try {
       await onCreateGuest({
         name: trimmed,
+        sex: newGuestSex,
+        ageCategory: newGuestAgeCategory,
         groupId: newGuestGroupId.trim() ? newGuestGroupId : null,
         notes: newGuestNotes.trim() ? newGuestNotes.trim() : undefined,
       });
       setNewGuestName("");
       setNewGuestGroupId("");
+      setNewGuestSex("unknown");
+      setNewGuestAgeCategory("adult");
       setNewGuestNotes("");
       setIsAddGuestDialogOpen(false);
     } catch {
@@ -690,6 +700,34 @@ export function GuestPanel({
                           {group.name}
                         </option>
                       ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.sex")}</label>
+                    <select
+                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+                      value={newGuestSex}
+                      onChange={(event) => setNewGuestSex(event.target.value as GuestSex)}
+                    >
+                      <option value="male">{t("guestPanel.sexMale")}</option>
+                      <option value="female">{t("guestPanel.sexFemale")}</option>
+                      <option value="unknown">{t("guestPanel.sexUnknown")}</option>
+                    </select>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.ageCategory")}</label>
+                    <select
+                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+                      value={newGuestAgeCategory}
+                      onChange={(event) =>
+                        setNewGuestAgeCategory(event.target.value as GuestAgeCategory)
+                      }
+                    >
+                      <option value="adult">{t("guestPanel.ageCategoryAdult")}</option>
+                      <option value="teen">{t("guestPanel.ageCategoryTeen")}</option>
+                      <option value="child">{t("guestPanel.ageCategoryChild")}</option>
+                      <option value="small_child">{t("guestPanel.ageCategorySmallChild")}</option>
+                      <option value="toddler_0_2">{t("guestPanel.ageCategoryToddler")}</option>
                     </select>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-start">

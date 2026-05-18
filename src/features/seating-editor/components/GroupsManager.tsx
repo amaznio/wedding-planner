@@ -3,11 +3,13 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
+import { resolveEffectiveGuestGroup } from "../lib/guest-group";
 
 type Guest = {
   id: string;
   name: string;
   groupId: string | null;
+  plusOneHostGuestId?: string | null;
   group: {
     id: string;
     name: string;
@@ -91,38 +93,49 @@ export function GroupsManager({
     () => groups.find((group) => group.id === selectedGroupId) ?? null,
     [groups, selectedGroupId],
   );
+  const guestsById = useMemo<Record<string, Guest>>(
+    () => Object.fromEntries(guests.map((guest) => [guest.id, guest])),
+    [guests],
+  );
 
   const guestCountByGroupId = useMemo(() => {
     const next: Record<string, number> = {};
     for (const guest of guests) {
-      if (!guest.groupId) continue;
-      next[guest.groupId] = (next[guest.groupId] ?? 0) + 1;
+      const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
+      if (!effectiveGroup) continue;
+      next[effectiveGroup.id] = (next[effectiveGroup.id] ?? 0) + 1;
     }
     return next;
-  }, [guests]);
+  }, [guests, guestsById]);
 
   const guestsInSelectedGroup = useMemo(() => {
     if (!selectedGroupId) return [];
     return guests
-      .filter((guest) => guest.groupId === selectedGroupId)
+      .filter(
+        (guest) => resolveEffectiveGuestGroup(guest, guestsById)?.id === selectedGroupId,
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [guests, selectedGroupId]);
+  }, [guests, guestsById, selectedGroupId]);
 
   const guestsOutsideSelectedGroup = useMemo(() => {
     if (!selectedGroupId) return [];
     const query = addGuestsQuery.trim().toLowerCase();
     return guests
-      .filter((guest) => guest.groupId === null)
+      .filter(
+        (guest) => resolveEffectiveGuestGroup(guest, guestsById)?.id !== selectedGroupId,
+      )
       .filter((guest) =>
         query.length === 0 ? true : guest.name.toLowerCase().includes(query),
       )
       .sort((a, b) => sortGuestsByName(a, b, addGuestsSortBy));
-  }, [addGuestsQuery, addGuestsSortBy, guests, selectedGroupId]);
+  }, [addGuestsQuery, addGuestsSortBy, guests, guestsById, selectedGroupId]);
 
   const totalOutsideSelectedGroup = useMemo(() => {
     if (!selectedGroupId) return 0;
-    return guests.filter((guest) => guest.groupId === null).length;
-  }, [guests, selectedGroupId]);
+    return guests.filter(
+      (guest) => resolveEffectiveGuestGroup(guest, guestsById)?.id !== selectedGroupId,
+    ).length;
+  }, [guests, guestsById, selectedGroupId]);
 
   const handleCreateGroup = async () => {
     const trimmed = newGroupName.trim();

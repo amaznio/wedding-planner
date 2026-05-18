@@ -1435,6 +1435,8 @@ export function SeatingPlanEditorScreen() {
 
   const handleCreateGuest = useCallback(async (payload: {
     name: string;
+    sex?: GuestSex;
+    ageCategory?: GuestAgeCategory;
     groupId?: string | null;
     notes?: string;
   }) => {
@@ -1446,8 +1448,8 @@ export function SeatingPlanEditorScreen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: trimmedName,
-        sex: "unknown",
-        ageCategory: "adult",
+        sex: payload.sex ?? "unknown",
+        ageCategory: payload.ageCategory ?? "adult",
         groupId: payload.groupId ?? undefined,
         notes: payload.notes?.trim() ? payload.notes.trim() : undefined,
       }),
