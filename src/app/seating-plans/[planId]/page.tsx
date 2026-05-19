@@ -13,6 +13,7 @@ import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
 } from "@/features/seating-editor/lib/group-move";
+import { formatTableAssignmentsExport } from "@/features/seating-editor/lib/table-assignment-export";
 import {
   CompositeEventTransport,
   HttpEventTransport,
@@ -1682,6 +1683,34 @@ export function SeatingPlanEditorScreen() {
     URL.revokeObjectURL(url);
   }, [guests]);
 
+  const handleExportTableList = useCallback(() => {
+    const text = formatTableAssignmentsExport(
+      plan.tables,
+      guests.map((guest) => ({
+        name: guest.isPlaceholderPlusOne
+          ? t("guestPanel.plusOnePlaceholderName")
+          : guest.name,
+        assignment: guest.assignment,
+      })),
+      locale,
+    );
+    const sanitizedPlanName = plan.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const filename = `seating-plan-${sanitizedPlanName || "plan"}-tables.txt`;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [guests, locale, plan.name, plan.tables, t]);
+
   const handleUpdateGuest = useCallback(async (
     guestId: string,
     payload: {
@@ -2915,6 +2944,7 @@ export function SeatingPlanEditorScreen() {
             onOpenGroupsManager={() => setDesktopGroupsManagerOpen(true)}
             onOpenDataTools={() => setDesktopDataToolsOpen(true)}
             onExportGuests={handleExportGuestsCsv}
+            onExportTableList={handleExportTableList}
             onOpenLegend={handleOpenLegend}
             onOpenSettings={() => setDesktopPlanSettingsOpen(true)}
             linkingSourceGuestId={linkingSourceGuestId}

@@ -187,6 +187,7 @@
     "export": "Eksportuj",
     "importCsv": "Import CSV",
     "exportCsv": "Eksport CSV",
+    "exportTableList": "Eksport listy stołów",
     "manageGroups": "Zarządzaj grupami",
     "guestCountLabel": "gości",
     "unseatedCountLabel": "nieusadzonych",
@@ -284,7 +285,7 @@
     "startLinking": "Rozpocznij łączenie",
     "addPlusOne": "Dodaj osobę towarzyszącą",
     "removePlusOne": "Usuń osobę towarzyszącą",
-    "plusOnePlaceholderName": "Osoba Tow.",
+    "plusOnePlaceholderName": "Osoba Towarzysząca",
     "relationshipType": {
       "couple": "Para",
       "family": "Rodzina",

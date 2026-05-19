@@ -187,6 +187,7 @@
     "export": "Export",
     "importCsv": "Import CSV",
     "exportCsv": "Export CSV",
+    "exportTableList": "Export table list",
     "manageGroups": "Manage groups",
     "guestCountLabel": "guests",
     "unseatedCountLabel": "unseated",

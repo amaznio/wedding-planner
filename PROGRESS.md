@@ -5347,3 +5347,54 @@ Phase 241-HF3 - Seating plan Add Guest modal field expansion
 ## Next Recommended Step
 
 - Apply the same expanded field set to the mobile add-guest sheet for parity with the desktop modal.
+
+## Current Phase
+
+Phase 226 - Table-ordered guest export for vendors
+
+## Completed Work
+
+- Added a pure table-assignment export formatter that:
+  - sorts tables by label (A-Z)
+  - lists only assigned guests
+  - orders guest names by seat number within each table
+  - outputs plain text sections in vendor-friendly format
+- Added unit tests for formatter behavior:
+  - table ordering
+  - seat-number ordering
+  - unassigned guest exclusion
+  - empty-table handling
+- Added a new seating-plan export action in the guest panel menu:
+  - existing `Export CSV` remains unchanged
+  - new `Export table list` downloads `.txt` built from current client state
+- Wired export in the seating plan page to generate:
+  - `seating-plan-{plan-name}-tables.txt`
+- Added i18n copy for the new menu action in EN/PL.
+
+## Files Changed
+
+- `src/features/seating-editor/lib/table-assignment-export.ts` (new)
+- `src/features/seating-editor/lib/table-assignment-export.test.ts` (new)
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due to pre-existing repo issues not introduced in this phase)
+- `pnpm i18n:audit` (fails due to pre-existing hardcoded text in `src/app/page.tsx`)
+
+## Known Issues
+
+- Repository has existing lint/type policy violations unrelated to this phase (e.g. pre-existing `no-explicit-any` in wedding guest API routes and React hook lint issues in seating page).
+- `i18n:audit` currently fails on pre-existing hardcoded strings in `src/app/page.tsx`.
+
+## Next Recommended Step
+
+- Run a quick manual verification in the seating editor:
+  - open a plan with assigned guests
+  - use `More -> Export table list`
+  - open the `.txt` in Google Docs/Sheets and verify table + seat-order output.
