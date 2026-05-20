@@ -78,6 +78,10 @@ function normalizeTableLabel(label: string, index: number): string {
   return trimmed.length > 0 ? trimmed : `Table ${index + 1}`;
 }
 
+function getEmptySeatLabel(locale: SeatingExportOptions["locale"]) {
+  return locale === "pl" ? "(puste)" : "(empty)";
+}
+
 function getPageSize(paper: SeatingExportOptions["paper"], orientation: SeatingExportOptions["orientation"]) {
   const base = PAGE_SIZE_BY_PAPER[paper];
   if (orientation === "landscape") {
@@ -225,13 +229,14 @@ export function buildSeatingPrintModel({
 
   const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
   const detailTables = [...tables].sort((a, b) => collator.compare(a.label, b.label));
+  const emptySeatLabel = getEmptySeatLabel(options.locale);
 
   const details = detailTables.map((table) => {
     const legend: PrintLegendItem[] = table.seats
       .filter((seat) => (options.includeEmptySeats ? true : seat.occupied))
       .map((seat) => ({
         seatNumber: seat.seatNumber,
-        guestName: seat.guest?.fullName ?? "(empty)",
+        guestName: seat.guest?.fullName ?? emptySeatLabel,
       }));
 
     return {
