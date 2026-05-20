@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 226 - Autosave toggle (user-controlled) (completed)
+Phase 229 - Seat search topbar single-line enforcement (desktop absolute-center + tablet fallback) (completed)
 
 ## Completed Phases
 
@@ -238,8 +238,78 @@ Phase 226 - Autosave toggle (user-controlled) (completed)
 - Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+)
 - Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event contract
 - Phase 226 - Autosave toggle (user-controlled)
+- Phase 227 - Shared seat search + pulse highlight (editor + public)
+- Phase 228 - Seat search placement refinement (topbar-centered desktop + mobile search sheet)
+- Phase 229 - Seat search topbar single-line enforcement (desktop absolute-center + tablet fallback)
 
 ## Completed Work
+
+- Implemented Phase 229 seat-search topbar single-line enforcement:
+  - desktop:
+    - switched from 3-column grid to a single-line flex topbar
+    - anchored search in the visual center using absolute positioning (`left-1/2` + translate)
+    - prevents search from dropping into a pseudo-second-row layout
+  - tablet fallback:
+    - uses inline (non-absolute) search block for tighter widths to avoid overlap
+  - mobile behavior from Phase 228 retained:
+    - search trigger button in top bar opens top-sheet search panel
+  - files changed:
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+  - known issues:
+    - none identified in this phase
+  - next recommended step:
+    - visual QA on 1024–1280 widths with long plan names and long user names
+
+- Implemented Phase 228 seat search placement refinement:
+  - desktop:
+    - moved seat search from secondary row into the main top toolbar center column
+    - kept live match feedback (`N matches` / `No matches`) next to the field
+    - removed the separate search bar underneath the top row
+  - mobile:
+    - replaced inline always-visible search row with a dedicated search trigger button in the top bar
+    - added a top sheet search panel (different mobile interaction pattern) with input + match feedback
+  - files changed:
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+  - known issues:
+    - none introduced in this phase
+  - next recommended step:
+    - validate spacing/overflow on very long plan names and narrow tablet widths, then tune center-column min/max width if needed
+
+- Implemented Phase 227 shared seat search + pulse highlight (editor + public):
+  - added shared top-toolbar seat search UX (desktop + mobile) with result feedback:
+    - query input in `SeatingToolbar` visible in edit and read-only modes
+    - result feedback shows `N matches` or `No matches` for non-empty queries
+  - added local client-side seat highlight derivation in editor screen:
+    - computes `highlightedSeats: Record<tableId, seatNumber[]>` from assigned guests whose names match query (case-insensitive)
+    - keeps match scope to assigned seats only
+  - wired highlights through render tree:
+    - `SeatingPlanEditorScreen` -> `SeatingCanvas` -> `RectTable` -> `Seat`
+    - supports public visitors/read-only and normal editor flows
+  - added additive pulse highlight ring on matching seats:
+    - does not replace selected/drop/conflict/table state visuals
+    - uses `motion-safe:animate-ping` and `motion-reduce:animate-none` for reduced-motion accessibility
+  - files changed:
+    - `src/app/seating-plans/[planId]/page.tsx`
+    - `src/features/seating-editor/components/SeatingToolbar.tsx`
+    - `src/features/seating-editor/components/SeatingCanvas.tsx`
+    - `src/features/seating-editor/components/RectTable.tsx`
+    - `src/features/seating-editor/components/Seat.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm i18n:audit` (fails on pre-existing hardcoded text in `src/app/page.tsx`)
+  - known issues:
+    - `pnpm i18n:audit` currently fails due to existing hardcoded homepage strings unrelated to this phase
+  - next recommended step:
+    - Phase 228: add keyboard result navigation (`Enter`/`Shift+Enter`) to cycle matched seats and optionally center view on active result
 
 - Implemented Phase 225 non-blocking assignment mutation queue + collaboration-ready event contract:
   - added assignment collaboration/event primitives:

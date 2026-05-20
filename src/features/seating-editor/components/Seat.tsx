@@ -17,6 +17,7 @@ type SeatProps = {
   isConflict?: boolean;
   isDropTarget?: boolean;
   isLinkedDropPreview?: boolean;
+  isSearchMatch?: boolean;
   isDragActive?: boolean;
   enableSeatDrag?: boolean;
   onClick?: (seatNumber: number, clientX: number, clientY: number) => void;
@@ -59,6 +60,7 @@ function SeatComponent({
   isConflict = false,
   isDropTarget = false,
   isLinkedDropPreview = false,
+  isSearchMatch = false,
   isDragActive = false,
   enableSeatDrag = false,
   onClick,
@@ -157,6 +159,12 @@ function SeatComponent({
           }`}
           style={seatStyle}
         >
+          {isSearchMatch ? (
+            <>
+              <span className="pointer-events-none absolute inset-[-4px] rounded-full border-2 border-violet-400/70 motion-safe:animate-ping motion-reduce:animate-none" />
+              <span className="pointer-events-none absolute inset-[-4px] rounded-full border-2 border-violet-500" />
+            </>
+          ) : null}
           {initials ?? seatNumber}
         </button>
       </TooltipTrigger>
@@ -187,6 +195,7 @@ function areSeatPropsEqual(prev: SeatProps, next: SeatProps) {
     prev.isConflict === next.isConflict &&
     prev.isDropTarget === next.isDropTarget &&
     prev.isLinkedDropPreview === next.isLinkedDropPreview &&
+    prev.isSearchMatch === next.isSearchMatch &&
     prev.isDragActive === next.isDragActive &&
     prev.enableSeatDrag === next.enableSeatDrag
   );

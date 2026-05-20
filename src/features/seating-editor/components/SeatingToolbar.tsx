@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, ChevronDown, Loader2, MousePointer2, OctagonAlert, Pencil, Settings } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, Loader2, MousePointer2, OctagonAlert, Pencil, Search, Settings } from "lucide-react";
 
 import { UserMenu } from "@/components/auth/UserMenu";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,12 @@ type SeatingToolbarProps = {
   onPlanNameChange: (name: string) => void;
   onSave: () => void;
   onOpenPlanSettings?: () => void;
+  seatSearchQuery: string;
+  onSeatSearchQueryChange: (value: string) => void;
+  seatSearchMeta?: {
+    matchCount: number;
+    hasQuery: boolean;
+  };
   readOnly?: boolean;
   viewingAsLabel?: string | null;
   anonIdentity?: {
@@ -54,6 +60,9 @@ export function SeatingToolbar({
   onPlanNameChange,
   onSave,
   onOpenPlanSettings,
+  seatSearchQuery,
+  onSeatSearchQueryChange,
+  seatSearchMeta,
   readOnly = false,
   viewingAsLabel = null,
   anonIdentity = null,
@@ -65,6 +74,7 @@ export function SeatingToolbar({
   const [isDesktopEditingTitle, setIsDesktopEditingTitle] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isMobileAnonOpen, setIsMobileAnonOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const titleWidthCh = Math.max(12, Math.min(48, planName.trim().length + 2));
   const statusText =
@@ -101,8 +111,8 @@ export function SeatingToolbar({
 
   return (
     <header className="border-b border-zinc-200/90 bg-white/95 px-3 py-1.5 shadow-[0_1px_0_rgba(24,24,27,0.04)] backdrop-blur md:px-4 md:py-2">
-      <div className="hidden h-12 items-center gap-3 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="relative hidden h-12 items-center justify-between gap-3 md:flex">
+        <div className="flex min-w-0 items-center gap-2 pr-4">
             <Button
               type="button"
               variant="outline"
@@ -155,8 +165,48 @@ export function SeatingToolbar({
             </>
           )}
         </div>
+        <div className="pointer-events-none absolute left-1/2 top-1/2 hidden w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 px-4 lg:block">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-2">
+            <div className="relative w-full">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Input
+                value={seatSearchQuery}
+                onChange={(event) => onSeatSearchQueryChange(event.target.value)}
+                className="h-8 border-zinc-200 bg-white pl-8 text-sm"
+                placeholder={t("toolbar.seatSearchPlaceholder")}
+                aria-label={t("toolbar.seatSearchPlaceholder")}
+              />
+            </div>
+            {seatSearchMeta?.hasQuery ? (
+              <p className="shrink-0 text-xs font-medium text-zinc-600">
+                {seatSearchMeta.matchCount > 0
+                  ? t("toolbar.seatSearchMatches", { count: seatSearchMeta.matchCount })
+                  : t("toolbar.seatSearchNoMatches")}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex min-w-0 items-center gap-2 lg:hidden">
+          <div className="relative w-full">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Input
+              value={seatSearchQuery}
+              onChange={(event) => onSeatSearchQueryChange(event.target.value)}
+              className="h-8 border-zinc-200 bg-white pl-8 text-sm"
+              placeholder={t("toolbar.seatSearchPlaceholder")}
+              aria-label={t("toolbar.seatSearchPlaceholder")}
+            />
+          </div>
+          {seatSearchMeta?.hasQuery ? (
+            <p className="shrink-0 text-xs font-medium text-zinc-600">
+              {seatSearchMeta.matchCount > 0
+                ? t("toolbar.seatSearchMatches", { count: seatSearchMeta.matchCount })
+                : t("toolbar.seatSearchNoMatches")}
+            </p>
+          ) : null}
+        </div>
 
-        <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-2 pl-4">
           {statusText ? (
             <p className={`inline-flex items-center text-xs font-medium ${statusToneClass}`}>
               {saveState === "saving" ? (
@@ -334,6 +384,15 @@ export function SeatingToolbar({
             ) : null}
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              aria-label={t("toolbar.seatSearchPlaceholder")}
+              onClick={() => setIsMobileSearchOpen(true)}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
             {!readOnly ? (
               <Button
                 type="button"
@@ -476,6 +535,33 @@ export function SeatingToolbar({
                 </div>
               </div>
               <p className="text-[11px] text-zinc-500">{t("toolbar.anonSessionNotice")}</p>
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Sheet open={isMobileSearchOpen} onOpenChange={setIsMobileSearchOpen}>
+          <SheetContent side="top" className="h-auto p-4">
+            <SheetTitle className="text-left text-sm font-semibold text-zinc-900">
+              {t("toolbar.seatSearchPlaceholder")}
+            </SheetTitle>
+            <div className="mt-3 space-y-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <Input
+                  value={seatSearchQuery}
+                  onChange={(event) => onSeatSearchQueryChange(event.target.value)}
+                  className="h-9 border-zinc-200 bg-white pl-8 text-sm"
+                  placeholder={t("toolbar.seatSearchPlaceholder")}
+                  aria-label={t("toolbar.seatSearchPlaceholder")}
+                  autoFocus
+                />
+              </div>
+              {seatSearchMeta?.hasQuery ? (
+                <p className="text-xs font-medium text-zinc-600">
+                  {seatSearchMeta.matchCount > 0
+                    ? t("toolbar.seatSearchMatches", { count: seatSearchMeta.matchCount })
+                    : t("toolbar.seatSearchNoMatches")}
+                </p>
+              ) : null}
             </div>
           </SheetContent>
         </Sheet>

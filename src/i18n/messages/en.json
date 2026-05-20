@@ -99,7 +99,10 @@
     "cursorColor": "Cursor color",
     "anonSessionNotice": "Applies only to this browser tab and resets when closed.",
     "editTitle": "Edit title",
-    "doneEditingTitle": "Done editing title"
+    "doneEditingTitle": "Done editing title",
+    "seatSearchPlaceholder": "Search seats by guest name",
+    "seatSearchMatches": "{{count}} matches",
+    "seatSearchNoMatches": "No matches"
   },
   "editor": {
     "loadingPlan": "Loading seating plan...",

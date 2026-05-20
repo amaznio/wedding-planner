@@ -252,6 +252,7 @@ export function SeatingPlanEditorScreen() {
     notes: string;
   }>({ name: "", sex: "unknown", ageCategory: "adult", groupId: null, notes: "" });
   const [showGroupColors, setShowGroupColors] = useState(false);
+  const [seatSearchQuery, setSeatSearchQuery] = useState("");
   const [isAutosaveEnabled, setIsAutosaveEnabled] = useState(() => {
     if (typeof window === "undefined") return true;
     return window.localStorage.getItem(AUTO_SAVE_STORAGE_KEY) !== "false";
@@ -460,6 +461,30 @@ export function SeatingPlanEditorScreen() {
     }
     return next;
   }, [relationships]);
+  const normalizedSeatSearchQuery = seatSearchQuery.trim().toLowerCase();
+  const highlightedSeats = useMemo(() => {
+    if (!normalizedSeatSearchQuery) return {} as Record<string, number[]>;
+    const next: Record<string, number[]> = {};
+    for (const guest of guests) {
+      if (!guest.assignment) continue;
+      if (!guest.name.toLowerCase().includes(normalizedSeatSearchQuery)) continue;
+      const tableHighlights = next[guest.assignment.tableId] ?? [];
+      tableHighlights.push(guest.assignment.seatNumber);
+      next[guest.assignment.tableId] = tableHighlights;
+    }
+    return next;
+  }, [guests, normalizedSeatSearchQuery]);
+  const seatSearchMatchCount = useMemo(
+    () => Object.values(highlightedSeats).reduce((sum, seats) => sum + seats.length, 0),
+    [highlightedSeats],
+  );
+  const seatSearchMeta = useMemo(
+    () => ({
+      matchCount: seatSearchMatchCount,
+      hasQuery: normalizedSeatSearchQuery.length > 0,
+    }),
+    [normalizedSeatSearchQuery.length, seatSearchMatchCount],
+  );
 
   const loadGuests = useCallback(
     async (options?: { showLoading?: boolean; surfaceErrors?: boolean }) => {
@@ -2415,6 +2440,9 @@ export function SeatingPlanEditorScreen() {
             lastSavedLabel={null}
             onPlanNameChange={() => {}}
             onSave={() => {}}
+            seatSearchQuery={seatSearchQuery}
+            onSeatSearchQueryChange={setSeatSearchQuery}
+            seatSearchMeta={seatSearchMeta}
             readOnly
             viewingAsLabel={viewingAsLabel}
             anonIdentity={anonIdentity}
@@ -2450,6 +2478,7 @@ export function SeatingPlanEditorScreen() {
               remoteCursors={remoteCursors}
               onPointerPresenceChange={handlePointerPresenceChange}
               mobileMode={!isDesktopViewport}
+              highlightedSeats={highlightedSeats}
               readOnly
             />
           </div>
@@ -2471,6 +2500,9 @@ export function SeatingPlanEditorScreen() {
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
           onOpenPlanSettings={() => setMobileMoreView("settings")}
+          seatSearchQuery={seatSearchQuery}
+          onSeatSearchQueryChange={setSeatSearchQuery}
+          seatSearchMeta={seatSearchMeta}
           viewingAsLabel={viewingAsLabel}
           anonIdentity={anonIdentity}
         />
@@ -2511,6 +2543,7 @@ export function SeatingPlanEditorScreen() {
             relationshipsByGuestId={relationshipsByGuestId}
             remoteCursors={remoteCursors}
             onPointerPresenceChange={handlePointerPresenceChange}
+            highlightedSeats={highlightedSeats}
             mobileMode
           />
           <Button
@@ -3036,6 +3069,9 @@ export function SeatingPlanEditorScreen() {
           onPlanNameChange={updatePlanName}
           onSave={handleSave}
           onOpenPlanSettings={() => setDesktopPlanSettingsOpen(true)}
+          seatSearchQuery={seatSearchQuery}
+          onSeatSearchQueryChange={setSeatSearchQuery}
+          seatSearchMeta={seatSearchMeta}
           viewingAsLabel={viewingAsLabel}
           anonIdentity={anonIdentity}
         />
@@ -3097,6 +3133,7 @@ export function SeatingPlanEditorScreen() {
               enableSeatDrag={isDesktopViewport}
               onSeatGuestDragStart={startGuestDrag}
               onSeatGuestDragEnd={endGuestDrag}
+              highlightedSeats={highlightedSeats}
               onGuestDropToSeat={dropGuestOnSeat}
               onGuestDropToTable={dropGuestOnTable}
               pairSidePreference={

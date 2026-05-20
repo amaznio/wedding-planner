@@ -33,6 +33,7 @@ type RectTableProps = {
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
   linkedDropPreviewSeatNumbers?: number[];
+  highlightedSeatNumbers?: number[];
   isDragActive?: boolean;
   enableTableDrag?: boolean;
   enableSeatDrag?: boolean;
@@ -70,6 +71,7 @@ function RectTableComponent({
   conflictSeatNumber,
   dropTargetSeatNumber,
   linkedDropPreviewSeatNumbers = [],
+  highlightedSeatNumbers = [],
   isDragActive = false,
   enableTableDrag = true,
   enableSeatDrag = false,
@@ -269,6 +271,7 @@ function RectTableComponent({
             isLinkedDropPreview={linkedDropPreviewSeatNumbers.includes(
               seat.seatNumber,
             )}
+            isSearchMatch={highlightedSeatNumbers.includes(seat.seatNumber)}
             isDragActive={isDragActive}
             enableSeatDrag={enableSeatDrag}
             onClick={(seatNumber, clientX, clientY) =>
@@ -393,6 +396,7 @@ function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
       prev.linkedDropPreviewSeatNumbers,
       next.linkedDropPreviewSeatNumbers,
     ) &&
+    areNumberArraysEqual(prev.highlightedSeatNumbers, next.highlightedSeatNumbers) &&
     areSeatOccupantsEqual(prev.seatOccupants, next.seatOccupants)
   );
 }

@@ -100,6 +100,7 @@ type SeatingCanvasProps = {
     lastMovementAt: number;
   }>;
   onPointerPresenceChange?: (x: number, y: number) => void;
+  highlightedSeats?: Record<string, number[]>;
 };
 
 export type SeatingCanvasHandle = {
@@ -140,6 +141,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   readOnly = false,
   remoteCursors = [],
   onPointerPresenceChange,
+  highlightedSeats = {},
 }, ref) {
   const { t } = useI18n();
   const relationshipTypeLabel: Record<SeatingRelationship["type"], string> = {
@@ -1156,6 +1158,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   : null
               }
               linkedDropPreviewSeatNumbers={linkedDragPreviewSeatsByTable[table.id] ?? []}
+              highlightedSeatNumbers={highlightedSeats[table.id] ?? []}
               isDragActive={isAnyGuestDragActive}
               enableTableDrag={enableTableDrag}
               enableSeatDrag={enableSeatDrag}

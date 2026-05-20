@@ -99,7 +99,10 @@
     "cursorColor": "Kolor kursora",
     "anonSessionNotice": "Dotyczy tylko tej karty przeglądarki i resetuje się po jej zamknięciu.",
     "editTitle": "Edytuj tytuł",
-    "doneEditingTitle": "Zakończ edycję tytułu"
+    "doneEditingTitle": "Zakończ edycję tytułu",
+    "seatSearchPlaceholder": "Szukaj miejsc po nazwie gościa",
+    "seatSearchMatches": "{{count}} wyników",
+    "seatSearchNoMatches": "Brak wyników"
   },
   "editor": {
     "loadingPlan": "Ładowanie planu...",
