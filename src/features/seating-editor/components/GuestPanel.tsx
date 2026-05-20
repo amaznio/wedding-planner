@@ -132,6 +132,7 @@ type GuestPanelProps = {
   onOpenDataTools?: () => void;
   onExportGuests?: () => void;
   onExportTableList?: () => void;
+  onExportPdf?: () => void;
   onOpenLegend?: () => void;
   onOpenSettings?: () => void;
   onGuestSelected?: (guestId: string | null) => void;
@@ -173,6 +174,7 @@ export function GuestPanel({
   onOpenDataTools,
   onExportGuests,
   onExportTableList,
+  onExportPdf,
   onOpenLegend,
   onOpenSettings,
   onGuestSelected,
@@ -641,6 +643,10 @@ export function GuestPanel({
                       <DropdownMenuItem onClick={onExportTableList} className="gap-2">
                         <Download className="h-4 w-4" />
                         {t("guestPanel.exportTableList")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onExportPdf} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        {t("guestPanel.exportPdf")}
                       </DropdownMenuItem>
                       <Separator className="my-1" />
                       <DropdownMenuItem onClick={onOpenGroupsManager} className="gap-2">

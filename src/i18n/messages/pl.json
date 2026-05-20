@@ -188,6 +188,7 @@
     "importCsv": "Import CSV",
     "exportCsv": "Eksport CSV",
     "exportTableList": "Eksport listy stołów",
+    "exportPdf": "Eksport PDF",
     "manageGroups": "Zarządzaj grupami",
     "guestCountLabel": "gości",
     "unseatedCountLabel": "nieusadzonych",
@@ -299,6 +300,27 @@
       "nearby": "Blisko",
       "same-table": "Ten sam stół"
     }
+  },
+  "exportPdf": {
+    "title": "Eksport planu do PDF",
+    "description": "Wygeneruj wersję do druku: podgląd sali i osobne strony dla stołów.",
+    "paper": "Format papieru",
+    "orientation": "Orientacja",
+    "landscape": "Pozioma",
+    "portrait": "Pionowa",
+    "includeEmptySeats": "Pokaż puste miejsca",
+    "includeEmptySeatsHelp": "Uwzględnij nieobsadzone miejsca na stronach stołów.",
+    "overviewShowSeats": "Pokaż miejsca na stronie podglądu",
+    "overviewShowSeatsHelp": "Domyślnie wyłączone dla czytelniejszego układu.",
+    "detailSeatLabels": "Etykiety miejsc na stronie stołu",
+    "labelNumber": "Numer miejsca",
+    "labelInitials": "Inicjały gościa",
+    "export": "Eksportuj PDF",
+    "exporting": "Eksportowanie...",
+    "successTitle": "Eksport PDF gotowy",
+    "successDescription": "Plik PDF został pobrany.",
+    "errorTitle": "Błąd eksportu PDF",
+    "errorDescription": "Nie udało się wygenerować pliku PDF."
   },
   "inspector": {
     "title": "Inspektor",

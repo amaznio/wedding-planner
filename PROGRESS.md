@@ -5398,3 +5398,609 @@ Phase 226 - Table-ordered guest export for vendors
   - open a plan with assigned guests
   - use `More -> Export table list`
   - open the `.txt` in Google Docs/Sheets and verify table + seat-order output.
+
+## Current Phase
+
+Phase 227 - Print-first seating PDF export (overview + per-table detail)
+
+## Completed Work
+
+- Added a dedicated seating export domain (`src/features/seating-export`) separated from editor UI:
+  - export options schema + query parsing
+  - print model types for pages/tables/seats/legend
+  - pure print-model builder that reuses existing geometry helpers:
+    - `getRectangleTableDimensions`
+    - `getSeatPositions`
+- Implemented server-side PDF generation (vector drawing via `pdf-lib`):
+  - overview page with full layout, table labels, occupancy/capacity
+  - one detail page per table with seat markers and numbered legend
+  - supports options for paper, orientation, empty-seat inclusion, overview seat visibility, and detail seat label mode
+- Added new API route:
+  - `GET /api/seating-plans/[planId]/export/pdf`
+  - validates options with Zod
+  - enforces `viewer` access via `requireSeatingPlanRole`
+  - fetches plan + guests/assignments from DB and returns `application/pdf`
+- Added editor UI integration:
+  - new `Export PDF` menu action in the desktop guest panel more-menu
+  - new shadcn-based `ExportPdfDialog` for export options
+  - client download flow with success/error toasts
+- Added i18n copy for EN/PL for export dialog and action labels.
+- Added print-model unit tests for key behaviors:
+  - legend seat ordering
+  - overview transform sanity
+
+## Files Changed
+
+- `package.json`
+- `pnpm-lock.yaml`
+- `src/app/api/seating-plans/[planId]/export/pdf/route.ts` (new)
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-editor/components/ExportPdfDialog.tsx` (new)
+- `src/features/seating-editor/components/GuestPanel.tsx`
+- `src/features/seating-export/schemas/export-options.schema.ts` (new)
+- `src/features/seating-export/types/print-model.ts` (new)
+- `src/features/seating-export/lib/build-print-model.ts` (new)
+- `src/features/seating-export/lib/build-print-model.test.ts` (new)
+- `src/features/seating-export/lib/pdf/build-pdf.ts` (new)
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm add pdf-lib` (pass)
+- `pnpm typecheck` (pass)
+- `node --test src/features/seating-export/lib/build-print-model.test.ts src/features/seating-editor/lib/table-assignment-export.test.ts` (fails in current repo setup: Node cannot execute `.ts` tests directly without a TS test runner/loader)
+
+## Known Issues
+
+- Existing repository test setup does not currently provide a TypeScript test runner for direct `node --test` execution of `.ts` files.
+- Overview rendering applies table rotation to table rectangles only; overview seat dots (if enabled) are drawn in unrotated local layout for now.
+
+## Next Recommended Step
+
+- Phase 228 - Export preview and pagination polish:
+  - add a dedicated export preview route/dialog panel that reuses the same print model,
+  - improve long-legend pagination (multi-column or spill-over pages),
+  - add end-to-end verification for 200-300 guest plans and A3/portrait variants.
+
+## Current Phase
+
+Phase 227-HF1 - PDF export observability + Unicode-safe text rendering
+
+## Completed Work
+
+- Added structured server-side error logging for seating PDF export failures:
+  - logs event `seating_pdf_export_failed`
+  - includes `requestId`, `planId`, route URL, error message, and stack
+- Added request correlation to API error responses:
+  - export route now returns `requestId` on 400/500 error payloads
+- Added client-side error diagnostics for failed PDF exports:
+  - logs `seating_pdf_export_request_failed` with status, requestId, planId, and options
+  - surfaces requestId in thrown error message to help correlate with server logs
+- Hardened PDF text drawing against Unicode encoding crashes in standard PDF fonts:
+  - added `toPdfSafeText()` in PDF builder
+  - if font encoding fails, text is normalized (diacritics stripped) and non-ASCII fallback applied
+  - avoids hard failure when guest/table names contain unsupported glyphs
+
+## Files Changed
+
+- `src/app/api/seating-plans/[planId]/export/pdf/route.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Standard font fallback may transliterate some non-ASCII characters in PDF output (to prevent export failure).
+- Full Unicode fidelity would require embedding a Unicode-capable font file in the export pipeline.
+
+## Next Recommended Step
+
+- Phase 227-HF2 - Unicode font embedding for PDF export:
+  - embed a Unicode-capable font (e.g. Noto Sans) in server PDF generation,
+  - keep transliteration fallback only as last-resort safety,
+  - verify Polish diacritics render correctly in table labels and guest legend.
+
+## Current Phase
+
+Phase 227-HF2 - Table-detail PDF layout quality overhaul (A4 landscape print polish)
+
+## Completed Work
+
+- Refactored PDF detail rendering to use computed layout boxes instead of ad-hoc coordinates.
+- Introduced dedicated layout helpers for detail pages:
+  - page/content/column bounds
+  - diagram fit/centering
+  - legend row capacity and multi-column splitting
+- Upgraded detail page visual design:
+  - compact top header with plan name, table name, occupancy/capacity, and export date
+  - two-column composition (large table diagram left, legend right)
+  - stronger table sizing and vertical centering
+  - larger seat circles and readable seat labels
+  - empty-seat visual distinction (lighter fill + cross marker)
+- Removed legend truncation behavior (`+ N more`) and replaced with dynamic multi-column legend so all entries render on page for typical capacities.
+- Added Unicode-capable font embedding for PDF text with `@pdf-lib/fontkit` + Noto Sans WOFF2 files from `@fontsource/noto-sans`, fixing Polish diacritics rendering.
+- Added tests for:
+  - legend column splitting
+  - all guests included in legend columns
+  - Polish names preserved in print model
+  - diagram placement fit sanity
+  - occupancy in print model
+
+## Files Changed
+
+- `package.json`
+- `pnpm-lock.yaml`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/pdf/detail-layout.ts` (new)
+- `src/features/seating-export/lib/pdf/detail-layout.test.ts` (new)
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm add @pdf-lib/fontkit @fontsource/noto-sans` (pass)
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Automated `.ts` test execution still depends on repository test-runner setup; type-level and static checks pass.
+- If future table capacities exceed practical A4 limits with very long names, further adaptive typography (or overflow continuation pages) may still be needed.
+
+## Next Recommended Step
+
+- Phase 227-HF3 - export preview parity + visual QA:
+  - add a preview surface that reuses exact export layout calculations,
+  - verify multi-language (EN/PL) long-name cases visually,
+  - finalize spacing/typography constants after print samples.
+
+## Current Phase
+
+Phase 227-HF3 - PDF export crash guard for font parsing (RangeError mitigation)
+
+## Completed Work
+
+- Hardened PDF font embedding against parser/runtime crashes (`RangeError: Index out of range`):
+  - switched preferred Noto Sans candidates from `.woff2` to `.woff` first
+  - keeps `.woff2` only as fallback candidates
+- Added robust runtime fallback path in PDF builder:
+  - if custom font registration/embedding fails, export falls back to standard Helvetica fonts
+  - logs event `seating_pdf_font_embed_failed_fallback_standard`
+- This prevents export endpoint crashes from bubbling as uncaught failures during font parsing.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- If fallback-to-standard-font path is used, full Polish diacritic fidelity may degrade.
+- Primary path still uses embedded Noto Sans and should preserve Polish characters when font parsing succeeds.
+
+## Next Recommended Step
+
+- Phase 227-HF4 - ship bundled `.ttf/.otf` font asset for PDF export to avoid subset/webfont parser variability in server runtime.
+
+## Current Phase
+
+Phase 227-HF4 - Localized PDF detail output + table label restoration + stronger Unicode font fallback
+
+## Completed Work
+
+- Restored table label rendering directly on the detail-page table diagram body.
+- Added locale propagation from UI to export API via query param (`locale=en|pl`).
+- Extended export options schema/model with locale.
+- Localized PDF output labels and date formatting by locale:
+  - overview title
+  - guest legend title
+  - exported label in header
+  - localized export date format
+- Localized plus-one placeholder in print model (`Plus One` / `Osoba Towarzysząca`).
+- Improved font candidate selection for Unicode/Polish reliability:
+  - tries latin-ext font candidates first
+  - adds OS TTF fallbacks (Windows Arial / Linux DejaVu Sans)
+  - keeps existing standard-font hard fallback if all embedding fails
+
+## Files Changed
+
+- `src/features/seating-export/types/print-model.ts`
+- `src/features/seating-export/schemas/export-options.schema.ts`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-export/lib/build-print-model.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/build-print-model.test.ts`
+- `src/features/seating-export/lib/pdf/detail-layout.test.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- If all custom font candidates fail in a runtime environment, export falls back to standard PDF fonts and diacritics may degrade.
+- For full deterministic cross-environment glyph fidelity, a bundled project-owned TTF asset should be preferred over environment-dependent system font paths.
+
+## Next Recommended Step
+
+- Phase 227-HF5 - bundle a repo font asset for export runtime determinism:
+  - commit a Unicode-capable font file under project assets,
+  - load only bundled font(s) in PDF renderer,
+  - remove OS-path dependence and verify Polish glyph output on all deploy targets.
+
+## Current Phase
+
+Phase 227-HF5 - Fix tofu glyph regression in PDF export (stable TTF-first font strategy)
+
+## Completed Work
+
+- Fixed major glyph rendering regression where almost all text rendered as square/tofu boxes.
+- Reordered embedded font candidates to prefer stable system TTF fonts first:
+  - Windows: Arial / Arial Bold
+  - Linux: DejaVu Sans / DejaVu Sans Bold
+- Kept fontsource webfonts only as lower-priority fallback candidates.
+- Retained existing hard fallback to standard PDF fonts if embedding still fails.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Cross-environment typography can still vary when system fonts differ.
+- Best long-term fix remains bundling one project-owned TTF for deterministic output.
+
+## Next Recommended Step
+
+- Phase 227-HF6 - bundle deterministic Unicode TTF asset and remove runtime system-font dependency.
+
+## Current Phase
+
+Phase 227-HF6 - Legend wrap line style consistency
+
+## Completed Work
+
+- Updated guest legend wrapped second-line rendering to match first-line style:
+  - same font size (10pt)
+  - same text color (primary/dark)
+- Removed prior secondary visual treatment that made wrapped lines look faded/smaller.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Very dense legends may need additional row/column tuning if many long names wrap simultaneously.
+
+## Next Recommended Step
+
+- Phase 227-HF7 - adaptive legend row height for multi-line names to avoid overlap in high-density cases.
+
+## Current Phase
+
+Phase 227-HF7 - Header simplification for more usable legend height
+
+## Completed Work
+
+- Removed top divider line from exported PDF pages.
+- Removed exported date text from header.
+- Reduced header footprint and top spacing so content starts higher.
+- Increased effective vertical room for legend/table detail content through layout constants.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/pdf/detail-layout.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Visual QA pass on dense 44-50 seat tables to tune row-height/column-balance now that extra vertical space is available.
+
+## Current Phase
+
+Phase 227-HF8 - Legend readability spacing for dense 3-column lists
+
+## Completed Work
+
+- Increased legend row height from 20 to 24 for better visual separation between numbered entries.
+- Increased legend number gutter width from 22 to 30 to create more room between seat numbers and names.
+- Increased wrapped second-line offset so two-line names are easier to distinguish from adjacent rows.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/detail-layout.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Current Phase
+
+Phase 227-HF9 - Move legend start higher in detail page
+
+## Completed Work
+
+- Shifted legend title upward in the right panel.
+- Shifted first legend row upward to reduce top empty area before items.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Current Phase
+
+Phase 227-HF10 - Legend top alignment + full-height column fill
+
+## Completed Work
+
+- Adjusted legend placement to start higher in the right panel.
+- Changed legend column splitting to even distribution by item count per column (instead of fixed rows-per-column slicing).
+- Added dynamic row height based on available legend height and max items per column, so columns stretch downward and better use full vertical space.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/detail-layout.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Current Phase
+
+Phase 227-HF11 - Adaptive legend spacing and heading gap tuning
+
+## Completed Work
+
+- Increased spacing between legend heading and first list item.
+- Reworked legend row spacing to be adaptive:
+  - small lists use fixed compact row height (no exaggerated vertical gaps)
+  - dense lists can stretch to better fill available column height
+- Keeps top-aligned legend behavior while preventing over-stretched sparse lists.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Current Phase
+
+Phase 227-HF12 - Proportional diagram scaling for low-seat tables
+
+## Completed Work
+
+- Adjusted table diagram scaling so very small tables (2-4 seats, 5-8 seats) no longer expand to fill the left pane at the same ratio as large tables.
+- Added seat-count-aware scale factor in layout helper:
+  - <=4 seats: reduced scale factor
+  - <=8 seats: moderate reduction
+  - >8 seats: full fit scale
+- Keeps center alignment while improving visual proportion between table body and seat count.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/detail-layout.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Current Phase
+
+Phase 227-HF13 - Rotation fidelity in overview export (geometry + rendering)
+
+## Completed Work
+
+- Implemented rotation-aware overview geometry in print-model build:
+  - added center/corners/AABB derivation for each table
+  - stores derived overview geometry on tables (`overviewCenter`, `overviewCorners`, `overviewAabb`)
+- Updated overview fit transform to use rotation-aware AABB extents instead of unrotated `x/y/width/height` bounds.
+- Updated overview PDF rendering to draw rotated table bodies (rotation around table center) to match canvas orientation.
+- Updated overview seat plotting (when enabled) to rotate seat points around table center so seat positions match rotated tables.
+- Added regression-oriented tests for:
+  - presence of rotation-aware geometry for rotated tables
+  - rotation-aware bounds behavior affecting width/fit characteristics
+
+## Files Changed
+
+- `src/features/seating-export/types/print-model.ts`
+- `src/features/seating-export/lib/build-print-model.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/build-print-model.test.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Visual QA in browser/PDF viewer still recommended for final confirmation on specific production-like plans.
+
+## Next Recommended Step
+
+- Run manual QA with the exact `Para Mloda` plan and compare canvas vs overview PDF for orientation and relative spacing; if needed, tune only global padding constants (without positional nudging).
+
+## Current Phase
+
+Phase 227-HF14 - Exact corner-path overview rendering for rotation fidelity
+
+## Completed Work
+
+- Replaced overview table body drawing from rectangle-rotation math to explicit corner-path rendering.
+- Overview now draws each table using the derived rotated corners (`overviewCorners`) from the print model.
+- Added safe fallback to unrotated corners when derived corners are unavailable.
+- This removes geometry drift from width/height + rotate composition and aligns exported overview spacing/orientation with canvas geometry.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm test -- build-print-model.test.ts` (fails: no `test` script in this repo)
+
+## Known Issues
+
+- Automated unit tests cannot be run via `pnpm test` because the project does not define a `test` script.
+- Visual QA is still required on the exact problematic plan to confirm final spacing/orientation.
+
+## Next Recommended Step
+
+- Export the same plan again and compare `Para Mloda` orientation + distance to `Stół 1`; if still off, inspect source table rotation value normalization from DB payload.
+
+## Current Phase
+
+Phase 227-HF15 - Overview table visibility hotfix after corner-path regression
+
+## Completed Work
+
+- Replaced `drawSvgPath` overview table rendering with explicit 4-edge line rendering from rotation-aware corners.
+- Keeps rotation fidelity while avoiding PDF path-fill rendering issues that caused table bodies to disappear.
+- Labels/occupancy remain centered from rotation-aware centers.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Known Issues
+
+- Overview table bodies are now stroked outlines only (no fill) in this hotfix path.
+
+## Next Recommended Step
+
+- Re-export the same plan to confirm rotated overview tables are visible and correctly spaced; then we can add a stable interior fill strategy if desired.
+
+## Current Phase
+
+Phase 227-HF16 - Correct rotated overview text anchoring
+
+## Completed Work
+
+- Added a centered-rotation origin helper for PDF text placement.
+- Applied helper only to overview table label and occupancy text.
+- Rotated text now stays centered within rotated tables instead of drifting outside due to origin-rotation mismatch.
+- No changes to overview/table geometry, scaling, margins, legend, or detail pages.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (initial run failed due transient generated `.next/dev/types/routes.d.ts` parse error)
+- `Remove-Item -Recurse -Force .next` (cleanup build artifacts)
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Re-export the same plan and confirm `Para Mloda` text is vertically centered/rotated inside the table without clipping.
+
+## Current Phase
+
+Phase 227-HF17 - Rotation-aware overview text block centering and overlap guard
+
+## Completed Work
+
+- Replaced overview rotated text placement with table-local axis layout around the table center.
+- Label and occupancy are now positioned as a centered 2-line rotated block using basis vectors derived from table rotation.
+- Switched from heuristic text-height offsets to measured font line heights to reduce drift and line collisions.
+- Added narrow-table safeguard:
+  - clamps text block height to a fraction of table short side
+  - reduces gap first
+  - then reduces occupancy font size to 7pt when needed
+- Kept all other behavior unchanged:
+  - overview table geometry/fit/spacing
+  - seat rendering
+  - header/margins/localization/fonts
+  - detail-page layout
+- Added focused tests for overview text layout math (0°, 90°, 270° centering and non-overlap distance checks).
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/pdf/overview-text-layout.test.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Re-export the same plan and verify `Para Mloda` now shows centered rotated label and separate occupancy text without overlap.
+
+## Current Phase
+
+Phase 227-HF18 - Rotated overview baseline-axis correction + readable text rotation
+
+## Completed Work
+
+- Fixed rotated overview text baseline drift by applying line-height correction along rotated normal axis `v`, not world Y.
+- Kept centered two-line block stacking and overlap safeguards from prior phase.
+- Added text-orientation readability normalization for overview labels/occupancy:
+  - for angles in `(90, 270]`, text rotation is adjusted by `-180` for text only.
+- Continued to preserve table geometry rotation fidelity (rectangle/seat rendering unchanged).
+- Added/updated helper tests:
+  - 0°/90°/270° center symmetry checks
+  - 270° readable rotation normalization check
+  - baseline correction vector orientation check for rotated case.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/pdf/overview-text-layout.test.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Re-export the same plan and verify `Para Mloda` shows balanced vertical label + seat-count stack centered inside the rotated table.

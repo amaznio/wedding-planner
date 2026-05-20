@@ -9,6 +9,7 @@ import { SeatingCanvas } from "@/features/seating-editor/components/SeatingCanva
 import { GuestDataTools } from "@/features/seating-editor/components/GuestDataTools";
 import { GuestPanel } from "@/features/seating-editor/components/GuestPanel";
 import { GroupsManager } from "@/features/seating-editor/components/GroupsManager";
+import { ExportPdfDialog } from "@/features/seating-editor/components/ExportPdfDialog";
 import {
   buildGroupMovePlan,
   getAutoMoveTogetherRelationships,
@@ -227,6 +228,7 @@ export function SeatingPlanEditorScreen() {
   const [mobileAddGuestSubmitting, setMobileAddGuestSubmitting] = useState(false);
   const [desktopGroupsManagerOpen, setDesktopGroupsManagerOpen] = useState(false);
   const [desktopDataToolsOpen, setDesktopDataToolsOpen] = useState(false);
+  const [isExportPdfDialogOpen, setIsExportPdfDialogOpen] = useState(false);
   const [desktopPlanSettingsOpen, setDesktopPlanSettingsOpen] = useState(false);
   const [mobileTableDragEnabled, setMobileTableDragEnabled] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
@@ -1711,6 +1713,61 @@ export function SeatingPlanEditorScreen() {
     URL.revokeObjectURL(url);
   }, [guests, locale, plan.name, plan.tables, t]);
 
+  const handleExportPdf = useCallback(
+    async (options: {
+      paper: "A4" | "A3";
+      orientation: "landscape" | "portrait";
+      includeEmptySeats: boolean;
+      overviewShowSeats: boolean;
+      detailSeatLabelMode: "number" | "initials";
+    }) => {
+      const query = new URLSearchParams({
+        paper: options.paper,
+        orientation: options.orientation,
+        includeEmptySeats: options.includeEmptySeats ? "1" : "0",
+        overviewShowSeats: options.overviewShowSeats ? "1" : "0",
+        detailSeatLabelMode: options.detailSeatLabelMode,
+        locale,
+      });
+
+      const response = await fetch(`/api/seating-plans/${planId}/export/pdf?${query.toString()}`);
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as
+          | { error?: string; requestId?: string }
+          | null;
+        const details = {
+          planId,
+          status: response.status,
+          statusText: response.statusText,
+          requestId: errorPayload?.requestId,
+          options,
+        };
+        console.error("seating_pdf_export_request_failed", details);
+        const message = errorPayload?.requestId
+          ? `${errorPayload?.error ?? "Failed to export PDF"} (request: ${errorPayload.requestId})`
+          : (errorPayload?.error ?? "Failed to export PDF");
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const sanitizedPlanName = plan.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const filename = `seating-plan-${sanitizedPlanName || "plan"}.pdf`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    [locale, plan.name, planId],
+  );
+
   const handleUpdateGuest = useCallback(async (
     guestId: string,
     payload: {
@@ -2945,6 +3002,7 @@ export function SeatingPlanEditorScreen() {
             onOpenDataTools={() => setDesktopDataToolsOpen(true)}
             onExportGuests={handleExportGuestsCsv}
             onExportTableList={handleExportTableList}
+            onExportPdf={() => setIsExportPdfDialogOpen(true)}
             onOpenLegend={handleOpenLegend}
             onOpenSettings={() => setDesktopPlanSettingsOpen(true)}
             linkingSourceGuestId={linkingSourceGuestId}
@@ -3108,6 +3166,25 @@ export function SeatingPlanEditorScreen() {
             </div>
           </SheetContent>
         </Sheet>
+        <ExportPdfDialog
+          open={isExportPdfDialogOpen}
+          onOpenChange={setIsExportPdfDialogOpen}
+          onExport={async (options) => {
+            try {
+              await handleExportPdf(options);
+              toast({
+                title: t("exportPdf.successTitle"),
+                description: t("exportPdf.successDescription"),
+              });
+            } catch (error) {
+              toast({
+                title: t("exportPdf.errorTitle"),
+                description: error instanceof Error ? error.message : t("exportPdf.errorDescription"),
+                variant: "destructive",
+              });
+            }
+          }}
+        />
       </div>
       ) : null}
     </main>
