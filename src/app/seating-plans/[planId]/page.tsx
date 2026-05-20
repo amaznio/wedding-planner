@@ -1715,18 +1715,22 @@ export function SeatingPlanEditorScreen() {
 
   const handleExportPdf = useCallback(
     async (options: {
+      theme: "simple" | "elegant" | "modern";
       paper: "A4" | "A3";
       orientation: "landscape" | "portrait";
       includeEmptySeats: boolean;
       overviewShowSeats: boolean;
       detailSeatLabelMode: "number" | "initials";
+      detailTableVertical: boolean;
     }) => {
       const query = new URLSearchParams({
+        theme: options.theme,
         paper: options.paper,
         orientation: options.orientation,
         includeEmptySeats: options.includeEmptySeats ? "1" : "0",
         overviewShowSeats: options.overviewShowSeats ? "1" : "0",
         detailSeatLabelMode: options.detailSeatLabelMode,
+        detailTableVertical: options.detailTableVertical ? "1" : "0",
         locale,
       });
 

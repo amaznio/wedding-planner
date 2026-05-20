@@ -11,18 +11,49 @@ import {
   type Box,
 } from "@/features/seating-export/lib/pdf/detail-layout";
 import type { PrintLegendItem, SeatingPrintModel } from "@/features/seating-export/types/print-model";
+type ThemeColors = (typeof THEME_STYLES)["simple"]["colors"];
 
-const COLORS = {
-  pageBackground: rgb(1, 1, 1),
-  tableFill: rgb(0.96, 0.96, 0.965),
-  tableBorder: rgb(0.5, 0.5, 0.55),
-  seatFill: rgb(1, 1, 1),
-  seatBorder: rgb(0.6, 0.6, 0.65),
-  seatEmptyFill: rgb(0.97, 0.97, 0.98),
-  seatOccupiedFill: rgb(0.88, 0.93, 0.99),
-  textPrimary: rgb(0.12, 0.12, 0.14),
-  textMuted: rgb(0.42, 0.42, 0.46),
-};
+const THEME_STYLES = {
+  simple: {
+    colors: {
+      pageBackground: rgb(1, 1, 1),
+      tableFill: rgb(1, 1, 1),
+      tableBorder: rgb(0.1, 0.1, 0.1),
+      seatBorder: rgb(0.15, 0.15, 0.15),
+      seatEmptyFill: rgb(1, 1, 1),
+      seatOccupiedFill: rgb(0.84, 0.84, 0.84),
+      textPrimary: rgb(0.05, 0.05, 0.05),
+      textMuted: rgb(0.2, 0.2, 0.2),
+    },
+    headingFontFamily: "sans" as const,
+  },
+  elegant: {
+    colors: {
+      pageBackground: rgb(0.985, 0.975, 0.94),
+      tableFill: rgb(0.985, 0.975, 0.94),
+      tableBorder: rgb(0.69, 0.61, 0.43),
+      seatBorder: rgb(0.73, 0.65, 0.48),
+      seatEmptyFill: rgb(0.99, 0.985, 0.965),
+      seatOccupiedFill: rgb(0.97, 0.93, 0.83),
+      textPrimary: rgb(0.2, 0.18, 0.16),
+      textMuted: rgb(0.38, 0.34, 0.3),
+    },
+    headingFontFamily: "serif" as const,
+  },
+  modern: {
+    colors: {
+      pageBackground: rgb(1, 1, 1),
+      tableFill: rgb(0.98, 0.98, 0.985),
+      tableBorder: rgb(0.15, 0.15, 0.18),
+      seatBorder: rgb(0.24, 0.24, 0.28),
+      seatEmptyFill: rgb(0.965, 0.965, 0.975),
+      seatOccupiedFill: rgb(0.88, 0.92, 0.98),
+      textPrimary: rgb(0.08, 0.08, 0.1),
+      textMuted: rgb(0.34, 0.34, 0.38),
+    },
+    headingFontFamily: "sans" as const,
+  },
+} as const;
 
 const FONT_PATHS = {
   regular: [
@@ -40,6 +71,14 @@ const FONT_PATHS = {
     path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans", "files", "noto-sans-latin-700-normal.woff"),
     path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans", "files", "noto-sans-latin-ext-700-normal.woff2"),
     path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans", "files", "noto-sans-latin-700-normal.woff2"),
+  ],
+  serifRegular: [
+    "C:\\Windows\\Fonts\\times.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+  ],
+  serifBold: [
+    "C:\\Windows\\Fonts\\timesbd.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
   ],
 };
 
@@ -217,6 +256,46 @@ function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function fitTextWithEllipsis({
+  text,
+  font,
+  maxWidth,
+  size,
+}: {
+  text: string;
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
+  maxWidth: number;
+  size: number;
+}) {
+  const normalized = normalizeText(text);
+  if (font.widthOfTextAtSize(normalized, size) <= maxWidth) {
+    return normalized;
+  }
+
+  const ellipsis = "…";
+  const ellipsisWidth = font.widthOfTextAtSize(ellipsis, size);
+  if (ellipsisWidth > maxWidth) {
+    return "";
+  }
+
+  let low = 0;
+  let high = normalized.length;
+  let best = "";
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const candidate = `${normalized.slice(0, mid).trimEnd()}${ellipsis}`;
+    const candidateWidth = font.widthOfTextAtSize(candidate, size);
+    if (candidateWidth <= maxWidth) {
+      best = candidate;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return best;
+}
+
 function drawTextSafe({
   page,
   text,
@@ -275,6 +354,36 @@ function wrapText(
   return lines;
 }
 
+function rotatePointClockwise90(x: number, y: number, height: number) {
+  return {
+    x: height - y,
+    y: x,
+  };
+}
+
+function getDetailRenderTable(
+  table: SeatingPrintModel["details"][number]["table"],
+  rotateVertical: boolean,
+) {
+  if (!rotateVertical || table.width <= table.height) {
+    return table;
+  }
+
+  return {
+    ...table,
+    width: table.height,
+    height: table.width,
+    seats: table.seats.map((seat) => {
+      const rotated = rotatePointClockwise90(seat.x, seat.y, table.height);
+      return {
+        ...seat,
+        x: rotated.x,
+        y: rotated.y,
+      };
+    }),
+  };
+}
+
 function drawHeader({
   page,
   pageWidth,
@@ -283,8 +392,9 @@ function drawHeader({
   tableName,
   occupancy,
   regularFonts,
-  boldFonts,
+  headingBoldFonts,
   margin,
+  colors,
 }: {
   page: PDFPage;
   pageWidth: number;
@@ -293,8 +403,9 @@ function drawHeader({
   tableName: string;
   occupancy: string;
   regularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
-  boldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  headingBoldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   margin: number;
+  colors: ThemeColors;
 }) {
   const top = margin;
 
@@ -304,8 +415,8 @@ function drawHeader({
     x: margin,
     y: invertY(pageHeight, top + 2, 16),
     size: 16,
-    color: COLORS.textPrimary,
-    fonts: boldFonts,
+    color: colors.textPrimary,
+    fonts: headingBoldFonts,
   });
 
   drawTextSafe({
@@ -314,7 +425,7 @@ function drawHeader({
     x: margin,
     y: invertY(pageHeight, top + 22, 11),
     size: 11,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     fonts: regularFonts,
   });
 }
@@ -326,7 +437,9 @@ function drawOverviewPage({
   printModel,
   regularFonts,
   boldFonts,
+  headingBoldFonts,
   labels,
+  colors,
 }: {
   page: PDFPage;
   pageWidth: number;
@@ -334,7 +447,9 @@ function drawOverviewPage({
   printModel: SeatingPrintModel;
   regularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   boldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  headingBoldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   labels: (typeof LABELS)["en"] | (typeof LABELS)["pl"];
+  colors: ThemeColors;
 }) {
   const margin = 24;
   drawHeader({
@@ -345,8 +460,9 @@ function drawOverviewPage({
     tableName: labels.seatingOverview,
     occupancy: `${printModel.overview.tables.length} ${labels.tables}`,
     regularFonts,
-    boldFonts,
+    headingBoldFonts,
     margin,
+    colors,
   });
 
   for (const table of printModel.overview.tables) {
@@ -381,7 +497,7 @@ function drawOverviewPage({
       page.drawLine({
         start,
         end,
-        color: COLORS.tableBorder,
+        color: colors.tableBorder,
         thickness: 0.8,
       });
     }
@@ -390,12 +506,12 @@ function drawOverviewPage({
       x: scaledCenterX,
       y: invertY(pageHeight, scaledCenterYTop),
       size: 0.4,
-      color: COLORS.tableBorder,
+      color: colors.tableBorder,
     });
 
     const label = normalizeText(table.label);
     const occupancy = `${table.occupiedCount}/${table.seatCount}`;
-    const labelFont = pickEncodableFont(label, boldFonts);
+    const labelFont = pickEncodableFont(label, headingBoldFonts);
     const occFont = pickEncodableFont(occupancy, regularFonts);
 
     const labelSize = 9;
@@ -424,7 +540,7 @@ function drawOverviewPage({
       y: textLayout.labelOrigin.y,
       size: labelSize,
       font: labelFont,
-      color: COLORS.textPrimary,
+      color: colors.textPrimary,
       rotate: degrees(textLayout.textRotationDegrees),
     });
 
@@ -433,7 +549,7 @@ function drawOverviewPage({
       y: textLayout.occupancyOrigin.y,
       size: textLayout.occupancySize,
       font: occFont,
-      color: COLORS.textMuted,
+      color: colors.textMuted,
       rotate: degrees(textLayout.textRotationDegrees),
     });
 
@@ -460,8 +576,8 @@ function drawOverviewPage({
           x: seatX,
           y: invertY(pageHeight, seatY),
           size: Math.max(2, 4.5 * printModel.overview.scale),
-          color: seat.occupied ? COLORS.seatOccupiedFill : COLORS.seatEmptyFill,
-          borderColor: COLORS.seatBorder,
+          color: seat.occupied ? colors.seatOccupiedFill : colors.seatEmptyFill,
+          borderColor: colors.seatBorder,
           borderWidth: 0.4,
         });
       }
@@ -479,6 +595,7 @@ function drawLegendItem({
   maxNameWidth,
   regularFonts,
   boldFonts,
+  colors,
 }: {
   page: PDFPage;
   pageHeight: number;
@@ -489,6 +606,7 @@ function drawLegendItem({
   maxNameWidth: number;
   regularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   boldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  colors: ThemeColors;
 }) {
   const numText = `${item.seatNumber}.`;
   drawTextSafe({
@@ -497,7 +615,7 @@ function drawLegendItem({
     x,
     y: invertY(pageHeight, yTop, 10),
     size: 10,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fonts: boldFonts,
   });
 
@@ -511,7 +629,7 @@ function drawLegendItem({
     y: invertY(pageHeight, yTop, 10),
     size: 10,
     font: nameFont,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     maxWidth: maxNameWidth,
   });
 
@@ -521,7 +639,7 @@ function drawLegendItem({
       y: invertY(pageHeight, yTop + 12, 10),
       size: 10,
       font: nameFont,
-      color: COLORS.textPrimary,
+      color: colors.textPrimary,
       maxWidth: maxNameWidth,
     });
   }
@@ -533,20 +651,27 @@ function drawDetailPage({
   pageHeight,
   detail,
   detailSeatLabelMode,
+  detailTableVertical,
   regularFonts,
   boldFonts,
+  headingBoldFonts,
   labels,
+  colors,
 }: {
   page: PDFPage;
   pageWidth: number;
   pageHeight: number;
   detail: SeatingPrintModel["details"][number];
   detailSeatLabelMode: SeatingPrintModel["options"]["detailSeatLabelMode"];
+  detailTableVertical: SeatingPrintModel["options"]["detailTableVertical"];
   regularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   boldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  headingBoldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   labels: (typeof LABELS)["en"] | (typeof LABELS)["pl"];
+  colors: ThemeColors;
 }) {
   const layout = getDetailPageLayout(pageWidth, pageHeight);
+  const renderTable = getDetailRenderTable(detail.table, detailTableVertical);
 
   drawHeader({
     page,
@@ -556,8 +681,9 @@ function drawDetailPage({
     tableName: detail.table.label,
     occupancy: `${detail.table.occupiedCount}/${detail.table.seatCount}`,
     regularFonts,
-    boldFonts,
+    headingBoldFonts,
     margin: layout.margin,
+    colors,
   });
 
   const leftInner: Box = {
@@ -567,35 +693,61 @@ function drawDetailPage({
     height: layout.left.height - 20,
   };
 
-  const placement = getDiagramPlacement(detail.table, leftInner);
+  const placement = getDiagramPlacement(renderTable, leftInner);
 
   const tableX = placement.offsetX;
   const tableY = placement.offsetY;
-  const tableWidth = detail.table.width * placement.scale;
-  const tableHeight = detail.table.height * placement.scale;
+  const tableWidth = renderTable.width * placement.scale;
+  const tableHeight = renderTable.height * placement.scale;
 
   page.drawRectangle({
     x: tableX,
     y: invertY(pageHeight, tableY, tableHeight),
     width: tableWidth,
     height: tableHeight,
-    color: COLORS.tableFill,
-    borderColor: COLORS.tableBorder,
+    color: colors.tableFill,
+    borderColor: colors.tableBorder,
     borderWidth: 1.2,
   });
 
   const tableLabel = normalizeText(detail.table.label);
   const tableLabelFont = pickEncodableFont(tableLabel, boldFonts);
-  const tableLabelSize = Math.max(12, Math.min(16, tableHeight * 0.18));
-  page.drawText(tableLabel, {
-    x: tableX + tableWidth / 2 - tableLabelFont.widthOfTextAtSize(tableLabel, tableLabelSize) / 2,
-    y: invertY(pageHeight, tableY + tableHeight / 2, tableLabelSize * 0.35),
-    size: tableLabelSize,
-    font: tableLabelFont,
-    color: COLORS.textMuted,
-  });
+  const isVerticalDetailTable = detailTableVertical && detail.table.width > detail.table.height;
+  if (!isVerticalDetailTable) {
+    const horizontalPadding = 12;
+    const labelMaxWidth = Math.max(1, tableWidth - horizontalPadding * 2);
+    let tableLabelSize = Math.max(12, Math.min(16, tableHeight * 0.18));
+    const minTableLabelSize = 10;
+    let fittedLabel = tableLabel;
 
-  for (const seat of detail.table.seats) {
+    while (
+      tableLabelSize > minTableLabelSize &&
+      tableLabelFont.widthOfTextAtSize(fittedLabel, tableLabelSize) > labelMaxWidth
+    ) {
+      tableLabelSize -= 1;
+    }
+
+    if (tableLabelFont.widthOfTextAtSize(fittedLabel, tableLabelSize) > labelMaxWidth) {
+      fittedLabel = fitTextWithEllipsis({
+        text: fittedLabel,
+        font: tableLabelFont,
+        maxWidth: labelMaxWidth,
+        size: tableLabelSize,
+      });
+    }
+
+    if (fittedLabel.length > 0) {
+      page.drawText(fittedLabel, {
+        x: tableX + tableWidth / 2 - tableLabelFont.widthOfTextAtSize(fittedLabel, tableLabelSize) / 2,
+        y: invertY(pageHeight, tableY + tableHeight / 2, tableLabelSize * 0.35),
+        size: tableLabelSize,
+        font: tableLabelFont,
+        color: colors.textMuted,
+      });
+    }
+  }
+
+  for (const seat of renderTable.seats) {
     if (!seat.occupied && !detail.legend.some((item) => item.seatNumber === seat.seatNumber)) {
       continue;
     }
@@ -607,8 +759,8 @@ function drawDetailPage({
       x: seatX,
       y: invertY(pageHeight, seatYTop),
       size: placement.seatRadius,
-      color: seat.occupied ? COLORS.seatOccupiedFill : COLORS.seatEmptyFill,
-      borderColor: COLORS.seatBorder,
+      color: seat.occupied ? colors.seatOccupiedFill : colors.seatEmptyFill,
+      borderColor: colors.seatBorder,
       borderWidth: 1,
     });
 
@@ -616,13 +768,13 @@ function drawDetailPage({
       page.drawLine({
         start: { x: seatX - placement.seatRadius * 0.55, y: invertY(pageHeight, seatYTop) - placement.seatRadius * 0.55 },
         end: { x: seatX + placement.seatRadius * 0.55, y: invertY(pageHeight, seatYTop) + placement.seatRadius * 0.55 },
-        color: COLORS.seatBorder,
+        color: colors.seatBorder,
         thickness: 0.8,
       });
       page.drawLine({
         start: { x: seatX - placement.seatRadius * 0.55, y: invertY(pageHeight, seatYTop) + placement.seatRadius * 0.55 },
         end: { x: seatX + placement.seatRadius * 0.55, y: invertY(pageHeight, seatYTop) - placement.seatRadius * 0.55 },
-        color: COLORS.seatBorder,
+        color: colors.seatBorder,
         thickness: 0.8,
       });
     }
@@ -640,7 +792,7 @@ function drawDetailPage({
       y: invertY(pageHeight, seatYTop, size * 0.45),
       size,
       font: textFont,
-      color: COLORS.textPrimary,
+      color: colors.textPrimary,
     });
   }
 
@@ -651,8 +803,8 @@ function drawDetailPage({
     x: layout.right.x,
     y: invertY(pageHeight, legendTitleYTop + 4, 12),
     size: 12,
-    color: COLORS.textPrimary,
-    fonts: boldFonts,
+    color: colors.textPrimary,
+    fonts: headingBoldFonts,
   });
 
   const legendColumns = getLegendColumns(detail.legend, layout.right);
@@ -686,6 +838,7 @@ function drawDetailPage({
         maxNameWidth: nameWidth,
         regularFonts,
         boldFonts,
+        colors,
       });
       yTop += dynamicRowHeight;
     }
@@ -696,8 +849,12 @@ export async function buildSeatingPlanPdf(printModel: SeatingPrintModel): Promis
   const pdf = await PDFDocument.create();
   let regularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   let boldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  let serifRegularFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
+  let serifBoldFonts: Array<Awaited<ReturnType<PDFDocument["embedFont"]>>>;
   const locale = printModel.options.locale;
   const labels = LABELS[locale];
+  const themeStyle = THEME_STYLES[printModel.options.theme];
+  const colors = themeStyle.colors;
 
   async function embedFromCandidates(paths: string[]) {
     for (const candidate of paths) {
@@ -715,21 +872,33 @@ export async function buildSeatingPlanPdf(printModel: SeatingPrintModel): Promis
     pdf.registerFontkit(fontkit);
     const regularFont = await embedFromCandidates(FONT_PATHS.regular);
     const boldFont = await embedFromCandidates(FONT_PATHS.bold);
+    const serifRegularFont = await embedFromCandidates(FONT_PATHS.serifRegular);
+    const serifBoldFont = await embedFromCandidates(FONT_PATHS.serifBold);
     regularFonts = [regularFont];
     boldFonts = [boldFont];
+    serifRegularFonts = [serifRegularFont];
+    serifBoldFonts = [serifBoldFont];
   } catch (error) {
     console.error("seating_pdf_font_embed_failed_fallback_standard", {
       error: error instanceof Error ? error.message : String(error),
     });
     const regularFont = await pdf.embedFont("Helvetica");
     const boldFont = await pdf.embedFont("Helvetica-Bold");
+    const serifRegularFont = await pdf.embedFont("Times-Roman");
+    const serifBoldFont = await pdf.embedFont("Times-Bold");
     regularFonts = [regularFont];
     boldFonts = [boldFont];
+    serifRegularFonts = [serifRegularFont];
+    serifBoldFonts = [serifBoldFont];
   }
+
+  const headingBoldFonts =
+    themeStyle.headingFontFamily === "serif" ? serifBoldFonts : boldFonts;
 
   const { width: pageWidth, height: pageHeight } = printModel.pageSizePt;
 
   const overviewPage = pdf.addPage([pageWidth, pageHeight]);
+  overviewPage.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: colors.pageBackground });
   drawOverviewPage({
     page: overviewPage,
     pageWidth,
@@ -737,22 +906,29 @@ export async function buildSeatingPlanPdf(printModel: SeatingPrintModel): Promis
     printModel,
     regularFonts,
     boldFonts,
+    headingBoldFonts,
     labels,
+    colors,
   });
 
   for (const detail of printModel.details) {
     const page = pdf.addPage([pageWidth, pageHeight]);
+    page.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: colors.pageBackground });
     drawDetailPage({
       page,
       pageWidth,
       pageHeight,
       detail,
       detailSeatLabelMode: printModel.options.detailSeatLabelMode,
+      detailTableVertical: printModel.options.detailTableVertical,
       regularFonts,
       boldFonts,
+      headingBoldFonts,
       labels,
+      colors,
     });
   }
 
   return pdf.save();
 }
+

@@ -3,13 +3,16 @@ import type { RectangleSeatLayout, SeatingTableType } from "@/features/seating-e
 export type ExportPaper = "A4" | "A3";
 export type ExportOrientation = "landscape" | "portrait";
 export type DetailSeatLabelMode = "number" | "initials";
+export type PdfThemeId = "simple" | "elegant" | "modern";
 
 export type SeatingExportOptions = {
+  theme: PdfThemeId;
   paper: ExportPaper;
   orientation: ExportOrientation;
   includeEmptySeats: boolean;
   overviewShowSeats: boolean;
   detailSeatLabelMode: DetailSeatLabelMode;
+  detailTableVertical: boolean;
   locale: "en" | "pl";
 };
 

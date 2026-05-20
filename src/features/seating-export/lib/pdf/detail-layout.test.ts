@@ -90,11 +90,13 @@ test("build print model preserves Polish guest names and occupancy", () => {
       },
     ],
     options: {
+      theme: "simple",
       paper: "A4",
       orientation: "landscape",
       includeEmptySeats: true,
       overviewShowSeats: false,
       detailSeatLabelMode: "number",
+      detailTableVertical: false,
       locale: "pl",
     },
   });

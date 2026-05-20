@@ -28,11 +28,13 @@ test("builds detail legends ordered by seat number", () => {
       { id: "g2", name: "Bob", isPlaceholderPlusOne: false, assignment: { tableId: "t1", seatNumber: 1 } },
     ],
     options: {
+      theme: "simple",
       paper: "A4",
       orientation: "landscape",
       includeEmptySeats: false,
       overviewShowSeats: false,
       detailSeatLabelMode: "number",
+      detailTableVertical: false,
       locale: "en",
     },
   });
@@ -74,11 +76,13 @@ test("keeps overview transform within positive bounds", () => {
     },
     guests: [],
     options: {
+      theme: "simple",
       paper: "A4",
       orientation: "landscape",
       includeEmptySeats: true,
       overviewShowSeats: false,
       detailSeatLabelMode: "number",
+      detailTableVertical: false,
       locale: "en",
     },
   });
@@ -110,11 +114,13 @@ test("stores rotation-aware overview geometry for tables", () => {
     },
     guests: [],
     options: {
+      theme: "simple",
       paper: "A4",
       orientation: "landscape",
       includeEmptySeats: true,
       overviewShowSeats: false,
       detailSeatLabelMode: "number",
+      detailTableVertical: false,
       locale: "pl",
     },
   });
@@ -159,11 +165,13 @@ test("rotation-aware bounds change overview fit versus unrotated extents", () =>
     },
     guests: [],
     options: {
+      theme: "simple",
       paper: "A4",
       orientation: "landscape",
       includeEmptySeats: true,
       overviewShowSeats: false,
       detailSeatLabelMode: "number",
+      detailTableVertical: false,
       locale: "pl",
     },
   });

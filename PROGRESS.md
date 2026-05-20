@@ -6004,3 +6004,210 @@ Phase 227-HF18 - Rotated overview baseline-axis correction + readable text rotat
 ## Next Recommended Step
 
 - Re-export the same plan and verify `Para Mloda` shows balanced vertical label + seat-count stack centered inside the rotated table.
+
+## Current Phase
+
+Phase 227-HF19 - Detail-page vertical table toggle in PDF export modal
+
+## Completed Work
+
+- Added a new export option to the PDF modal: vertical table diagram on detail pages.
+- Wired the option end-to-end:
+  - dialog state and payload
+  - page query params
+  - API option parsing schema
+  - export option type model
+- Implemented detail-page diagram rotation behavior in PDF renderer:
+  - when enabled and table is wider than tall, table geometry and seat coordinates are rotated to a vertical presentation
+  - overview page behavior remains unchanged
+  - legend behavior remains unchanged
+- Added localized UI copy for EN/PL for the new toggle.
+- Updated export-related tests/options objects to include the new flag.
+
+## Files Changed
+
+- `src/features/seating-editor/components/ExportPdfDialog.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-export/schemas/export-options.schema.ts`
+- `src/features/seating-export/types/print-model.ts`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/build-print-model.test.ts`
+- `src/features/seating-export/lib/pdf/detail-layout.test.ts`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Export a table detail PDF with the new toggle both OFF and ON.
+- Validate that wide tables switch to vertical layout on detail pages while overview output stays exactly the same.
+
+## Current Phase
+
+Phase 227-HF20 - Restore PDF theme presets (styling-only, no layout changes)
+
+## Completed Work
+
+- Restored PDF theme selection in export options with three presets:
+  - `simple` (default)
+  - `elegant`
+  - `modern`
+- Added theme selector back to export modal UI.
+- Wired theme through full export pipeline:
+  - dialog payload
+  - page query params
+  - API search-param parsing via Zod
+  - export options type model
+- Implemented styling-only theming in renderer:
+  - per-theme color palette tokens (background, table/seat strokes/fills, text)
+  - serif heading font for `elegant`, sans headings for `simple`/`modern`
+- Kept layout/geometry untouched:
+  - no changes to page composition
+  - no changes to table/seat placement math
+  - no changes to legend column layout behavior
+- Updated tests using export options to include the new required `theme` field.
+
+## Files Changed
+
+- `src/features/seating-export/types/print-model.ts`
+- `src/features/seating-export/schemas/export-options.schema.ts`
+- `src/features/seating-editor/components/ExportPdfDialog.tsx`
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `src/features/seating-export/lib/build-print-model.test.ts`
+- `src/features/seating-export/lib/pdf/detail-layout.test.ts`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Open export modal and verify theme selector is visible in PL/EN.
+- Export one PDF per theme and confirm only visual styling changes (same layout across themes).
+
+## Current Phase
+
+Phase 227-HF21 - Restore export modal live preview
+
+## Completed Work
+
+- Added a live preview section back to the PDF export modal.
+- Preview updates immediately with current options:
+  - theme (`simple` / `elegant` / `modern`)
+  - paper + orientation label
+  - overview seats toggle
+  - detail seat label mode
+  - detail vertical table toggle
+- Kept export pipeline/layout untouched; this is modal-only UI feedback.
+- Added EN/PL translations for preview labels and status text.
+
+## Files Changed
+
+- `src/features/seating-editor/components/ExportPdfDialog.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Open the export modal and verify preview updates correctly when toggling all options.
+
+## Current Phase
+
+Phase 227-HF22 - Simplify preview and improve export modal organization
+
+## Completed Work
+
+- Simplified modal preview to only show:
+  - themed table
+  - themed seat markers
+  - vertical vs horizontal detail orientation
+- Removed extra preview elements (legend/font sample blocks) from preview area.
+- Reorganized modal into clearer sections:
+  - format row: theme, paper, orientation
+  - preview block
+  - grouped detail options block (switches + seat label mode)
+- Added localized section label for detail options in EN/PL.
+
+## Files Changed
+
+- `src/features/seating-editor/components/ExportPdfDialog.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Visually verify spacing and control grouping in the modal on desktop and narrow widths.
+
+## Current Phase
+
+Phase 227-HF23 - Apply theme to overview and optimize simple for black/white print
+
+## Completed Work
+
+- Updated PDF renderer theme behavior so overview page (page 1) uses theme heading style for table labels as well.
+- Tuned `simple` theme colors specifically for black/white printing:
+  - white page/table fills
+  - near-black borders/text
+  - stronger grayscale contrast for occupied vs empty seats
+- Kept layout/geometry unchanged.
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Export page 1 in each theme and confirm visible style difference.
+- Print `simple` on monochrome printer/PDF print preview to verify readability.
+
+## Current Phase
+
+Phase 227-HF24 - Vertical detail table label policy + horizontal label fit guard
+
+## Completed Work
+
+- Implemented header-only naming policy for vertical detail table render:
+  - when vertical detail mode rotates a wide table, in-table label is not drawn
+  - table name and occupancy remain in page header
+- Added long-name fit guard for non-vertical table labels:
+  - compute available label width from table width and horizontal padding
+  - reduce label font size down to minimum 10pt
+  - apply ellipsis truncation if still too wide
+- Kept all layout geometry unchanged (table/seat positions, legend layout, page composition).
+
+## Files Changed
+
+- `src/features/seating-export/lib/pdf/build-pdf.ts`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+
+## Next Recommended Step
+
+- Export a vertical detail table with a long name and verify no in-table label overlap.
+- Export a horizontal detail table with a very long name and verify shrink/ellipsis behavior.
