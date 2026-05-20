@@ -149,6 +149,8 @@ type PlanAccessError = {
 };
 
 type GuestSyncState = "idle" | "pending" | "failed";
+const AUTO_SAVE_STORAGE_KEY = "seating-plan-editor:auto-save-enabled";
+
 type RemoteCursor = {
   participantId: string;
   displayName: string;
@@ -250,6 +252,10 @@ export function SeatingPlanEditorScreen() {
     notes: string;
   }>({ name: "", sex: "unknown", ageCategory: "adult", groupId: null, notes: "" });
   const [showGroupColors, setShowGroupColors] = useState(false);
+  const [isAutosaveEnabled, setIsAutosaveEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(AUTO_SAVE_STORAGE_KEY) !== "false";
+  });
   const [planAccess, setPlanAccess] = useState<ApiPlanAccess | null>(null);
   const [isPublicRead, setIsPublicRead] = useState(false);
   const [isUpdatingSharing, setIsUpdatingSharing] = useState(false);
@@ -310,6 +316,14 @@ export function SeatingPlanEditorScreen() {
   useEffect(() => {
     isTableDraggingRef.current = isTableDragging;
   }, [isTableDragging]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      AUTO_SAVE_STORAGE_KEY,
+      isAutosaveEnabled ? "true" : "false",
+    );
+  }, [isAutosaveEnabled]);
 
   const selectedTableId = selection?.type === "table" ? selection.tableId : null;
   const selectedGuestId = selection?.type === "guest" ? selection.guestId : null;
@@ -1401,6 +1415,7 @@ export function SeatingPlanEditorScreen() {
       } finally {
         saveInFlightRef.current = false;
         if (
+          isAutosaveEnabled &&
           pendingAutosaveRef.current &&
           (isDirtyRef.current || shouldAutosaveGuestsRef.current)
         ) {
@@ -1416,6 +1431,10 @@ export function SeatingPlanEditorScreen() {
   }, [savePlan]);
 
   const scheduleAutosave = useCallback(() => {
+    if (!isAutosaveEnabled) {
+      pendingAutosaveRef.current = false;
+      return;
+    }
     if (isTableDraggingRef.current) {
       pendingAutosaveRef.current = true;
       return;
@@ -1426,7 +1445,7 @@ export function SeatingPlanEditorScreen() {
     autosaveTimerRef.current = setTimeout(() => {
       void savePlanRef.current("auto");
     }, 1000);
-  }, []);
+  }, [isAutosaveEnabled]);
 
   const handleSave = useCallback(async () => {
     if (autosaveTimerRef.current) {
@@ -2239,10 +2258,11 @@ export function SeatingPlanEditorScreen() {
 
   useEffect(() => {
     if (isLoading) return;
+    if (!isAutosaveEnabled) return;
     if (!isDirty) return;
     // Debounce should follow the latest edit, not the first dirty transition.
     scheduleAutosave();
-  }, [isDirty, isLoading, plan, scheduleAutosave]);
+  }, [isAutosaveEnabled, isDirty, isLoading, plan, scheduleAutosave]);
 
   useEffect(() => {
     if (isTableDragging) {
@@ -2252,11 +2272,22 @@ export function SeatingPlanEditorScreen() {
       }
       return;
     }
-    if (pendingAutosaveRef.current && (isDirtyRef.current || shouldAutosaveGuestsRef.current)) {
+    if (
+      isAutosaveEnabled &&
+      pendingAutosaveRef.current &&
+      (isDirtyRef.current || shouldAutosaveGuestsRef.current)
+    ) {
       pendingAutosaveRef.current = false;
       scheduleAutosave();
     }
-  }, [isTableDragging, scheduleAutosave]);
+  }, [isAutosaveEnabled, isTableDragging, scheduleAutosave]);
+
+  useEffect(() => {
+    if (isAutosaveEnabled || !autosaveTimerRef.current) return;
+    clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = null;
+    pendingAutosaveRef.current = false;
+  }, [isAutosaveEnabled]);
 
   useEffect(() => {
     if (isDraggingGuest) return;
@@ -2273,11 +2304,14 @@ export function SeatingPlanEditorScreen() {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
-      if (isDirtyRef.current || shouldAutosaveGuestsRef.current) {
+      if (
+        isAutosaveEnabled &&
+        (isDirtyRef.current || shouldAutosaveGuestsRef.current)
+      ) {
         void savePlanRef.current("auto");
       }
     };
-  }, []);
+  }, [isAutosaveEnabled]);
 
   if (isLoading) {
     return (
@@ -2870,6 +2904,21 @@ export function SeatingPlanEditorScreen() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium text-zinc-700">
+                          {t("planSettings.autoSave")}
+                        </p>
+                        <p className="text-xs text-zinc-500">{t("planSettings.autoSaveHelp")}</p>
+                      </div>
+                      <Switch
+                        checked={isAutosaveEnabled}
+                        onCheckedChange={setIsAutosaveEnabled}
+                        aria-label={t("planSettings.autoSave")}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-zinc-600">
                       {t("planSettings.pairSidePreference")}
@@ -3140,6 +3189,21 @@ export function SeatingPlanEditorScreen() {
                       }}
                       disabled={isUpdatingSharing}
                       aria-label={t("planSettings.publicRead")}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-zinc-700">
+                        {t("planSettings.autoSave")}
+                      </p>
+                      <p className="text-xs text-zinc-500">{t("planSettings.autoSaveHelp")}</p>
+                    </div>
+                    <Switch
+                      checked={isAutosaveEnabled}
+                      onCheckedChange={setIsAutosaveEnabled}
+                      aria-label={t("planSettings.autoSave")}
                     />
                   </div>
                 </div>

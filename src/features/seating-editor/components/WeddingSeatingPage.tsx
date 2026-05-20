@@ -6,6 +6,7 @@ import { AlertTriangle, CalendarDays, Ellipsis, MapPin, Plus, Search } from "luc
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 import { AppEmptyState } from "@/components/app/AppEmptyState";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useI18n } from "@/i18n/provider";
@@ -65,7 +66,9 @@ export function WeddingSeatingPage({
   const [sortBy, setSortBy] = useState<"updated" | "name">("updated");
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
   const [isCreating, setIsCreating] = useState(false);
+  const [duplicatingPlanId, setDuplicatingPlanId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   const selectedEventName = useMemo(
     () => events.find((event) => event.id === selectedEventId)?.name ?? null,
@@ -142,6 +145,46 @@ export function WeddingSeatingPage({
       setCreateError(t("events.detail.states.createPlanError"));
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleDuplicatePlan = async (sourcePlanId: string) => {
+    if (!canEdit || duplicatingPlanId || isCreating) return;
+
+    setDuplicateError(null);
+    setDuplicatingPlanId(sourcePlanId);
+
+    try {
+      const response = await fetch(`/api/seating-plans/${sourcePlanId}/duplicate`, {
+        method: "POST",
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            error?: string;
+            plan?: {
+              id: string;
+              name: string;
+              width: number;
+              height: number;
+              updatedAt: string;
+              assignments: Array<{ id: string }>;
+              guests: Array<{ id: string }>;
+              event: { id: string; name: string } | null;
+            };
+          }
+        | null;
+
+      if (!response.ok || !payload?.plan) {
+        setDuplicateError(payload?.error ?? t("events.detail.seatingTab.duplicateError"));
+        return;
+      }
+
+      setPlans((current) => [payload.plan!, ...current]);
+    } catch {
+      setDuplicateError(t("events.detail.seatingTab.duplicateError"));
+    } finally {
+      setDuplicatingPlanId(null);
     }
   };
 
@@ -230,6 +273,7 @@ export function WeddingSeatingPage({
           </div>
         </div>
         {createError ? <p className="px-4 pt-3 text-sm text-red-600">{createError}</p> : null}
+        {duplicateError ? <p className="px-4 pt-3 text-sm text-red-600">{duplicateError}</p> : null}
 
         {visiblePlans.length ? (
           <>
@@ -294,13 +338,27 @@ export function WeddingSeatingPage({
                           >
                             {t("events.detail.actions.openSeatingPlan")}
                           </Link>
-                          <button
-                            type="button"
-                            className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-500 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
-                            aria-label={t("events.detail.seatingTab.moreActions")}
-                          >
-                            <Ellipsis className="size-4" />
-                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-500 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
+                                aria-label={t("events.detail.seatingTab.moreActions")}
+                              >
+                                <Ellipsis className="size-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => void handleDuplicatePlan(plan.id)}
+                                disabled={!canEdit || !!duplicatingPlanId || isCreating}
+                              >
+                                {duplicatingPlanId === plan.id
+                                  ? t("events.detail.seatingTab.duplicating")
+                                  : t("events.detail.seatingTab.duplicate")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     );
@@ -326,13 +384,27 @@ export function WeddingSeatingPage({
                           {plan.event?.name ?? t("events.detail.seatingTab.noEvent")}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="inline-flex size-9 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-500 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
-                        aria-label={t("events.detail.seatingTab.moreActions")}
-                      >
-                        <Ellipsis className="size-4" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex size-9 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-500 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
+                            aria-label={t("events.detail.seatingTab.moreActions")}
+                          >
+                            <Ellipsis className="size-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => void handleDuplicatePlan(plan.id)}
+                            disabled={!canEdit || !!duplicatingPlanId || isCreating}
+                          >
+                            {duplicatingPlanId === plan.id
+                              ? t("events.detail.seatingTab.duplicating")
+                              : t("events.detail.seatingTab.duplicate")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <div className="mt-3">
                       <p className="tabular-nums text-3xl font-semibold tracking-tight text-zinc-900">

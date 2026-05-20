@@ -143,6 +143,8 @@
     "pairSideHelp": "Default side preference used when auto-placing adjacent mixed-sex pairs.",
     "publicRead": "Public read access",
     "publicReadHelp": "Anyone with this plan URL can view the layout without signing in.",
+    "autoSave": "Auto-save changes",
+    "autoSaveHelp": "When enabled, edits are saved automatically in the background.",
     "publicReadEnabled": "Public read access enabled",
     "publicReadDisabled": "Public read access disabled",
     "publicReadUpdateError": "Failed to update public sharing"
@@ -1084,6 +1086,9 @@
         "noEvent": "No event",
         "thumbnail": "Preview",
         "moreActions": "More actions",
+        "duplicate": "Duplicate plan",
+        "duplicating": "Duplicating...",
+        "duplicateError": "Failed to duplicate seating plan",
         "createInlineCta": "Create a new seating plan",
         "createInlineHint": "Start from an empty plan or use a template",
         "columns": {

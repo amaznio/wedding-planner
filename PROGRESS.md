@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event contract (completed)
+Phase 226 - Autosave toggle (user-controlled) (completed)
 
 ## Completed Phases
 
@@ -237,6 +237,7 @@ Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event c
 - Phase 223 - Workspace subroute loading-state unification
 - Phase 224 - Wedding dashboard cover photo upload (Cloudinary, editor+)
 - Phase 225 - Non-blocking assignment mutation queue + collaboration-ready event contract
+- Phase 226 - Autosave toggle (user-controlled)
 
 ## Completed Work
 
@@ -6255,3 +6256,90 @@ Phase 228 - Guests table fast multi-edit mode (inline name/status/notes + batch 
 ## Next Recommended Step
 
 - Phase 229 - expand fast multi-edit to include per-event RSVP editing (event-scoped columns) and optional dirty-row highlighting before save.
+
+## Current Phase
+
+Phase 226 - Duplicate seating plan full clone
+
+## Completed Work
+
+- Added new endpoint `POST /api/seating-plans/[planId]/duplicate`.
+- Enforced authorization with `requireSeatingPlanRole(planId, "editor")`.
+- Implemented one-transaction deep clone for plan data:
+  - cloned `SeatingPlan` core fields (`eventId`, `width`, `height`, `pairSidePreference`)
+  - cloned `SeatingTable` rows with new IDs
+  - cloned plan groups (`SeatingGuestGroup`) with new IDs
+  - cloned guests with mapping for `groupId`, `plannedTableId`, and `plusOneHostGuestId`
+  - cloned `EventGuest` records for cloned guests to preserve event seat eligibility behavior
+  - cloned `SeatingRelationship` + `SeatingRelationshipMember` via ID remapping
+  - cloned `SeatAssignment` via remapped guest/table IDs
+- Added deterministic clone naming:
+  - `Original Name (Copy)`
+  - fallback sequence `Original Name (Copy 2)`, `Original Name (Copy 3)`, ...
+  - uniqueness checked in the same `eventId` scope.
+- Added a `Duplicate plan` action in the seating plans list UI (desktop + mobile “more actions” menus).
+- Added duplicate-request loading/disabled state and localized duplicate error feedback.
+- Added EN/PL i18n keys for duplicate action labels and error text.
+
+## Files Changed
+
+- `src/app/api/seating-plans/[planId]/duplicate/route.ts`
+- `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due pre-existing repo errors in unrelated files)
+
+## Known Issues
+
+- `pnpm lint` still fails on pre-existing issues unrelated to this phase (existing wedding guest API and seating page lint violations).
+- Prisma client types in this workspace do not currently expose `guardianGuestId`; clone logic maps `plusOneHostGuestId` but cannot map guardian linkage until the generated client includes that field.
+
+## Next Recommended Step
+
+- Manually verify duplicate flow from `/weddings/[weddingId]/seating` on desktop and mobile:
+  - use “more actions” -> “Duplicate plan”
+  - confirm new copy appears in list with expected `(Copy)` naming
+  - open clone and verify tables, guests, assignments, and relationships match source semantics.
+
+## Completed Work
+
+- Implemented Phase 226 autosave toggle (user-controlled) in seating plan editor.
+- Added `isAutosaveEnabled` client state with per-browser persistence via `localStorage`.
+- Gated all autosave paths when toggle is disabled:
+  - debounce scheduler
+  - pending autosave replay logic
+  - drag-stop autosave replay
+  - auto-save on unmount
+- Kept manual save path unchanged (`Save` button still persists immediately).
+- Added autosave switch to both mobile and desktop plan settings panels.
+- Added EN/PL i18n keys for autosave label and helper description.
+
+## Files Changed
+
+- `src/app/seating-plans/[planId]/page.tsx`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due pre-existing repo lint errors, plus existing lint rules in `src/app/seating-plans/[planId]/page.tsx` unrelated to this phase's behavior)
+- `pnpm eslint "src/app/seating-plans/[planId]/page.tsx"` (fails due pre-existing lint rules already present in file)
+
+## Known Issues
+
+- Repository lint is not currently clean due to pre-existing errors in unrelated API files and existing rule violations in `src/app/seating-plans/[planId]/page.tsx`.
+- This phase did not change server-side autosave/persistence architecture; toggle is intentionally local per browser.
+
+## Next Recommended Step
+
+- Manual QA in editor:
+  - disable autosave, perform table/guest edits, verify no background save occurs until manual `Save`
+  - re-enable autosave, repeat edits, verify autosave resumes without reload
+  - refresh page and confirm toggle preference persists in same browser profile.

@@ -143,6 +143,8 @@
     "pairSideHelp": "Domyślna preferencja strony używana przy automatycznym sadzaniu par różnej płci obok siebie.",
     "publicRead": "Publiczny podgląd",
     "publicReadHelp": "Każdy z linkiem do tego planu może go wyświetlić bez logowania.",
+    "autoSave": "Automatyczny zapis zmian",
+    "autoSaveHelp": "Po włączeniu zmiany zapisują się automatycznie w tle.",
     "publicReadEnabled": "Włączono publiczny podgląd",
     "publicReadDisabled": "Wyłączono publiczny podgląd",
     "publicReadUpdateError": "Nie udało się zaktualizować udostępniania"
@@ -1084,6 +1086,9 @@
         "noEvent": "Brak wydarzenia",
         "thumbnail": "Podgląd",
         "moreActions": "Więcej akcji",
+        "duplicate": "Duplikuj plan",
+        "duplicating": "Duplikowanie...",
+        "duplicateError": "Nie udało się zduplikować planu stołów",
         "createInlineCta": "Utwórz nowy plan stołów",
         "createInlineHint": "Zacznij od pustego planu lub użyj szablonu",
         "columns": {
