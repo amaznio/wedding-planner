@@ -6211,3 +6211,47 @@ Phase 227-HF24 - Vertical detail table label policy + horizontal label fit guard
 
 - Export a vertical detail table with a long name and verify no in-table label overlap.
 - Export a horizontal detail table with a very long name and verify shrink/ellipsis behavior.
+
+## Current Phase
+
+Phase 228 - Guests table fast multi-edit mode (inline name/status/notes + batch save)
+
+## Completed Work
+
+- Added a fast multi-edit mode toggle to the wedding guests desktop table.
+- In fast multi-edit mode, rows now expose inline editable controls for:
+  - guest/member names (household member inputs)
+  - RSVP status (select)
+  - notes (text input)
+- Added batch save action in table header:
+  - saves changed guest fields (`name`, `notes`) through `PUT /api/weddings/[weddingId]/guests/[guestId]`
+  - saves changed RSVP status across each guest's event entries through `PUT /api/weddings/[weddingId]/events/[eventId]/guests/[guestId]`
+  - exits edit mode and reloads guests on success
+  - surfaces localized save error feedback on failure
+- Added required guest data mapping for edit persistence:
+  - notes value per guest
+  - per-event guest status metadata (`eventId`, `rsvpStatus`)
+- Added EN/PL i18n strings for fast-edit controls and notes input placeholder.
+
+## Files Changed
+
+- `src/features/wedding-guests/components/GuestManagementTable.tsx`
+- `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+- `src/features/wedding-guests/types.ts`
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/pl.json`
+- `PROGRESS.md`
+
+## Commands Run
+
+- `pnpm typecheck` (pass)
+- `pnpm lint` (fails due pre-existing repo errors in unrelated files)
+
+## Known Issues
+
+- Current fast multi-edit mode targets the mutable guest fields surfaced by existing APIs (`name`, `status`, `notes`). Non-mutable columns like table placement and relationship structure remain read-only in this phase.
+- `pnpm lint` currently fails because of pre-existing errors outside these changes (for example in `src/app/seating-plans/[planId]/page.tsx` and existing API files with `any` usage).
+
+## Next Recommended Step
+
+- Phase 229 - expand fast multi-edit to include per-event RSVP editing (event-scoped columns) and optional dirty-row highlighting before save.

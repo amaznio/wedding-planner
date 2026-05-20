@@ -841,7 +841,14 @@
       "showChildren": "Show children ({{count}})",
       "hideChildren": "Hide children",
       "noChildren": "No children",
+      "notesInputPlaceholder": "Notes",
       "rowActions": "Row actions",
+      "fastEdit": {
+        "toggle": "Fast multi edit",
+        "save": "Save changes",
+        "cancel": "Cancel",
+        "saveError": "Failed to save all guest changes."
+      },
       "actions": {
         "edit": "Edit guest",
         "details": "View details",

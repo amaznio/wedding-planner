@@ -841,7 +841,14 @@
       "showChildren": "Pokaż dzieci ({{count}})",
       "hideChildren": "Ukryj dzieci",
       "noChildren": "Brak dzieci",
+      "notesInputPlaceholder": "Notatki",
       "rowActions": "Akcje wiersza",
+      "fastEdit": {
+        "toggle": "Szybka edycja zbiorcza",
+        "save": "Zapisz zmiany",
+        "cancel": "Anuluj",
+        "saveError": "Nie udało się zapisać wszystkich zmian gości."
+      },
       "actions": {
         "edit": "Edytuj gościa",
         "details": "Zobacz szczegóły",

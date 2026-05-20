@@ -46,6 +46,7 @@ type WeddingGuestsApiGuest = {
     relationshipId: string;
   }>;
   eventGuests: Array<{
+    eventId: string;
     rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
     requiresSeat: boolean;
     notes: string | null;
@@ -228,9 +229,12 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
         <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={false} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <GuestManagementTable
+            weddingId={weddingId}
             guests={data.guests}
             totalGuests={data.stats.totalGuests}
             isLoading={false}
+            canEdit={canEditWedding}
+            onSaved={() => setReloadKey((prev) => prev + 1)}
           />
           <GuestInsightsPanel
             stats={data.stats}
@@ -277,6 +281,11 @@ function mapGuestsFromApi(apiGuests: WeddingGuestsApiGuest[]): WeddingGuest[] {
       name: guest.name,
       initials: getInitials(guest.name),
       status: mapGuestStatus(guest.eventGuests.map((eventGuest) => eventGuest.rsvpStatus)),
+      notes: guest.notes ?? null,
+      eventGuestStatuses: guest.eventGuests.map((eventGuest) => ({
+        eventId: eventGuest.eventId,
+        rsvpStatus: eventGuest.rsvpStatus,
+      })),
       ageCategory: guest.ageCategory,
       requiresSeat,
       isChild,

@@ -16,6 +16,11 @@ export type WeddingGuest = {
   guardianGuestId?: string | null;
   plusOneHostGuestId?: string | null;
   events: WeddingGuestEvent[];
+  notes?: string | null;
+  eventGuestStatuses?: Array<{
+    eventId: string;
+    rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
+  }>;
   tableNumber?: number;
   plusOne?: boolean;
   notesCount?: number;

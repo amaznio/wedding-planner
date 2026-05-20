@@ -19,9 +19,12 @@ import { GuestEventChips } from "./GuestEventChips";
 import { GuestStatusBadge } from "./GuestStatusBadge";
 
 type GuestManagementTableProps = {
+  weddingId: string;
   guests: WeddingGuest[];
   totalGuests: number;
   isLoading: boolean;
+  canEdit: boolean;
+  onSaved: () => void;
 };
 
 type StatusTab = "all" | GuestRsvpStatus;
@@ -41,14 +44,32 @@ type HouseholdRow = {
 
 const PAGE_SIZE = 50;
 
-export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestManagementTableProps) {
+type FastEditDraft = {
+  name: string;
+  status: GuestRsvpStatus;
+  notes: string;
+};
+
+export function GuestManagementTable({
+  weddingId,
+  guests,
+  totalGuests,
+  isLoading,
+  canEdit,
+  onSaved,
+}: GuestManagementTableProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [page] = useState(1);
   const [expandedHouseholds, setExpandedHouseholds] = useState<Record<string, boolean>>({});
+  const [fastEditMode, setFastEditMode] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, FastEditDraft>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const households = useMemo(() => buildHouseholds(guests), [guests]);
+  const guestById = useMemo(() => Object.fromEntries(guests.map((guest) => [guest.id, guest])), [guests]);
 
   const filteredHouseholds = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -86,6 +107,77 @@ export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestMa
     { value: "not_attending", label: t("weddingGuestsPage.filters.notAttending") },
   ];
 
+  const applyFastEdit = (guest: WeddingGuest): FastEditDraft => drafts[guest.id] ?? {
+    name: guest.name,
+    status: guest.status,
+    notes: guest.notes ?? "",
+  };
+
+  const setGuestDraft = (guestId: string, updater: (current: FastEditDraft) => FastEditDraft) => {
+    setDrafts((current) => {
+      const source = guestById[guestId];
+      if (!source) return current;
+      const existing: FastEditDraft = current[guestId] ?? {
+        name: source.name,
+        status: source.status,
+        notes: source.notes ?? "",
+      };
+      return {
+        ...current,
+        [guestId]: updater(existing),
+      };
+    });
+  };
+
+  const handleSaveFastEdits = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      for (const guest of guests) {
+        const draft = drafts[guest.id];
+        if (!draft) continue;
+
+        const payload: Record<string, string | null> = {};
+        const trimmedName = draft.name.trim();
+        if (trimmedName && trimmedName !== guest.name) {
+          payload.name = trimmedName;
+        }
+        const normalizedNotes = draft.notes.trim() ? draft.notes.trim() : null;
+        const originalNotes = guest.notes?.trim() ? guest.notes.trim() : null;
+        if (normalizedNotes !== originalNotes) {
+          payload.notes = normalizedNotes;
+        }
+        if (Object.keys(payload).length > 0) {
+          const response = await fetch(`/api/weddings/${weddingId}/guests/${guest.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) throw new Error("save_failed");
+        }
+
+        if (draft.status !== guest.status && guest.eventGuestStatuses && guest.eventGuestStatuses.length > 0) {
+          const rsvpStatus = mapUiStatusToApiStatus(draft.status);
+          for (const eventGuest of guest.eventGuestStatuses) {
+            const response = await fetch(`/api/weddings/${weddingId}/events/${eventGuest.eventId}/guests/${guest.id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ rsvpStatus }),
+            });
+            if (!response.ok) throw new Error("save_failed");
+          }
+        }
+      }
+      setDrafts({});
+      setFastEditMode(false);
+      onSaved();
+    } catch {
+      setSaveError(t("weddingGuestsPage.table.fastEdit.saveError"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Card className="gap-0 overflow-hidden py-0">
       <CardHeader className="flex flex-col gap-3 px-4 py-4 sm:px-5">
@@ -117,6 +209,28 @@ export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestMa
             {t("weddingGuestsPage.filters.filters")}
           </Button>
         </div>
+        {canEdit ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant={fastEditMode ? "primary" : "outline"} onClick={() => setFastEditMode((current) => !current)}>
+              {t("weddingGuestsPage.table.fastEdit.toggle")}
+            </Button>
+            {fastEditMode ? (
+              <Button type="button" variant="outline" disabled={isSaving} onClick={() => {
+                setDrafts({});
+                setFastEditMode(false);
+                setSaveError(null);
+              }}>
+                {t("weddingGuestsPage.table.fastEdit.cancel")}
+              </Button>
+            ) : null}
+            {fastEditMode ? (
+              <Button type="button" disabled={isSaving} onClick={() => void handleSaveFastEdits()}>
+                {isSaving ? t("common.loading") : t("weddingGuestsPage.table.fastEdit.save")}
+              </Button>
+            ) : null}
+            {saveError ? <p className="text-sm text-rose-600">{saveError}</p> : null}
+          </div>
+        ) : null}
       </CardHeader>
 
       <CardContent className="px-0">
@@ -142,12 +256,21 @@ export function GuestManagementTable({ guests, totalGuests, isLoading }: GuestMa
                 </TableHeader>
                 <TableBody>
                   {pagedHouseholds.map((household) => (
-                    <TableRowGroup key={household.id} household={household} t={t} expanded={expandedHouseholds[household.id] === true} onToggle={() =>
-                      setExpandedHouseholds((current) => ({
-                        ...current,
-                        [household.id]: !current[household.id],
-                      }))
-                    } />
+                    <TableRowGroup
+                      key={household.id}
+                      household={household}
+                      t={t}
+                      expanded={expandedHouseholds[household.id] === true}
+                      fastEditMode={fastEditMode}
+                      applyFastEdit={applyFastEdit}
+                      setGuestDraft={setGuestDraft}
+                      onToggle={() =>
+                        setExpandedHouseholds((current) => ({
+                          ...current,
+                          [household.id]: !current[household.id],
+                        }))
+                      }
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -241,10 +364,14 @@ type TableRowGroupProps = {
   household: HouseholdRow;
   t: (key: string, values?: Record<string, string | number>) => string;
   expanded: boolean;
+  fastEditMode: boolean;
+  applyFastEdit: (guest: WeddingGuest) => FastEditDraft;
+  setGuestDraft: (guestId: string, updater: (current: FastEditDraft) => FastEditDraft) => void;
   onToggle: () => void;
 };
 
-function TableRowGroup({ household, t, expanded, onToggle }: TableRowGroupProps) {
+function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, setGuestDraft, onToggle }: TableRowGroupProps) {
+  const primary = household.members[0];
   return (
     <>
       <TableRow>
@@ -253,14 +380,48 @@ function TableRowGroup({ household, t, expanded, onToggle }: TableRowGroupProps)
                           <Avatar className="size-9">
                             <AvatarFallback>{household.initials}</AvatarFallback>
                           </Avatar>
-                          <div>
-                            <p className="font-medium text-zinc-900">{household.label}</p>
+                          <div className="min-w-[220px] space-y-1">
+                            {fastEditMode ? (
+                              household.members.map((member) => {
+                                const draft = applyFastEdit(member);
+                                return (
+                                  <Input
+                                    key={`${household.id}-${member.id}-name`}
+                                    value={draft.name}
+                                    onChange={(event) =>
+                                      setGuestDraft(member.id, (current) => ({ ...current, name: event.target.value }))
+                                    }
+                                    className="h-8"
+                                  />
+                                );
+                              })
+                            ) : (
+                              <p className="font-medium text-zinc-900">{household.label}</p>
+                            )}
                             <p className="text-xs text-zinc-500">{household.members.length > 1 ? "Pair" : "Single guest"}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <GuestStatusBadge status={household.status} />
+                        {fastEditMode ? (
+                          <select
+                            value={applyFastEdit(primary).status}
+                            onChange={(event) =>
+                              setGuestDraft(primary.id, (current) => ({
+                                ...current,
+                                status: event.target.value as GuestRsvpStatus,
+                              }))
+                            }
+                            className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+                          >
+                            <option value="confirmed">{t("weddingGuestsPage.status.confirmed")}</option>
+                            <option value="pending">{t("weddingGuestsPage.status.pending")}</option>
+                            <option value="not_attending">{t("weddingGuestsPage.status.not_attending")}</option>
+                            <option value="no_response">{t("weddingGuestsPage.status.no_response")}</option>
+                          </select>
+                        ) : (
+                          <GuestStatusBadge status={household.status} />
+                        )}
                       </TableCell>
                       <TableCell>
                         <GuestEventChips events={household.events} />
@@ -273,13 +434,24 @@ function TableRowGroup({ household, t, expanded, onToggle }: TableRowGroupProps)
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        {household.notesCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-zinc-600">
-                            <MessageSquare className="size-4" />
-                            {household.notesCount}
-                          </span>
+                        {fastEditMode ? (
+                          <Input
+                            value={applyFastEdit(primary).notes}
+                            onChange={(event) =>
+                              setGuestDraft(primary.id, (current) => ({ ...current, notes: event.target.value }))
+                            }
+                            className="h-8 min-w-[180px]"
+                            placeholder={t("weddingGuestsPage.table.notesInputPlaceholder")}
+                          />
                         ) : (
-                          "-"
+                          household.notesCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-zinc-600">
+                              <MessageSquare className="size-4" />
+                              {household.notesCount}
+                            </span>
+                          ) : (
+                            "-"
+                          )
                         )}
                       </TableCell>
                       <TableCell>
@@ -304,12 +476,45 @@ function TableRowGroup({ household, t, expanded, onToggle }: TableRowGroupProps)
                             {child.name} • {getAgeCategoryLabel(t, child.ageCategory)}
                           </div>
                         </TableCell>
-                        <TableCell><GuestStatusBadge status={child.status} /></TableCell>
+                        <TableCell>
+                          {fastEditMode ? (
+                            <select
+                              value={applyFastEdit(child).status}
+                              onChange={(event) =>
+                                setGuestDraft(child.id, (current) => ({
+                                  ...current,
+                                  status: event.target.value as GuestRsvpStatus,
+                                }))
+                              }
+                              className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+                            >
+                              <option value="confirmed">{t("weddingGuestsPage.status.confirmed")}</option>
+                              <option value="pending">{t("weddingGuestsPage.status.pending")}</option>
+                              <option value="not_attending">{t("weddingGuestsPage.status.not_attending")}</option>
+                              <option value="no_response">{t("weddingGuestsPage.status.no_response")}</option>
+                            </select>
+                          ) : (
+                            <GuestStatusBadge status={child.status} />
+                          )}
+                        </TableCell>
                         <TableCell><GuestEventChips events={child.events} /></TableCell>
                         <TableCell>{child.requiresSeat === false ? t("weddingGuestsPage.table.noSeatRequired") : "-"}</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
-                        <TableCell>{child.notesCount && child.notesCount > 0 ? child.notesCount : "-"}</TableCell>
+                        <TableCell>
+                          {fastEditMode ? (
+                            <Input
+                              value={applyFastEdit(child).notes}
+                              onChange={(event) =>
+                                setGuestDraft(child.id, (current) => ({ ...current, notes: event.target.value }))
+                              }
+                              className="h-8 min-w-[180px]"
+                              placeholder={t("weddingGuestsPage.table.notesInputPlaceholder")}
+                            />
+                          ) : (
+                            child.notesCount && child.notesCount > 0 ? child.notesCount : "-"
+                          )}
+                        </TableCell>
                         <TableCell />
                       </TableRow>
                     )) : null}
@@ -393,4 +598,11 @@ function getAgeCategoryLabel(t: (key: string) => string, ageCategory?: WeddingGu
   if (ageCategory === "child") return t("guestPanel.ageCategoryChild");
   if (ageCategory === "small_child") return t("guestPanel.ageCategorySmallChild");
   return t("guestPanel.ageCategoryToddler");
+}
+
+function mapUiStatusToApiStatus(status: GuestRsvpStatus): "unknown" | "confirmed" | "declined" | "maybe" {
+  if (status === "confirmed") return "confirmed";
+  if (status === "pending") return "maybe";
+  if (status === "not_attending") return "declined";
+  return "unknown";
 }
