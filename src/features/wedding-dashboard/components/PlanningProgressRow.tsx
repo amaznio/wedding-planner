@@ -46,8 +46,8 @@ function RowBody({
   const Icon = iconById[row.id];
 
   return (
-    <div className="flex items-center gap-3 p-4">
-      <div className={cn("flex size-9 items-center justify-center rounded-full", accentById[row.id])}>
+    <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 p-4 sm:flex-nowrap">
+      <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", accentById[row.id])}>
         <Icon className="size-4" />
       </div>
 
@@ -56,17 +56,17 @@ function RowBody({
         <p className="text-xs text-zinc-600">{description}</p>
       </div>
 
-      <div className="w-40 shrink-0 text-right">
-        {row.progress !== null ? (
-          <>
-            <p className="text-sm font-semibold text-zinc-900">{progressLabel}</p>
-            <Progress value={row.progress} className="mt-1.5 h-2" />
-          </>
-        ) : null}
-      </div>
+      {row.progress !== null ? (
+        <div className="order-3 ml-12 w-full text-left sm:order-none sm:ml-0 sm:w-40 sm:shrink-0 sm:text-right">
+          <p className="text-sm font-semibold text-zinc-900">{progressLabel}</p>
+          <Progress value={row.progress} className="mt-1.5 h-2" />
+        </div>
+      ) : (
+        <div className="hidden sm:block sm:w-40 sm:shrink-0" aria-hidden="true" />
+      )}
 
-      <div className="w-32 shrink-0 text-right text-xs text-zinc-600">{detailLabel}</div>
-      <ChevronRight className="size-4 shrink-0 text-zinc-400" />
+      <div className="order-4 ml-12 w-full text-xs text-zinc-600 sm:order-none sm:ml-0 sm:w-36 sm:shrink-0 sm:text-right">{detailLabel}</div>
+      <ChevronRight className="order-2 ml-auto size-4 shrink-0 text-zinc-400 sm:order-none sm:ml-0" />
     </div>
   );
 }
@@ -98,7 +98,7 @@ export function PlanningProgressRowItem({
       type="button"
       variant="ghost"
       onClick={() => onPlaceholderAction(row.id)}
-      className="h-auto w-full justify-start rounded-none border-b border-zinc-200 p-0 text-left font-normal hover:bg-zinc-50 last:border-b-0"
+      className="flex h-auto w-full items-stretch justify-start whitespace-normal rounded-none border-b border-zinc-200 p-0 text-left font-normal hover:bg-zinc-50 last:border-b-0"
     >
       <RowBody
         row={row}

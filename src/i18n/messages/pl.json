@@ -1092,6 +1092,19 @@
         "duplicate": "Duplikuj plan",
         "duplicating": "Duplikowanie...",
         "duplicateError": "Nie udało się zduplikować planu stołów",
+        "delete": "Usuń plan",
+        "deleting": "Usuwanie...",
+        "deleteError": "Nie udało się usunąć planu stołów",
+        "deleteConfirmTitle": "Usunąć plan stołów?",
+        "deleteConfirmDescription": "Trwale usuniesz \"{{name}}\" oraz jego układ stołów. Tej akcji nie można cofnąć.",
+        "deleteConfirmAction": "Usuń plan",
+        "complete": "Wszyscy usadzeni",
+        "results": "Widoczne plany: {{count}}",
+        "summary": {
+          "plans": "Plany",
+          "seated": "Usadzeni goście",
+          "progress": "Całkowity postęp"
+        },
         "createInlineCta": "Utwórz nowy plan stołów",
         "createInlineHint": "Zacznij od pustego planu lub użyj szablonu",
         "columns": {
@@ -1103,7 +1116,7 @@
           "actions": "Akcje"
         },
         "selectEventForPlan": "Wybierz wydarzenie",
-        "remainingToSeat": "Pozostało do usadzenia: {count}"
+        "remainingToSeat": "Pozostało do usadzenia: {{count}}"
       }
     },
     "actions": {

@@ -2,7 +2,99 @@
 
 ## Current Phase
 
-Phase 229 - Seat search topbar single-line enforcement (desktop absolute-center + tablet fallback) (completed)
+Phase 233 - Planning progress panel UI fix (completed)
+
+## Completed Work
+
+- Implemented Phase 233 planning progress panel UI fix:
+  - fixed placeholder/button-backed progress rows so their content stretches to the full row width like link-backed rows
+  - kept the row body's original flex reading order while adding full-width stretching and responsive wrapping safeguards
+  - corrected an interim grid-based layout that pushed row text and metrics too far right
+  - preserved current row copy, icons, navigation behavior, and placeholder action behavior
+  - replaced invalid/fragile shared progress default color utilities with standard Tailwind classes so progress tracks and primary-color indicators render visibly
+  - files changed:
+    - `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`
+    - `src/components/ui/progress.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-dashboard/components/PlanningProgressRow.tsx src/components/ui/progress.tsx` (pass)
+    - `pnpm typecheck` (pass after primary-color progress update)
+    - `pnpm lint -- src/features/wedding-dashboard/components/PlanningProgressRow.tsx src/components/ui/progress.tsx` (pass after primary-color progress update)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]` was not completed in this session
+    - existing unrelated dirty changes remain in `src/features/seating-editor/components/WeddingSeatingPage.tsx`, `src/i18n/messages/en.json`, and `src/i18n/messages/pl.json`
+  - next recommended step:
+    - open an authenticated dashboard and verify the planning progress panel at desktop and narrow widths.
+
+## Completed Work
+
+Phase 232 - Seating list interpolation token fix (completed)
+
+## Completed Work
+
+- Implemented Phase 232 seating list interpolation token fix:
+  - corrected new seating-list translation placeholders from `{name}` / `{count}` to the app's supported `{{name}}` / `{{count}}` syntax
+  - fixed delete confirmation description so the selected plan name renders instead of a literal token
+  - fixed visible plan count and remaining-to-seat text so counts render instead of literal tokens
+  - files changed:
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/seating-editor/components/WeddingSeatingPage.tsx` (pass)
+  - known issues:
+    - no new issues identified in this phase
+  - next recommended step:
+    - deploy/reload cloud environment and verify delete confirmation copy shows the plan name.
+
+## Completed Work
+
+- Implemented Phase 231 seating plan card cleanup:
+  - removed the decorative preview image from the left side of each seating plan card
+  - removed the bottom dashed add-plan zone
+  - reworked the card grid so the plan details, seated count, progress, open button, and overflow menu each have clear non-overlapping space on desktop
+  - constrained the open-plan label with truncation and a fixed action column to prevent it from covering progress text/bars in Polish
+  - files changed:
+    - `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/seating-editor/components/WeddingSeatingPage.tsx` (pass)
+  - known issues:
+    - no new issues identified in this phase
+  - next recommended step:
+    - deploy/reload cloud environment and visually confirm the card row at desktop widths where the previous overlap was visible.
+
+## Completed Work
+
+- Implemented Phase 230 seating plans list UX refactor:
+  - replaced the oversized table-like list with clearer summary metrics, a focused create/search/filter control band, and compact responsive plan cards
+  - improved hierarchy for plan name, event, updated date, seated count, progress, and primary open action
+  - kept all user-facing plan actions label-based and avoided exposing plan IDs
+  - added per-plan delete action in the actions menu
+  - added destructive confirmation dialog before deletion, including the plan name in the confirmation copy
+  - wired delete to the existing `DELETE /api/seating-plans/[planId]` endpoint and removes the plan from local state after success
+  - added EN/PL strings for delete, delete errors, confirmation copy, summary metrics, result count, and complete state
+  - files changed:
+    - `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm dlx shadcn@latest docs alert-dialog dropdown-menu button` (docs checked)
+    - `pnpm typecheck` (pass)
+    - `pnpm lint` (fails on pre-existing unrelated lint errors)
+    - `pnpm i18n:audit` (fails on pre-existing hardcoded homepage strings in `src/app/page.tsx`)
+    - `Invoke-WebRequest http://localhost:3000/sign-in` (200)
+    - `Invoke-WebRequest http://localhost:3000/weddings/test/seating -MaximumRedirection 0` (307 redirect to `/sign-in`, expected without session)
+  - known issues:
+    - Authenticated visual/browser QA for `/weddings/[weddingId]/seating` was blocked because the in-app Browser runtime tool is not exposed in this session and the route redirects without a signed-in session.
+    - Existing repo lint failures remain in unrelated API/editor files.
+    - Existing i18n audit failure remains in `src/app/page.tsx`.
+  - next recommended step:
+    - manual authenticated visual QA on `/weddings/[weddingId]/seating`: open the actions menu, trigger delete, cancel once, then confirm deletion on a disposable plan.
 
 ## Completed Phases
 
@@ -241,6 +333,10 @@ Phase 229 - Seat search topbar single-line enforcement (desktop absolute-center 
 - Phase 227 - Shared seat search + pulse highlight (editor + public)
 - Phase 228 - Seat search placement refinement (topbar-centered desktop + mobile search sheet)
 - Phase 229 - Seat search topbar single-line enforcement (desktop absolute-center + tablet fallback)
+- Phase 230 - Seating plans list UX refactor + delete confirmation
+- Phase 231 - Seating plan cards preview removal and action overlap fix
+- Phase 232 - Seating list interpolation token fix
+- Phase 233 - Planning progress panel UI fix
 
 ## Completed Work
 

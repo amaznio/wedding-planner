@@ -1092,6 +1092,19 @@
         "duplicate": "Duplicate plan",
         "duplicating": "Duplicating...",
         "duplicateError": "Failed to duplicate seating plan",
+        "delete": "Delete plan",
+        "deleting": "Deleting...",
+        "deleteError": "Failed to delete seating plan",
+        "deleteConfirmTitle": "Delete seating plan?",
+        "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and its seating layout. This action cannot be undone.",
+        "deleteConfirmAction": "Delete plan",
+        "complete": "Fully seated",
+        "results": "{{count}} plans shown",
+        "summary": {
+          "plans": "Plans",
+          "seated": "Seated guests",
+          "progress": "Overall progress"
+        },
         "createInlineCta": "Create a new seating plan",
         "createInlineHint": "Start from an empty plan or use a template",
         "columns": {
@@ -1103,7 +1116,7 @@
           "actions": "Actions"
         },
         "selectEventForPlan": "Select event",
-        "remainingToSeat": "{count} left to seat"
+        "remainingToSeat": "{{count}} left to seat"
       }
     },
     "actions": {
