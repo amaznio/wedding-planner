@@ -28,6 +28,14 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
   const dashboardJson = (await dashboardResponse.json()) as WeddingDashboardApiResponse;
 
   const mappedEvents = mapEvents(weddingId, weddingJson.wedding.events);
+  const primaryEventId = weddingJson.wedding.events.find((event) => event.type === "wedding")?.id
+    ?? weddingJson.wedding.events[0]?.id;
+  const primaryRsvp = dashboardJson.rsvpByEvent.find((event) => event.eventId === primaryEventId)
+    ?? dashboardJson.rsvpByEvent[0];
+  const rsvpRespondedCount = primaryRsvp
+    ? primaryRsvp.confirmed + primaryRsvp.declined + primaryRsvp.maybe
+    : 0;
+  const rsvpTotalCount = primaryRsvp?.totalEventGuests ?? weddingJson.wedding._count.guests;
   const expenseSpentMinor = dashboardJson.expenseSummary
     .filter((row) => row.status !== "canceled")
     .reduce((sum, row) => sum + (row._sum.amountMinor ?? 0), 0);
@@ -40,6 +48,8 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     coverImageUrl: weddingJson.wedding.coverImageUrl,
     currency: dashboardJson.currency,
     guestCount: weddingJson.wedding._count.guests,
+    rsvpRespondedCount,
+    rsvpTotalCount,
     budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
     spentMinor: dashboardJson.vendorSummary.totalPaidMinor || expenseSpentMinor || undefined,
     events: mappedEvents,

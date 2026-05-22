@@ -2,6 +2,7 @@ import type { DashboardNavItem } from "@/features/wedding-dashboard/types";
 
 export type GuestRsvpStatus = "confirmed" | "pending" | "not_attending" | "no_response";
 export type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
+export type GuestSex = "male" | "female" | "unknown";
 
 export type WeddingGuestEvent = "wedding" | "afterparty" | "bachelorette" | "bachelor";
 
@@ -10,6 +11,7 @@ export type WeddingGuest = {
   name: string;
   initials: string;
   status: GuestRsvpStatus;
+  sex?: GuestSex;
   ageCategory?: GuestAgeCategory;
   requiresSeat?: boolean;
   isChild?: boolean;

@@ -522,8 +522,8 @@
       "title": "Planning progress",
       "items": {
         "guestList": {
-          "title": "Guest list",
-          "description": "Manage guests and invitations"
+          "title": "RSVP responses",
+          "description": "Track guest response completion"
         },
         "eventGuests": {
           "title": "Events & guest assignments",
@@ -836,10 +836,16 @@
         "guest": "Guest",
         "status": "Status",
         "events": "Events",
-        "table": "Table",
+        "ageGroup": "Age group",
+        "gender": "Gender",
         "plusOne": "+1",
         "children": "Children",
         "notes": "Notes"
+      },
+      "gender": {
+        "female": "Female",
+        "male": "Male",
+        "unknown": "Unknown"
       },
       "noSeatShort": "no-seat",
       "noSeatRequired": "No seat required",
@@ -860,7 +866,15 @@
         "remove": "Remove guest"
       },
       "empty": "No guests match the current filters.",
-      "showing": "Showing {{from}}-{{to}} of {{total}} guests"
+      "showing": "Showing {{from}}-{{to}} of {{total}} results",
+      "pageSize": {
+        "label": "Rows per page",
+        "all": "All"
+      },
+      "pagination": {
+        "previous": "Previous page",
+        "next": "Next page"
+      }
     },
     "insights": {
       "summary": {

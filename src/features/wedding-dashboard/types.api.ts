@@ -36,6 +36,17 @@ export type WeddingDetailApiResponse = {
 
 export type WeddingDashboardApiResponse = {
   currency: string;
+  rsvpByEvent: Array<{
+    eventId: string;
+    name: string;
+    type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+    totalEventGuests: number;
+    invited: number;
+    confirmed: number;
+    declined: number;
+    maybe: number;
+    seatedEligible: number;
+  }>;
   expenseSummary: Array<{
     status: string;
     _sum: { amountMinor: number | null };

@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
-import type { GuestAgeCategory, GuestRsvpStatus, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
+import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
 import { AddGuestDialog } from "./AddGuestDialog";
 import { GuestInsightsPanel } from "./GuestInsightsPanel";
 import { GuestManagementTable } from "./GuestManagementTable";
@@ -38,6 +38,7 @@ type WeddingDetailsApiResponse = {
 type WeddingGuestsApiGuest = {
   id: string;
   name: string;
+  sex: GuestSex;
   ageCategory: GuestAgeCategory;
   guardianGuestId: string | null;
   notes: string | null;
@@ -231,7 +232,6 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
           <GuestManagementTable
             weddingId={weddingId}
             guests={data.guests}
-            totalGuests={data.stats.totalGuests}
             isLoading={false}
             canEdit={canEditWedding}
             onSaved={() => setReloadKey((prev) => prev + 1)}
@@ -281,6 +281,7 @@ function mapGuestsFromApi(apiGuests: WeddingGuestsApiGuest[]): WeddingGuest[] {
       name: guest.name,
       initials: getInitials(guest.name),
       status: mapGuestStatus(guest.eventGuests.map((eventGuest) => eventGuest.rsvpStatus)),
+      sex: guest.sex,
       notes: guest.notes ?? null,
       eventGuestStatuses: guest.eventGuests.map((eventGuest) => ({
         eventId: eventGuest.eventId,

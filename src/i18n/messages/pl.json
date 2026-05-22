@@ -522,8 +522,8 @@
       "title": "Postępy w planowaniu",
       "items": {
         "guestList": {
-          "title": "Lista gości",
-          "description": "Zarządzaj gośćmi i zaproszeniami"
+          "title": "Odpowiedzi RSVP",
+          "description": "Śledź kompletność odpowiedzi gości"
         },
         "eventGuests": {
           "title": "Wydarzenia i goście",
@@ -836,10 +836,16 @@
         "guest": "Gość",
         "status": "Status",
         "events": "Wydarzenia",
-        "table": "Stół",
+        "ageGroup": "Grupa wiekowa",
+        "gender": "Płeć",
         "plusOne": "+1",
         "children": "Dzieci",
         "notes": "Notatki"
+      },
+      "gender": {
+        "female": "Kobieta",
+        "male": "Mężczyzna",
+        "unknown": "Nieznana"
       },
       "noSeatShort": "bez miejsca",
       "noSeatRequired": "Nie wymaga miejsca",
@@ -860,7 +866,15 @@
         "remove": "Usuń gościa"
       },
       "empty": "Brak gości pasujących do filtrów.",
-      "showing": "Wyświetlanie {{from}}-{{to}} z {{total}} gości"
+      "showing": "Wyświetlanie {{from}}-{{to}} z {{total}} wyników",
+      "pageSize": {
+        "label": "Wierszy na stronę",
+        "all": "Wszystkie"
+      },
+      "pagination": {
+        "previous": "Poprzednia strona",
+        "next": "Następna strona"
+      }
     },
     "insights": {
       "summary": {

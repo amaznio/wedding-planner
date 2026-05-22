@@ -2,7 +2,84 @@
 
 ## Current Phase
 
-Phase 233 - Planning progress panel UI fix (completed)
+Phase 236 - Dashboard RSVP progress row (completed)
+
+## Completed Work
+
+- Implemented Phase 236 dashboard RSVP progress row:
+  - changed the first planning progress row from mock guest-list progress to live RSVP response completion
+  - used the primary wedding event's RSVP counts from `/api/weddings/[weddingId]/dashboard`
+  - calculated responded guests as `confirmed + declined + maybe` over total event guests
+  - updated the row detail and percentage so current data can show `219 / 219` and `100%` instead of the old mock `81 / 219` and `67%`
+  - renamed the row copy to `RSVP responses` / `Odpowiedzi RSVP`
+  - extended the dashboard API response type with `rsvpByEvent`
+  - files changed:
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+    - `src/features/wedding-dashboard/types.api.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-dashboard/dashboard.mock.ts src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts src/features/wedding-dashboard/types.api.ts src/i18n/messages/en.json src/i18n/messages/pl.json` (pass with JSON ignored warnings)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]` was not completed in this session
+    - existing unrelated dirty changes remain in `src/components/ui/progress.tsx`, `src/features/seating-editor/components/WeddingSeatingPage.tsx`, `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`, `src/features/wedding-guests/**`, `src/i18n/messages/en.json`, and `src/i18n/messages/pl.json`
+  - next recommended step:
+    - open an authenticated dashboard and verify the planning progress row shows RSVP completion matching the guests page/database counts.
+
+## Completed Work
+
+- Implemented Phase 235 guest table pagination controls:
+  - replaced the fixed page-1 table slice with working client-side page state
+  - added row-based pagination over visible household rows so pair rows stay together
+  - added a shadcn page-size selector with `50`, `100`, and `All`, defaulting to `50`
+  - wired previous, next, and dynamic numeric page buttons with first/last disabled states
+  - reset pagination to page 1 when search, RSVP status filter, or page size changes
+  - derived a clamped current page for reduced result sets without triggering React effect state updates
+  - changed footer copy from guest-count wording to row/result wording in EN/PL
+  - removed the no-longer-needed `totalGuests` prop from the guest table
+  - files changed:
+    - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-guests/components/GuestManagementTable.tsx src/features/wedding-guests/components/WeddingGuestsPage.tsx src/i18n/messages/en.json src/i18n/messages/pl.json` (failed first on `react-hooks/set-state-in-effect`, then pass after replacing effect clamp with derived state; JSON files reported ignored warnings)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/guests` was not completed in this session
+    - existing unrelated dirty changes remain in `src/components/ui/progress.tsx`, `src/features/seating-editor/components/WeddingSeatingPage.tsx`, `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`, `src/i18n/messages/en.json`, and `src/i18n/messages/pl.json`
+  - next recommended step:
+    - open an authenticated guests page and verify page 1/page 2 navigation, `50`/`100`/`All` page sizes, and filter reset behavior.
+
+## Completed Work
+
+- Implemented Phase 234 guest table age and gender refactor:
+  - replaced the wedding guests desktop table `Table` column with `Age group` and `Gender`
+  - passed existing guest `sex` values through the wedding guests API view model
+  - added stacked age group and gender display for pair rows, matching the existing stacked name behavior
+  - made age group and gender editable in quick bulk edit for pair members and child rows
+  - included changed `sex` and `ageCategory` fields in the existing guest quick-edit save payload
+  - moved expanded child no-seat text into the `Children` column and kept table assignment info hidden
+  - added EN/PL table labels for age group, gender, and gender values
+  - files changed:
+    - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+    - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+    - `src/features/wedding-guests/types.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-guests/components/GuestManagementTable.tsx src/features/wedding-guests/components/WeddingGuestsPage.tsx src/features/wedding-guests/types.ts` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/guests` was not completed in this session
+    - existing unrelated dirty changes remain in `src/components/ui/progress.tsx`, `src/features/seating-editor/components/WeddingSeatingPage.tsx`, `src/features/wedding-dashboard/components/PlanningProgressRow.tsx`, `src/i18n/messages/en.json`, and `src/i18n/messages/pl.json`
+  - next recommended step:
+    - open an authenticated guests page, enable quick bulk edit, and verify age/gender display plus save/cancel behavior on single, pair, and expanded child rows.
 
 ## Completed Work
 

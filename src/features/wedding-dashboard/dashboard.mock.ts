@@ -14,6 +14,8 @@ type BuildDashboardDataInput = {
   coverImageUrl?: string | null;
   currency?: string;
   guestCount?: number;
+  rsvpRespondedCount?: number;
+  rsvpTotalCount?: number;
   budgetMinor?: number;
   spentMinor?: number;
   events?: DashboardEventCard[];
@@ -27,13 +29,16 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
   const budgetMinor = input.budgetMinor ?? 120_000_00;
   const spentMinor = input.spentMinor ?? 65_000_00;
   const guestCount = input.guestCount ?? 120;
+  const rsvpTotalCount = input.rsvpTotalCount ?? guestCount;
+  const rsvpRespondedCount = input.rsvpRespondedCount ?? 81;
+  const rsvpProgress = rsvpTotalCount > 0 ? Math.round((rsvpRespondedCount / rsvpTotalCount) * 100) : 0;
   const events = input.events && input.events.length > 0 ? input.events : getDefaultEvents(input.weddingId);
 
   const planningProgress: PlanningProgressRow[] = [
     {
       id: "guestList",
-      progress: 67,
-      detailLabel: `81 / ${guestCount}`,
+      progress: rsvpProgress,
+      detailLabel: `${rsvpRespondedCount} / ${rsvpTotalCount}`,
       href: routes.guests,
     },
     {

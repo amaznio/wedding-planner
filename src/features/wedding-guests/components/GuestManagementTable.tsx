@@ -12,16 +12,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
-import type { GuestRsvpStatus, WeddingGuest } from "../types";
+import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest } from "../types";
 import { GuestEventChips } from "./GuestEventChips";
 import { GuestStatusBadge } from "./GuestStatusBadge";
 
 type GuestManagementTableProps = {
   weddingId: string;
   guests: WeddingGuest[];
-  totalGuests: number;
   isLoading: boolean;
   canEdit: boolean;
   onSaved: () => void;
@@ -42,18 +42,22 @@ type HouseholdRow = {
   childNoSeatCount: number;
 };
 
-const PAGE_SIZE = 50;
+type PageSize = 50 | 100 | "all";
+
+const DEFAULT_PAGE_SIZE: PageSize = 50;
+const PAGE_SIZE_OPTIONS: PageSize[] = [50, 100, "all"];
 
 type FastEditDraft = {
   name: string;
   status: GuestRsvpStatus;
+  sex: GuestSex;
+  ageCategory: GuestAgeCategory;
   notes: string;
 };
 
 export function GuestManagementTable({
   weddingId,
   guests,
-  totalGuests,
   isLoading,
   canEdit,
   onSaved,
@@ -61,7 +65,8 @@ export function GuestManagementTable({
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
-  const [page] = useState(1);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [expandedHouseholds, setExpandedHouseholds] = useState<Record<string, boolean>>({});
   const [fastEditMode, setFastEditMode] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, FastEditDraft>>({});
@@ -88,17 +93,20 @@ export function GuestManagementTable({
     });
   }, [households, searchQuery, statusTab]);
 
-  const pagedHouseholds = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredHouseholds.slice(start, start + PAGE_SIZE);
-  }, [filteredHouseholds, page]);
+  const displayTotal = filteredHouseholds.length;
+  const totalPages = pageSize === "all" ? 1 : Math.max(1, Math.ceil(displayTotal / pageSize));
+  const currentPage = Math.min(page, totalPages);
 
-  const displayTotal =
-    searchQuery.trim() || statusTab !== "all"
-      ? filteredHouseholds.length
-      : Math.max(totalGuests, filteredHouseholds.length);
-  const showFrom = filteredHouseholds.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const showTo = filteredHouseholds.length === 0 ? 0 : Math.min(page * PAGE_SIZE, displayTotal);
+  const pagedHouseholds = useMemo(() => {
+    if (pageSize === "all") return filteredHouseholds;
+    const start = (currentPage - 1) * pageSize;
+    return filteredHouseholds.slice(start, start + pageSize);
+  }, [filteredHouseholds, currentPage, pageSize]);
+
+  const showFrom = displayTotal === 0 ? 0 : pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1;
+  const showTo = displayTotal === 0 ? 0 : pageSize === "all" ? displayTotal : Math.min(currentPage * pageSize, displayTotal);
+  const visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+  const isPaginationDisabled = pageSize === "all" || totalPages <= 1;
 
   const tabs: Array<{ value: StatusTab; label: string }> = [
     { value: "all", label: t("weddingGuestsPage.filters.all") },
@@ -110,6 +118,8 @@ export function GuestManagementTable({
   const applyFastEdit = (guest: WeddingGuest): FastEditDraft => drafts[guest.id] ?? {
     name: guest.name,
     status: guest.status,
+    sex: guest.sex ?? "unknown",
+    ageCategory: guest.ageCategory ?? "adult",
     notes: guest.notes ?? "",
   };
 
@@ -120,6 +130,8 @@ export function GuestManagementTable({
       const existing: FastEditDraft = current[guestId] ?? {
         name: source.name,
         status: source.status,
+        sex: source.sex ?? "unknown",
+        ageCategory: source.ageCategory ?? "adult",
         notes: source.notes ?? "",
       };
       return {
@@ -146,6 +158,12 @@ export function GuestManagementTable({
         const originalNotes = guest.notes?.trim() ? guest.notes.trim() : null;
         if (normalizedNotes !== originalNotes) {
           payload.notes = normalizedNotes;
+        }
+        if (draft.sex !== (guest.sex ?? "unknown")) {
+          payload.sex = draft.sex;
+        }
+        if (draft.ageCategory !== (guest.ageCategory ?? "adult")) {
+          payload.ageCategory = draft.ageCategory;
         }
         if (Object.keys(payload).length > 0) {
           const response = await fetch(`/api/weddings/${weddingId}/guests/${guest.id}`, {
@@ -187,7 +205,10 @@ export function GuestManagementTable({
               key={tab.value}
               type="button"
               variant={statusTab === tab.value ? "primary" : "outline"}
-              onClick={() => setStatusTab(tab.value)}
+              onClick={() => {
+                setStatusTab(tab.value);
+                setPage(1);
+              }}
             >
               {tab.label}
             </Button>
@@ -199,7 +220,10 @@ export function GuestManagementTable({
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
             <Input
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setPage(1);
+              }}
               className="pl-10"
               placeholder={t("weddingGuestsPage.filters.searchPlaceholder")}
             />
@@ -247,7 +271,8 @@ export function GuestManagementTable({
                     <TableHead>{t("weddingGuestsPage.table.columns.guest")}</TableHead>
                     <TableHead>{t("weddingGuestsPage.table.columns.status")}</TableHead>
                     <TableHead>{t("weddingGuestsPage.table.columns.events")}</TableHead>
-                    <TableHead>{t("weddingGuestsPage.table.columns.table")}</TableHead>
+                    <TableHead>{t("weddingGuestsPage.table.columns.ageGroup")}</TableHead>
+                    <TableHead>{t("weddingGuestsPage.table.columns.gender")}</TableHead>
                     <TableHead>{t("weddingGuestsPage.table.columns.plusOne")}</TableHead>
                     <TableHead>{t("weddingGuestsPage.table.columns.children")}</TableHead>
                     <TableHead>{t("weddingGuestsPage.table.columns.notes")}</TableHead>
@@ -330,7 +355,7 @@ export function GuestManagementTable({
         )}
       </CardContent>
 
-      <CardFooter className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 text-sm text-zinc-600 sm:px-5">
+      <CardFooter className="flex flex-col gap-3 border-t border-zinc-200 px-4 py-3 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <p>
           {t("weddingGuestsPage.table.showing", {
             from: showFrom,
@@ -338,20 +363,60 @@ export function GuestManagementTable({
             total: displayTotal,
           })}
         </p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="icon" disabled>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span>{t("weddingGuestsPage.table.pageSize.label")}</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPageSize(value === "all" ? "all" : (Number(value) as PageSize));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-[92px]" aria-label={t("weddingGuestsPage.table.pageSize.label")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <SelectItem key={String(option)} value={String(option)}>
+                      {option === "all" ? t("weddingGuestsPage.table.pageSize.all") : option}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={t("weddingGuestsPage.table.pagination.previous")}
+            disabled={isPaginationDisabled || currentPage === 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
             {"<"}
           </Button>
-          <Button type="button" variant="outline" className="border-violet-300 text-violet-600" disabled>
-            1
-          </Button>
-          <Button type="button" variant="outline" disabled>
-            2
-          </Button>
-          <Button type="button" variant="outline" disabled>
-            3
-          </Button>
-          <Button type="button" variant="outline" size="icon" disabled>
+          {visiblePageNumbers.map((pageNumber) => (
+            <Button
+              key={pageNumber}
+              type="button"
+              variant="outline"
+              className={pageNumber === currentPage ? "border-violet-300 text-violet-600" : undefined}
+              disabled={pageSize === "all"}
+              onClick={() => setPage(pageNumber)}
+            >
+              {pageNumber}
+            </Button>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={t("weddingGuestsPage.table.pagination.next")}
+            disabled={isPaginationDisabled || currentPage === totalPages}
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+          >
             {">"}
           </Button>
         </div>
@@ -426,7 +491,46 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                       <TableCell>
                         <GuestEventChips events={household.events} />
                       </TableCell>
-                      <TableCell>-</TableCell>
+                      <TableCell>
+                        <div className="min-w-[150px] space-y-1">
+                          {household.members.map((member) => {
+                            const draft = applyFastEdit(member);
+                            return fastEditMode ? (
+                              <AgeCategorySelect
+                                key={`${household.id}-${member.id}-age`}
+                                value={draft.ageCategory}
+                                t={t}
+                                onChange={(ageCategory) =>
+                                  setGuestDraft(member.id, (current) => ({ ...current, ageCategory }))
+                                }
+                              />
+                            ) : (
+                              <p key={`${household.id}-${member.id}-age`} className="text-sm text-zinc-700">
+                                {getAgeCategoryLabel(t, member.ageCategory)}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-[120px] space-y-1">
+                          {household.members.map((member) => {
+                            const draft = applyFastEdit(member);
+                            return fastEditMode ? (
+                              <GenderSelect
+                                key={`${household.id}-${member.id}-sex`}
+                                value={draft.sex}
+                                t={t}
+                                onChange={(sex) => setGuestDraft(member.id, (current) => ({ ...current, sex }))}
+                              />
+                            ) : (
+                              <p key={`${household.id}-${member.id}-sex`} className="text-sm text-zinc-700">
+                                {getGenderLabel(t, member.sex)}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      </TableCell>
                       <TableCell>{household.plusOne ? "+1" : "-"}</TableCell>
                       <TableCell>
                         {household.children.length > 0
@@ -473,7 +577,7 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                       <TableRow key={`${household.id}-${child.id}`}>
                         <TableCell>
                           <div className="pl-12 text-sm text-zinc-700">
-                            {child.name} • {getAgeCategoryLabel(t, child.ageCategory)}
+                            {child.name}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -498,9 +602,32 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                           )}
                         </TableCell>
                         <TableCell><GuestEventChips events={child.events} /></TableCell>
+                        <TableCell>
+                          {fastEditMode ? (
+                            <AgeCategorySelect
+                              value={applyFastEdit(child).ageCategory}
+                              t={t}
+                              onChange={(ageCategory) =>
+                                setGuestDraft(child.id, (current) => ({ ...current, ageCategory }))
+                              }
+                            />
+                          ) : (
+                            getAgeCategoryLabel(t, child.ageCategory)
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {fastEditMode ? (
+                            <GenderSelect
+                              value={applyFastEdit(child).sex}
+                              t={t}
+                              onChange={(sex) => setGuestDraft(child.id, (current) => ({ ...current, sex }))}
+                            />
+                          ) : (
+                            getGenderLabel(t, child.sex)
+                          )}
+                        </TableCell>
+                        <TableCell>-</TableCell>
                         <TableCell>{child.requiresSeat === false ? t("weddingGuestsPage.table.noSeatRequired") : "-"}</TableCell>
-                        <TableCell>-</TableCell>
-                        <TableCell>-</TableCell>
                         <TableCell>
                           {fastEditMode ? (
                             <Input
@@ -520,7 +647,7 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                     )) : null}
       {household.children.length > 0 ? (
                       <TableRow key={`${household.id}-toggle`}>
-                        <TableCell colSpan={8}>
+                        <TableCell colSpan={9}>
                           <Button
                             type="button"
                             variant="ghost"
@@ -598,6 +725,68 @@ function getAgeCategoryLabel(t: (key: string) => string, ageCategory?: WeddingGu
   if (ageCategory === "child") return t("guestPanel.ageCategoryChild");
   if (ageCategory === "small_child") return t("guestPanel.ageCategorySmallChild");
   return t("guestPanel.ageCategoryToddler");
+}
+
+function getVisiblePageNumbers(currentPage: number, totalPages: number): number[] {
+  const maxVisiblePages = 5;
+  if (totalPages <= maxVisiblePages) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const firstPage = Math.max(1, Math.min(currentPage - 2, totalPages - maxVisiblePages + 1));
+  return Array.from({ length: maxVisiblePages }, (_, index) => firstPage + index);
+}
+
+function getGenderLabel(t: (key: string) => string, sex?: WeddingGuest["sex"]): string {
+  if (sex === "male") return t("weddingGuestsPage.table.gender.male");
+  if (sex === "female") return t("weddingGuestsPage.table.gender.female");
+  return t("weddingGuestsPage.table.gender.unknown");
+}
+
+function AgeCategorySelect({
+  value,
+  t,
+  onChange,
+}: {
+  value: GuestAgeCategory;
+  t: (key: string) => string;
+  onChange: (value: GuestAgeCategory) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as GuestAgeCategory)}
+      className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+    >
+      <option value="adult">{t("guestPanel.ageCategoryAdult")}</option>
+      <option value="teen">{t("guestPanel.ageCategoryTeen")}</option>
+      <option value="child">{t("guestPanel.ageCategoryChild")}</option>
+      <option value="small_child">{t("guestPanel.ageCategorySmallChild")}</option>
+      <option value="toddler_0_2">{t("guestPanel.ageCategoryToddler")}</option>
+    </select>
+  );
+}
+
+function GenderSelect({
+  value,
+  t,
+  onChange,
+}: {
+  value: GuestSex;
+  t: (key: string) => string;
+  onChange: (value: GuestSex) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as GuestSex)}
+      className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+    >
+      <option value="female">{t("weddingGuestsPage.table.gender.female")}</option>
+      <option value="male">{t("weddingGuestsPage.table.gender.male")}</option>
+      <option value="unknown">{t("weddingGuestsPage.table.gender.unknown")}</option>
+    </select>
+  );
 }
 
 function mapUiStatusToApiStatus(status: GuestRsvpStatus): "unknown" | "confirmed" | "declined" | "maybe" {
