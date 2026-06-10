@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { useI18n } from "@/i18n/provider";
 import type { SearchableUser, WeddingAccess, WeddingCollaborator, WeddingRole } from "../types";
 import { AccessInfoCallout } from "./AccessInfoCallout";
@@ -207,7 +208,7 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col">
+    <AppWorkspacePage>
       <CollaboratorsHeader />
 
       <div className="mt-5 flex flex-col gap-5">
@@ -265,6 +266,6 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
         }}
         onConfirm={removeCollaborator}
       />
-    </main>
+    </AppWorkspacePage>
   );
 }

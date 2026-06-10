@@ -30,7 +30,13 @@ export default async function WeddingEventsRoutePage({ params }: WeddingEventsRo
           type: true,
           startsAt: true,
           location: true,
-          _count: { select: { eventGuests: true } },
+          _count: {
+            select: {
+              eventGuests: true,
+              seatingPlans: true,
+              vendorEvents: true,
+            },
+          },
           eventGuests: {
             select: {
               rsvpStatus: true,

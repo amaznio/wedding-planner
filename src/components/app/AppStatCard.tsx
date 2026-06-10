@@ -10,12 +10,12 @@ type AppStatCardProps = {
 
 export function AppStatCard({ title, value, hint, className }: AppStatCardProps) {
   return (
-    <Card className={cn("gap-0 py-0", className)}>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-zinc-600">{title}</CardTitle>
+    <Card className={cn("min-h-24 gap-0 rounded-lg py-0 shadow-sm", className)}>
+      <CardHeader className="px-5 pb-1 pt-4">
+        <CardTitle className="text-sm font-medium leading-5 text-zinc-600">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="pb-5">
-        <p className="text-2xl font-semibold text-zinc-900">{value}</p>
+      <CardContent className="px-5 pb-4">
+        <p className="text-2xl font-semibold leading-8 text-zinc-900">{value}</p>
         {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
       </CardContent>
     </Card>

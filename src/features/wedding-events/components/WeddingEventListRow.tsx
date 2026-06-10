@@ -14,6 +14,10 @@ type WeddingEventListRowProps = {
   guestsLabel: string;
   confirmedLabel: string;
   confirmedRatioLabel: string;
+  respondedLabel: string;
+  seatingPlansLabel: string;
+  vendorsLabel: string;
+  nextActionLabel: string;
   openLabel: string;
   editLabel: string;
   deleteLabel: string;
@@ -27,6 +31,10 @@ export function WeddingEventListRow({
   guestsLabel,
   confirmedLabel,
   confirmedRatioLabel,
+  respondedLabel,
+  seatingPlansLabel,
+  vendorsLabel,
+  nextActionLabel,
   openLabel,
   editLabel,
   deleteLabel,
@@ -40,7 +48,7 @@ export function WeddingEventListRow({
         highlighted ? "border-violet-300 bg-violet-50/30" : "border-zinc-200 hover:bg-zinc-50",
       )}
     >
-      <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 md:grid-cols-[56px_minmax(0,1fr)_92px_120px_32px] md:items-center md:gap-4">
+      <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 md:grid-cols-[56px_minmax(0,1fr)_92px_160px_150px_32px] md:items-center md:gap-4">
         <Link href={href} className="block rounded-lg bg-violet-50 px-1 py-2 text-center">
           <div className="text-2xl font-semibold leading-none text-violet-700">{event.dayLabel}</div>
           <div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-violet-500">{event.monthLabel}</div>
@@ -63,6 +71,15 @@ export function WeddingEventListRow({
           <div className="mt-1 text-xs text-zinc-700">
             {confirmedRatioLabel}
           </div>
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {respondedLabel}
+          </div>
+        </div>
+
+        <div className="mt-2 space-y-1 text-xs text-zinc-600 md:mt-0">
+          <div>{seatingPlansLabel}</div>
+          <div>{vendorsLabel}</div>
+          <Badge className="mt-1 bg-zinc-100 text-zinc-700 hover:bg-zinc-100">{nextActionLabel}</Badge>
         </div>
 
         <div className="mt-2 flex justify-end md:mt-0">

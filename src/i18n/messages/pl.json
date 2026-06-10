@@ -915,7 +915,23 @@
       "row": {
         "guests": "Gości",
         "confirmed": "Potwierdzeni",
-        "confirmedRatio": "{{confirmed}} ({{percent}}%)"
+        "confirmedRatio": "{{confirmed}} ({{percent}}%)",
+        "respondedRatio": "{{responded}} z odpowiedzią ({{percent}}%)",
+        "seatingPlans": "{{count}} planów stołów",
+        "vendors": "{{count}} dostawców"
+      },
+      "coverage": {
+        "guests": "Goście wydarzeń",
+        "responded": "Odpowiedzi RSVP",
+        "seatingPlans": "Plany stołów",
+        "vendors": "Podpięci dostawcy",
+        "nextAction": {
+          "missingGuests": "Dodaj gości",
+          "missingRsvps": "Zbierz RSVP",
+          "missingSeating": "Dodaj plan stołów",
+          "missingVendors": "Podepnij dostawców",
+          "ready": "Gotowe"
+        }
       },
       "states": {
         "emptyTitle": "Brak wydarzeń",
@@ -1131,10 +1147,156 @@
         },
         "selectEventForPlan": "Wybierz wydarzenie",
         "remainingToSeat": "Pozostało do usadzenia: {{count}}"
+      },
+      "scheduleTab": {
+        "title": "Harmonogram wydarzenia",
+        "description": "Ułóż plan dnia dla tego wydarzenia.",
+        "add": "Dodaj punkt",
+        "edit": "Edytuj punkt",
+        "delete": "Usuń punkt",
+        "completed": "Gotowe",
+        "empty": "Brak punktów harmonogramu.",
+        "createTitle": "Dodaj punkt harmonogramu",
+        "editTitle": "Edytuj punkt harmonogramu",
+        "deleteTitle": "Usuń punkt harmonogramu",
+        "deleteDescription": "Usunąć {{title}} z harmonogramu?",
+        "form": {
+          "time": "Godzina",
+          "title": "Tytuł",
+          "sortOrder": "Kolejność",
+          "notes": "Notatki",
+          "completed": "Ukończone"
+        },
+        "errors": {
+          "load": "Nie udało się załadować punktów harmonogramu.",
+          "save": "Nie udało się zapisać punktu harmonogramu.",
+          "delete": "Nie udało się usunąć punktu harmonogramu.",
+          "invalidForm": "Podaj godzinę, tytuł i poprawną kolejność."
+        }
       }
     },
     "actions": {
       "addEvent": "Dodaj wydarzenie"
+    }
+  },
+  "budget": {
+    "page": {
+      "title": "Budżet i wydatki",
+      "subtitle": "Śledź koszty zaplanowane, zakontraktowane i opłacone.",
+      "stats": {
+        "total": "Aktywna suma",
+        "paid": "Opłacone",
+        "committed": "Zakontraktowane",
+        "planned": "Zaplanowane"
+      },
+      "filters": {
+        "all": "Wszystkie statusy"
+      },
+      "status": {
+        "planned": "Zaplanowane",
+        "committed": "Zakontraktowane",
+        "paid": "Opłacone",
+        "reimbursed": "Zwrócone",
+        "canceled": "Anulowane"
+      },
+      "actions": {
+        "add": "Dodaj wydatek",
+        "edit": "Edytuj wydatek",
+        "delete": "Usuń wydatek"
+      },
+      "table": {
+        "title": "Wydatki",
+        "description": "Kategorie i statusy kosztów weselnych.",
+        "columns": {
+          "title": "Wydatek",
+          "category": "Kategoria",
+          "amount": "Kwota",
+          "status": "Status",
+          "linked": "Powiązanie"
+        }
+      },
+      "dialog": {
+        "createTitle": "Dodaj wydatek",
+        "editTitle": "Edytuj wydatek"
+      },
+      "form": {
+        "title": "Tytuł wydatku",
+        "category": "Kategoria",
+        "amount": "Kwota",
+        "paidBy": "Opłacone przez",
+        "notes": "Notatki"
+      },
+      "delete": {
+        "title": "Usuń wydatek",
+        "description": "Usunąć {{title}} z budżetu?"
+      },
+      "errors": {
+        "load": "Nie udało się załadować wydatków.",
+        "save": "Nie udało się zapisać wydatku.",
+        "delete": "Nie udało się usunąć wydatku.",
+        "invalidForm": "Podaj tytuł, kategorię i poprawną kwotę."
+      },
+      "empty": "Brak wydatków dla tego filtra."
+    }
+  },
+  "vendors": {
+    "page": {
+      "title": "Dostawcy",
+      "subtitle": "Zarządzaj kontaktami, wydarzeniami i postępem płatności.",
+      "stats": {
+        "totalVendors": "Dostawcy",
+        "totalCost": "Łączny koszt",
+        "deposits": "Zaliczki",
+        "paid": "Opłacone"
+      },
+      "status": {
+        "not_started": "Nie rozpoczęto",
+        "partial": "Częściowo",
+        "paid": "Opłacone",
+        "canceled": "Anulowane"
+      },
+      "actions": {
+        "add": "Dodaj dostawcę",
+        "edit": "Edytuj dostawcę",
+        "delete": "Usuń dostawcę"
+      },
+      "table": {
+        "title": "Lista dostawców",
+        "description": "Kontakty, powiązane wydarzenia i status płatności.",
+        "columns": {
+          "name": "Dostawca",
+          "contact": "Kontakt",
+          "events": "Wydarzenia",
+          "payment": "Opłacone / całość",
+          "status": "Status"
+        }
+      },
+      "dialog": {
+        "createTitle": "Dodaj dostawcę",
+        "editTitle": "Edytuj dostawcę"
+      },
+      "form": {
+        "name": "Nazwa dostawcy",
+        "contactName": "Osoba kontaktowa",
+        "contactEmail": "Email",
+        "contactPhone": "Telefon",
+        "totalCost": "Łączny koszt",
+        "deposit": "Zaliczka",
+        "paid": "Opłacona kwota",
+        "notes": "Notatki",
+        "events": "Powiązane wydarzenia"
+      },
+      "delete": {
+        "title": "Usuń dostawcę",
+        "description": "Usunąć {{name}} z dostawców?"
+      },
+      "errors": {
+        "load": "Nie udało się załadować dostawców.",
+        "save": "Nie udało się zapisać dostawcy.",
+        "delete": "Nie udało się usunąć dostawcy.",
+        "invalidForm": "Podaj nazwę dostawcy i poprawne kwoty."
+      },
+      "empty": "Brak dostawców."
     }
   },
   "seating": {
@@ -1180,9 +1342,51 @@
       "stats": {
         "total": "Łącznie",
         "updatedThisWeek": "Zmienione w tym tygodniu",
-        "starred": "Wyróżnione"
+        "starred": "Wyróżnione",
+        "pinned": "Przypięte",
+        "categories": "Kategorie"
       },
-      "updated": "Aktualizacja:"
+      "updated": "Aktualizacja:",
+      "actions": {
+        "add": "Dodaj notatkę",
+        "edit": "Edytuj notatkę",
+        "delete": "Usuń notatkę",
+        "showMore": "Pokaż więcej",
+        "showLess": "Pokaż mniej"
+      },
+      "dialog": {
+        "createTitle": "Dodaj notatkę",
+        "editTitle": "Edytuj notatkę",
+        "createDescription": "Zapisz ważne informacje w jednym miejscu.",
+        "editDescription": "Zaktualizuj treść i organizację notatki."
+      },
+      "form": {
+        "title": "Tytuł notatki",
+        "category": "Kategoria",
+        "body": "Notatka",
+        "pinned": "Przypnij notatkę",
+        "optional": "Opcjonalnie",
+        "titlePlaceholder": "np. Lista pytań do fotografa",
+        "categoryPlaceholder": "np. Fotograf",
+        "categoryEmpty": "Brak kategorii.",
+        "categoryCreate": "Utwórz „{{category}}”",
+        "bodyPlaceholder": "Wpisz treść notatki...",
+        "pinnedDescription": "Przypięte notatki łatwiej znaleźć na liście."
+      },
+      "delete": {
+        "title": "Usuń notatkę",
+        "description": "Usunąć {{title}}?"
+      },
+      "errors": {
+        "load": "Nie udało się załadować notatek.",
+        "save": "Nie udało się zapisać notatki.",
+        "delete": "Nie udało się usunąć notatki.",
+        "invalidForm": "Podaj tytuł i treść notatki."
+      },
+      "search": "Szukaj notatek...",
+      "pinned": "Przypięta",
+      "uncategorized": "Bez kategorii",
+      "empty": "Brak notatek dla tego widoku."
     }
   },
   "documents": {
@@ -1201,13 +1405,46 @@
           "name": "Nazwa",
           "category": "Kategoria",
           "owner": "Właściciel",
-          "status": "Status"
+          "status": "Status",
+          "linked": "Powiązanie"
         }
+      },
+      "filters": {
+        "all": "Wszystkie statusy"
       },
       "status": {
         "draft": "Szkic",
         "shared": "Udostępniony",
         "signed": "Podpisany"
+      },
+      "actions": {
+        "add": "Dodaj dokument",
+        "edit": "Edytuj dokument",
+        "delete": "Usuń dokument",
+        "open": "Otwórz dokument"
+      },
+      "dialog": {
+        "createTitle": "Dodaj dokument",
+        "editTitle": "Edytuj dokument"
+      },
+      "form": {
+        "name": "Nazwa dokumentu",
+        "category": "Kategoria",
+        "owner": "Właściciel",
+        "externalUrl": "Adres URL",
+        "notes": "Notatki",
+        "noEvent": "Brak wydarzenia",
+        "noVendor": "Brak dostawcy"
+      },
+      "delete": {
+        "title": "Usuń dokument",
+        "description": "Usunąć {{name}}?"
+      },
+      "errors": {
+        "load": "Nie udało się załadować dokumentów.",
+        "save": "Nie udało się zapisać dokumentu.",
+        "delete": "Nie udało się usunąć dokumentu.",
+        "invalidForm": "Podaj nazwę i kategorię."
       },
       "empty": "Brak dokumentów."
     }

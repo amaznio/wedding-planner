@@ -33,6 +33,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
   const rsvpRespondedCount = input.rsvpRespondedCount ?? 81;
   const rsvpProgress = rsvpTotalCount > 0 ? Math.round((rsvpRespondedCount / rsvpTotalCount) * 100) : 0;
   const events = input.events && input.events.length > 0 ? input.events : getDefaultEvents(input.weddingId);
+  const primaryEventHref = events.find((event) => event.type === "wedding")?.href ?? events[0]?.href;
 
   const planningProgress: PlanningProgressRow[] = [
     {
@@ -45,7 +46,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       id: "eventGuests",
       progress: 42,
       detailLabel: "2 / 4",
-      href: events[0]?.href,
+      href: routes.events,
     },
     {
       id: "budgetExpenses",
@@ -63,16 +64,19 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       id: "schedule",
       progress: 30,
       detailLabel: "3 / 10",
+      href: primaryEventHref ? `${primaryEventHref}?tab=schedule` : undefined,
     },
     {
       id: "notesIdeas",
       progress: null,
       detailLabel: "12",
+      href: routes.notes,
     },
     {
       id: "documents",
       progress: null,
       detailLabel: "8",
+      href: routes.documents,
     },
   ];
 

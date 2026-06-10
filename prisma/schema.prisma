@@ -96,9 +96,26 @@ model Wedding {
   guestGroups WeddingGuestGroup[]
   vendors Vendor[]
   expenses Expense[]
+  planningNotes WeddingNote[]
+  documents WeddingDocument[]
   memberships WeddingMembership[]
 
   @@index([ownerId])
+}
+
+model WeddingNote {
+  id        String   @id @default(cuid())
+  weddingId String
+  wedding   Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  category  String?
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+  @@index([weddingId, pinned])
 }
 
 model WeddingEvent {
@@ -117,8 +134,26 @@ model WeddingEvent {
   eventGuests  EventGuest[]
   vendorEvents VendorEvent[]
   expenses Expense[]
+  timelineItems EventTimelineItem[]
+  documents WeddingDocument[]
 
   @@index([weddingId])
+}
+
+model EventTimelineItem {
+  id        String       @id @default(cuid())
+  eventId   String
+  event     WeddingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  time      String
+  title     String
+  notes     String?
+  sortOrder Int          @default(0)
+  completed Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([eventId])
+  @@index([eventId, sortOrder])
 }
 
 model SeatingPlan {
@@ -284,8 +319,33 @@ model Vendor {
 
   vendorEvents VendorEvent[]
   expenses Expense[]
+  documents WeddingDocument[]
 
   @@index([weddingId])
+}
+
+model WeddingDocument {
+  id          String        @id @default(cuid())
+  weddingId   String
+  wedding     Wedding       @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       WeddingEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  vendorId    String?
+  vendor      Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  name        String
+  category    String
+  ownerName   String?
+  status      String        @default("draft")
+  externalUrl String?
+  notes       String?
+  dueDate     DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([weddingId])
+  @@index([eventId])
+  @@index([vendorId])
+  @@index([status])
 }
 
 model VendorEvent {

@@ -915,7 +915,23 @@
       "row": {
         "guests": "Guests",
         "confirmed": "Confirmed",
-        "confirmedRatio": "{{confirmed}} ({{percent}}%)"
+        "confirmedRatio": "{{confirmed}} ({{percent}}%)",
+        "respondedRatio": "{{responded}} responded ({{percent}}%)",
+        "seatingPlans": "{{count}} seating plans",
+        "vendors": "{{count}} vendors"
+      },
+      "coverage": {
+        "guests": "Event guests",
+        "responded": "RSVP responses",
+        "seatingPlans": "Seating plans",
+        "vendors": "Vendors linked",
+        "nextAction": {
+          "missingGuests": "Add guests",
+          "missingRsvps": "Collect RSVPs",
+          "missingSeating": "Add seating",
+          "missingVendors": "Link vendors",
+          "ready": "Ready"
+        }
       },
       "states": {
         "emptyTitle": "No events found",
@@ -1131,10 +1147,156 @@
         },
         "selectEventForPlan": "Select event",
         "remainingToSeat": "{{count}} left to seat"
+      },
+      "scheduleTab": {
+        "title": "Event-day schedule",
+        "description": "Build the timeline for this event.",
+        "add": "Add item",
+        "edit": "Edit item",
+        "delete": "Delete item",
+        "completed": "Done",
+        "empty": "No timeline items yet.",
+        "createTitle": "Add timeline item",
+        "editTitle": "Edit timeline item",
+        "deleteTitle": "Delete timeline item",
+        "deleteDescription": "Delete {{title}} from the schedule?",
+        "form": {
+          "time": "Time",
+          "title": "Title",
+          "sortOrder": "Order",
+          "notes": "Notes",
+          "completed": "Completed"
+        },
+        "errors": {
+          "load": "Failed to load timeline items.",
+          "save": "Failed to save timeline item.",
+          "delete": "Failed to delete timeline item.",
+          "invalidForm": "Enter a time, title and valid order."
+        }
       }
     },
     "actions": {
       "addEvent": "Add event"
+    }
+  },
+  "budget": {
+    "page": {
+      "title": "Budget & expenses",
+      "subtitle": "Track committed, planned and paid wedding costs.",
+      "stats": {
+        "total": "Active total",
+        "paid": "Paid",
+        "committed": "Committed",
+        "planned": "Planned"
+      },
+      "filters": {
+        "all": "All statuses"
+      },
+      "status": {
+        "planned": "Planned",
+        "committed": "Committed",
+        "paid": "Paid",
+        "reimbursed": "Reimbursed",
+        "canceled": "Canceled"
+      },
+      "actions": {
+        "add": "Add expense",
+        "edit": "Edit expense",
+        "delete": "Delete expense"
+      },
+      "table": {
+        "title": "Expenses",
+        "description": "Categorized expense tracking for the wedding.",
+        "columns": {
+          "title": "Expense",
+          "category": "Category",
+          "amount": "Amount",
+          "status": "Status",
+          "linked": "Linked to"
+        }
+      },
+      "dialog": {
+        "createTitle": "Add expense",
+        "editTitle": "Edit expense"
+      },
+      "form": {
+        "title": "Expense title",
+        "category": "Category",
+        "amount": "Amount",
+        "paidBy": "Paid by",
+        "notes": "Notes"
+      },
+      "delete": {
+        "title": "Delete expense",
+        "description": "Delete {{title}} from the budget?"
+      },
+      "errors": {
+        "load": "Failed to load expenses.",
+        "save": "Failed to save expense.",
+        "delete": "Failed to delete expense.",
+        "invalidForm": "Enter a title, category and valid amount."
+      },
+      "empty": "No expenses match this filter."
+    }
+  },
+  "vendors": {
+    "page": {
+      "title": "Vendors",
+      "subtitle": "Manage vendor contacts, linked events and payment progress.",
+      "stats": {
+        "totalVendors": "Vendors",
+        "totalCost": "Total cost",
+        "deposits": "Deposits",
+        "paid": "Paid"
+      },
+      "status": {
+        "not_started": "Not started",
+        "partial": "Partial",
+        "paid": "Paid",
+        "canceled": "Canceled"
+      },
+      "actions": {
+        "add": "Add vendor",
+        "edit": "Edit vendor",
+        "delete": "Delete vendor"
+      },
+      "table": {
+        "title": "Vendor list",
+        "description": "Contacts, event links and payment state.",
+        "columns": {
+          "name": "Vendor",
+          "contact": "Contact",
+          "events": "Events",
+          "payment": "Paid / total",
+          "status": "Status"
+        }
+      },
+      "dialog": {
+        "createTitle": "Add vendor",
+        "editTitle": "Edit vendor"
+      },
+      "form": {
+        "name": "Vendor name",
+        "contactName": "Contact name",
+        "contactEmail": "Email",
+        "contactPhone": "Phone",
+        "totalCost": "Total cost",
+        "deposit": "Deposit",
+        "paid": "Paid amount",
+        "notes": "Notes",
+        "events": "Linked events"
+      },
+      "delete": {
+        "title": "Delete vendor",
+        "description": "Delete {{name}} from vendors?"
+      },
+      "errors": {
+        "load": "Failed to load vendors.",
+        "save": "Failed to save vendor.",
+        "delete": "Failed to delete vendor.",
+        "invalidForm": "Enter a vendor name and valid cost amounts."
+      },
+      "empty": "No vendors yet."
     }
   },
   "seating": {
@@ -1180,9 +1342,51 @@
       "stats": {
         "total": "Total",
         "updatedThisWeek": "Updated this week",
-        "starred": "Starred"
+        "starred": "Starred",
+        "pinned": "Pinned",
+        "categories": "Categories"
       },
-      "updated": "Updated:"
+      "updated": "Updated:",
+      "actions": {
+        "add": "Add note",
+        "edit": "Edit note",
+        "delete": "Delete note",
+        "showMore": "Show more",
+        "showLess": "Show less"
+      },
+      "dialog": {
+        "createTitle": "Add note",
+        "editTitle": "Edit note",
+        "createDescription": "Keep important information in one place.",
+        "editDescription": "Update the note content and organization."
+      },
+      "form": {
+        "title": "Note title",
+        "category": "Category",
+        "body": "Note",
+        "pinned": "Pin note",
+        "optional": "Optional",
+        "titlePlaceholder": "e.g. Questions for the photographer",
+        "categoryPlaceholder": "e.g. Photographer",
+        "categoryEmpty": "No categories found.",
+        "categoryCreate": "Create “{{category}}”",
+        "bodyPlaceholder": "Write your note...",
+        "pinnedDescription": "Pinned notes are easier to find in the list."
+      },
+      "delete": {
+        "title": "Delete note",
+        "description": "Delete {{title}}?"
+      },
+      "errors": {
+        "load": "Failed to load notes.",
+        "save": "Failed to save note.",
+        "delete": "Failed to delete note.",
+        "invalidForm": "Enter a title and note body."
+      },
+      "search": "Search notes...",
+      "pinned": "Pinned",
+      "uncategorized": "Uncategorized",
+      "empty": "No notes match this view."
     }
   },
   "documents": {
@@ -1201,13 +1405,46 @@
           "name": "Name",
           "category": "Category",
           "owner": "Owner",
-          "status": "Status"
+          "status": "Status",
+          "linked": "Linked to"
         }
+      },
+      "filters": {
+        "all": "All statuses"
       },
       "status": {
         "draft": "Draft",
         "shared": "Shared",
         "signed": "Signed"
+      },
+      "actions": {
+        "add": "Add document",
+        "edit": "Edit document",
+        "delete": "Delete document",
+        "open": "Open document"
+      },
+      "dialog": {
+        "createTitle": "Add document",
+        "editTitle": "Edit document"
+      },
+      "form": {
+        "name": "Document name",
+        "category": "Category",
+        "owner": "Owner",
+        "externalUrl": "External URL",
+        "notes": "Notes",
+        "noEvent": "No event",
+        "noVendor": "No vendor"
+      },
+      "delete": {
+        "title": "Delete document",
+        "description": "Delete {{name}}?"
+      },
+      "errors": {
+        "load": "Failed to load documents.",
+        "save": "Failed to save document.",
+        "delete": "Failed to delete document.",
+        "invalidForm": "Enter a name and category."
       },
       "empty": "No documents yet."
     }

@@ -49,6 +49,68 @@ export const updateWeddingEventSchema = createWeddingEventSchema.partial().refin
   { message: "At least one field must be provided" },
 );
 
+export const createEventTimelineItemSchema = z.object({
+  time: z.string().trim().min(1).max(20),
+  title: z.string().trim().min(1).max(160),
+  notes: z.string().max(2000).nullable().optional(),
+  sortOrder: z.int().min(0).default(0),
+  completed: z.boolean().default(false),
+});
+
+export const updateEventTimelineItemSchema = z.object({
+  time: z.string().trim().min(1).max(20).optional(),
+  title: z.string().trim().min(1).max(160).optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  sortOrder: z.int().min(0).optional(),
+  completed: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one field must be provided",
+});
+
+export const createWeddingNoteSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  body: z.string().trim().min(1).max(4000),
+  category: z.string().trim().max(80).nullable().optional(),
+  pinned: z.boolean().default(false),
+});
+
+export const updateWeddingNoteSchema = z.object({
+  title: z.string().trim().min(1).max(160).optional(),
+  body: z.string().trim().min(1).max(4000).optional(),
+  category: z.string().trim().max(80).nullable().optional(),
+  pinned: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one field must be provided",
+});
+
+export const weddingDocumentStatusSchema = z.enum(["draft", "shared", "signed"]);
+
+export const createWeddingDocumentSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  category: z.string().trim().min(1).max(120),
+  ownerName: z.string().trim().max(160).nullable().optional(),
+  status: weddingDocumentStatusSchema.default("draft"),
+  externalUrl: z.url().max(1000).nullable().optional(),
+  notes: z.string().max(4000).nullable().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  eventId: z.string().min(1).nullable().optional(),
+  vendorId: z.string().min(1).nullable().optional(),
+});
+
+export const updateWeddingDocumentSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  category: z.string().trim().min(1).max(120).optional(),
+  ownerName: z.string().trim().max(160).nullable().optional(),
+  status: weddingDocumentStatusSchema.optional(),
+  externalUrl: z.url().max(1000).nullable().optional(),
+  notes: z.string().max(4000).nullable().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  eventId: z.string().min(1).nullable().optional(),
+  vendorId: z.string().min(1).nullable().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one field must be provided",
+});
+
 export const createWeddingGuestSchema = z.object({
   name: z.string().trim().min(1).max(120),
   sex: z.enum(["male", "female", "unknown"]).default("unknown"),

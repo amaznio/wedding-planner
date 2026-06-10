@@ -12,12 +12,12 @@ export type WorkspacePageHeaderProps = {
 
 export function WorkspacePageHeader({ title, subtitle, actions, className }: WorkspacePageHeaderProps) {
   return (
-    <header className={cn("flex flex-col gap-2 px-1 py-1", className)}>
+    <header className={cn("flex flex-col gap-2", className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-3xl font-semibold text-zinc-900">{title}</h1>
-        {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        <h1 className="text-3xl font-semibold leading-tight text-zinc-900">{title}</h1>
+        {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div> : null}
       </div>
-      {subtitle ? <p className="text-sm text-zinc-600">{subtitle}</p> : null}
+      {subtitle ? <p className="max-w-3xl text-sm leading-6 text-zinc-600">{subtitle}</p> : null}
     </header>
   );
 }

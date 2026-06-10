@@ -1,5 +1,6 @@
 "use client";
 
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { useI18n } from "@/i18n/provider";
 
 type WorkspaceRouteLoadingProps = {
@@ -9,15 +10,15 @@ type WorkspaceRouteLoadingProps = {
 
 export function WorkspaceRouteLoading({
   message,
-  maxWidthClassName = "max-w-6xl",
+  maxWidthClassName,
 }: WorkspaceRouteLoadingProps) {
   const { t } = useI18n();
 
   return (
-    <main className={`mx-auto flex w-full ${maxWidthClassName} flex-col`}>
-      <div className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
+    <AppWorkspacePage className={maxWidthClassName}>
+      <div className="rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-600 shadow-sm">
         {message ?? t("dashboard.states.loadingWorkspace")}
       </div>
-    </main>
+    </AppWorkspacePage>
   );
 }

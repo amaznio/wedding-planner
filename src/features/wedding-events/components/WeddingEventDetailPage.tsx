@@ -14,6 +14,8 @@ import {
   MapPin,
   MoreHorizontal,
   NotebookPen,
+  Plus,
+  Trash2,
   Users,
   UtensilsCrossed,
   Rows3,
@@ -23,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -121,6 +125,27 @@ type ExpensesApiResponse = {
   }>;
 };
 
+type EventTimelineItem = {
+  id: string;
+  time: string;
+  title: string;
+  notes: string | null;
+  sortOrder: number;
+  completed: boolean;
+};
+
+type TimelineItemsApiResponse = {
+  items: EventTimelineItem[];
+};
+
+type TimelineForm = {
+  time: string;
+  title: string;
+  notes: string;
+  sortOrder: string;
+  completed: boolean;
+};
+
 type EventTabItem = {
   id: EventTabId;
   icon: React.ComponentType<{ className?: string }>;
@@ -141,6 +166,14 @@ const categoryKeys = [
   "events.detail.vendors.category.photographer",
   "events.detail.vendors.category.band",
 ] as const;
+
+const emptyTimelineForm: TimelineForm = {
+  time: "",
+  title: "",
+  notes: "",
+  sortOrder: "0",
+  completed: false,
+};
 
 export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetailPageProps) {
   const { t, locale } = useI18n();
@@ -177,6 +210,13 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const [planName, setPlanName] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [canEditWedding, setCanEditWedding] = useState(false);
+  const [timelineItems, setTimelineItems] = useState<EventTimelineItem[]>([]);
+  const [timelineDialogMode, setTimelineDialogMode] = useState<"create" | "edit" | null>(null);
+  const [timelineForm, setTimelineForm] = useState<TimelineForm>(emptyTimelineForm);
+  const [editingTimelineItemId, setEditingTimelineItemId] = useState<string | null>(null);
+  const [deleteTimelineItemId, setDeleteTimelineItemId] = useState<string | null>(null);
+  const [isSavingTimelineItem, setIsSavingTimelineItem] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
   const weddingRoutes = useMemo(() => getWeddingRoutes(weddingId), [weddingId]);
 
   const firstSeatingPlan = data.seatingPlans[0];
@@ -190,13 +230,14 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
       setError(null);
 
       try {
-        const [weddingResult, eventResult, eventGuestsResult, plansResult, vendorsResult, expensesResult] = await Promise.allSettled([
+        const [weddingResult, eventResult, eventGuestsResult, plansResult, vendorsResult, expensesResult, timelineResult] = await Promise.allSettled([
           fetch(`/api/weddings/${weddingId}`, { cache: "no-store" }),
           fetch(`/api/weddings/${weddingId}/events/${eventId}`, { cache: "no-store" }),
           fetch(`/api/weddings/${weddingId}/events/${eventId}/guests`, { cache: "no-store" }),
           fetch(`/api/seating-plans?eventId=${eventId}`, { cache: "no-store" }),
           fetch(`/api/weddings/${weddingId}/vendors`, { cache: "no-store" }),
           fetch(`/api/weddings/${weddingId}/expenses`, { cache: "no-store" }),
+          fetch(`/api/weddings/${weddingId}/events/${eventId}/timeline-items`, { cache: "no-store" }),
         ]);
 
         if (weddingResult.status !== "fulfilled" || !weddingResult.value.ok) {
@@ -230,6 +271,11 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           expensesResult.status === "fulfilled" && expensesResult.value.ok
             ? ((await expensesResult.value.json()) as ExpensesApiResponse)
             : { expenses: [] };
+
+        const timelineJson =
+          timelineResult.status === "fulfilled" && timelineResult.value.ok
+            ? ((await timelineResult.value.json()) as TimelineItemsApiResponse)
+            : { items: [] };
 
         if (!active) return;
 
@@ -271,6 +317,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           },
           seatingPlans: mappedSeatingPlans.length ? mappedSeatingPlans : mockData.seatingPlans,
         });
+        setTimelineItems(timelineJson.items);
       } catch {
         if (active) {
           setError(t("events.detail.states.loadError"));
@@ -356,6 +403,79 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
     }
   };
 
+  const loadTimelineItems = async () => {
+    const response = await fetch(`/api/weddings/${weddingId}/events/${eventId}/timeline-items`, { cache: "no-store" });
+    if (!response.ok) throw new Error(t("events.detail.scheduleTab.errors.load"));
+    const json = (await response.json()) as TimelineItemsApiResponse;
+    setTimelineItems(json.items);
+  };
+
+  const openCreateTimelineDialog = () => {
+    setTimelineForm({ ...emptyTimelineForm, sortOrder: String(timelineItems.length) });
+    setEditingTimelineItemId(null);
+    setTimelineError(null);
+    setTimelineDialogMode("create");
+  };
+
+  const openEditTimelineDialog = (item: EventTimelineItem) => {
+    setTimelineForm({
+      time: item.time,
+      title: item.title,
+      notes: item.notes ?? "",
+      sortOrder: String(item.sortOrder),
+      completed: item.completed,
+    });
+    setEditingTimelineItemId(item.id);
+    setTimelineError(null);
+    setTimelineDialogMode("edit");
+  };
+
+  const saveTimelineItem = async () => {
+    if (!canEditWedding || !timelineDialogMode) return;
+    const sortOrder = Number.parseInt(timelineForm.sortOrder, 10);
+    if (!timelineForm.time.trim() || !timelineForm.title.trim() || !Number.isFinite(sortOrder) || sortOrder < 0) {
+      setTimelineError(t("events.detail.scheduleTab.errors.invalidForm"));
+      return;
+    }
+
+    setIsSavingTimelineItem(true);
+    setTimelineError(null);
+    try {
+      const payload = {
+        time: timelineForm.time.trim(),
+        title: timelineForm.title.trim(),
+        notes: timelineForm.notes.trim() || null,
+        sortOrder,
+        completed: timelineForm.completed,
+      };
+      const url = timelineDialogMode === "edit" && editingTimelineItemId
+        ? `/api/weddings/${weddingId}/events/${eventId}/timeline-items/${editingTimelineItemId}`
+        : `/api/weddings/${weddingId}/events/${eventId}/timeline-items`;
+      const response = await fetch(url, {
+        method: timelineDialogMode === "edit" ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(t("events.detail.scheduleTab.errors.save"));
+      await loadTimelineItems();
+      setTimelineDialogMode(null);
+    } catch (saveError) {
+      setTimelineError(saveError instanceof Error ? saveError.message : t("events.detail.scheduleTab.errors.save"));
+    } finally {
+      setIsSavingTimelineItem(false);
+    }
+  };
+
+  const deleteTimelineItem = async () => {
+    if (!canEditWedding || !deleteTimelineItemId) return;
+    const response = await fetch(`/api/weddings/${weddingId}/events/${eventId}/timeline-items/${deleteTimelineItemId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error(t("events.detail.scheduleTab.errors.delete"));
+    await loadTimelineItems();
+    setDeleteTimelineItemId(null);
+  };
+
   const localeName = toIntlLocale(locale as Locale);
   const eventDateLabel = formatEventDate(data.event.date, localeName);
   const eventTimeLabel = `${data.event.startTime} - ${data.event.endTime}`;
@@ -365,6 +485,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
 
   const attendancePercent =
     data.event.guests.total > 0 ? Math.round((data.event.guests.confirmed / data.event.guests.total) * 100) : 0;
+  const timelineItemPendingDelete = timelineItems.find((item) => item.id === deleteTimelineItemId) ?? null;
 
   if (isLoading) {
     return <WorkspaceRouteLoading />;
@@ -695,6 +816,55 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           </div>
         ) : null}
 
+        {activeTab === "schedule" ? (
+          <Card className="gap-0">
+            <CardHeader>
+              <div>
+                <CardTitle>{t("events.detail.scheduleTab.title")}</CardTitle>
+                <CardDescription>{t("events.detail.scheduleTab.description")}</CardDescription>
+              </div>
+              <CardAction>
+                <Button type="button" variant="primary" onClick={openCreateTimelineDialog} disabled={!canEditWedding}>
+                  <Plus className="size-4" />
+                  {t("events.detail.scheduleTab.add")}
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              {timelineItems.length ? (
+                <div className="space-y-1">
+                  {timelineItems.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-[72px_18px_minmax(0,1fr)_80px] items-start gap-3 py-3">
+                      <p className="pt-0.5 text-lg font-medium leading-none text-zinc-900">{item.time}</p>
+                      <div className="relative flex h-full justify-center">
+                        {index < timelineItems.length - 1 ? <span className="absolute bottom-[-18px] top-3 w-px bg-violet-200" /> : null}
+                        <span className="relative mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.35)]" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-zinc-900">{item.title}</p>
+                          {item.completed ? <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{t("events.detail.scheduleTab.completed")}</Badge> : null}
+                        </div>
+                        {item.notes ? <p className="mt-1 text-sm text-zinc-600">{item.notes}</p> : null}
+                      </div>
+                      <div className="flex justify-end gap-1">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => openEditTimelineDialog(item)} disabled={!canEditWedding} aria-label={t("events.detail.scheduleTab.edit")}>
+                          <Edit3 className="size-4" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setDeleteTimelineItemId(item.id)} disabled={!canEditWedding} aria-label={t("events.detail.scheduleTab.delete")}>
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-600">{t("events.detail.scheduleTab.empty")}</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
         {activeTab === "seating" ? (
           <Card className="gap-0">
             <CardHeader>
@@ -761,6 +931,47 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           </Card>
         ) : null}
       </div>
+
+      <Dialog open={timelineDialogMode !== null} onOpenChange={(open) => !open && setTimelineDialogMode(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{timelineDialogMode === "edit" ? t("events.detail.scheduleTab.editTitle") : t("events.detail.scheduleTab.createTitle")}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveTimelineItem();
+            }}
+          >
+            <div className="grid gap-3 sm:grid-cols-[140px_minmax(0,1fr)_120px]">
+              <Input value={timelineForm.time} onChange={(event) => setTimelineForm((current) => ({ ...current, time: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.time")} />
+              <Input value={timelineForm.title} onChange={(event) => setTimelineForm((current) => ({ ...current, title: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.title")} />
+              <Input value={timelineForm.sortOrder} onChange={(event) => setTimelineForm((current) => ({ ...current, sortOrder: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.sortOrder")} />
+            </div>
+            <Input value={timelineForm.notes} onChange={(event) => setTimelineForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.notes")} />
+            <label className="flex items-center gap-2 text-sm text-zinc-700">
+              <Checkbox checked={timelineForm.completed} onCheckedChange={(checked) => setTimelineForm((current) => ({ ...current, completed: checked === true }))} />
+              {t("events.detail.scheduleTab.form.completed")}
+            </label>
+            {timelineError ? <p className="text-sm text-red-600">{timelineError}</p> : null}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTimelineDialogMode(null)}>{t("common.cancel")}</Button>
+              <Button type="submit" variant="primary" disabled={isSavingTimelineItem}>{isSavingTimelineItem ? t("common.saving") : t("common.save")}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTimelineItemId !== null}
+        onOpenChange={(open) => !open && setDeleteTimelineItemId(null)}
+        title={t("events.detail.scheduleTab.deleteTitle")}
+        description={timelineItemPendingDelete ? t("events.detail.scheduleTab.deleteDescription", { title: timelineItemPendingDelete.title }) : undefined}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={deleteTimelineItem}
+      />
     </>
   );
 }

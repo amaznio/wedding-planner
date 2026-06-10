@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { CalendarCheck2, Handshake, Plus, UsersRound, UtensilsCrossed } from "lucide-react";
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,11 @@ type WeddingEventsListPageProps = {
     type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
     startsAt: string | null;
     location: string | null;
-    _count: { eventGuests: number };
+    _count: {
+      eventGuests: number;
+      seatingPlans: number;
+      vendorEvents: number;
+    };
     eventGuests: Array<{
       rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
     }>;
@@ -64,6 +69,7 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
     () =>
       eventsState.map((event) => {
         const confirmedCount = event.eventGuests.filter((guest) => guest.rsvpStatus === "confirmed").length;
+        const respondedCount = event.eventGuests.filter((guest) => guest.rsvpStatus !== "unknown").length;
         return mapWeddingEventListItem({
           id: event.id,
           name: event.name,
@@ -72,6 +78,9 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
           location: event.location,
           guestCount: event._count.eventGuests,
           confirmedCount,
+          respondedCount,
+          seatingPlanCount: event._count.seatingPlans,
+          vendorCount: event._count.vendorEvents,
           locale,
         });
       }),
@@ -198,7 +207,7 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col">
+    <AppWorkspacePage>
       <WeddingPageHeader
         title={t("events.list.title")}
         subtitle={t("events.list.subtitle")}
@@ -211,6 +220,33 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
       />
 
       <div className="mt-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <CoverageMetric
+            icon={UsersRound}
+            label={t("events.list.coverage.guests")}
+            value={eventsState.reduce((sum, event) => sum + event._count.eventGuests, 0)}
+          />
+          <CoverageMetric
+            icon={CalendarCheck2}
+            label={t("events.list.coverage.responded")}
+            value={eventsState.reduce(
+              (sum, event) => sum + event.eventGuests.filter((guest) => guest.rsvpStatus !== "unknown").length,
+              0,
+            )}
+          />
+          <CoverageMetric
+            icon={UtensilsCrossed}
+            label={t("events.list.coverage.seatingPlans")}
+            value={eventsState.reduce((sum, event) => sum + event._count.seatingPlans, 0)}
+          />
+          <CoverageMetric
+            icon={Handshake}
+            label={t("events.list.coverage.vendors")}
+            value={eventsState.reduce((sum, event) => sum + event._count.vendorEvents, 0)}
+          />
+        </div>
+
+        <div className="mt-5">
         <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "upcoming" | "completed")}>
           <TabsList className="h-auto justify-start gap-1 rounded-none border-b border-zinc-200 bg-transparent p-0">
             <TabsTrigger value="all" className="h-10 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-violet-500 data-[state=active]:bg-transparent data-[state=active]:text-violet-600 data-[state=active]:shadow-none">{t("events.list.filters.all")}</TabsTrigger>
@@ -227,7 +263,7 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
           />
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 flex flex-col gap-3">
           {visibleEvents.length ? (
             visibleEvents.map((event) => (
               <WeddingEventListRow
@@ -240,6 +276,13 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
                   confirmed: event.confirmedCount,
                   percent: event.confirmedPercent,
                 })}
+                respondedLabel={t("events.list.row.respondedRatio", {
+                  responded: event.respondedCount,
+                  percent: event.respondedPercent,
+                })}
+                seatingPlansLabel={t("events.list.row.seatingPlans", { count: event.seatingPlanCount })}
+                vendorsLabel={t("events.list.row.vendors", { count: event.vendorCount })}
+                nextActionLabel={t(`events.list.coverage.nextAction.${event.coverageStatus}`)}
                 openLabel={t("events.list.actions.open")}
                 editLabel={t("events.list.actions.edit")}
                 deleteLabel={t("events.list.actions.delete")}
@@ -257,6 +300,7 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
               </CardContent>
             </Card>
           )}
+        </div>
         </div>
       </div>
 
@@ -345,7 +389,27 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
           </form>
         </DialogContent>
       </Dialog>
-    </main>
+    </AppWorkspacePage>
+  );
+}
+
+function CoverageMetric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase text-zinc-500">
+        <Icon className="size-4 text-violet-600" />
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-semibold text-zinc-900">{value}</div>
+    </div>
   );
 }
 

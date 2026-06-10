@@ -1,10 +1,10 @@
 "use client";
 
 import { AppDataTable } from "@/components/app/AppDataTable";
-import { AppPageGrid } from "@/components/app/AppPageGrid";
 import { AppSectionCard } from "@/components/app/AppSectionCard";
-import { AppStatCard } from "@/components/app/AppStatCard";
+import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppStatusBadge } from "@/components/app/AppStatusBadge";
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
@@ -34,13 +34,16 @@ export function WeddingTasksPage() {
   const done = mockTasks.filter((task) => task.status === "done").length;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col">
+    <AppWorkspacePage>
       <WeddingPageHeader title={t("tasks.page.title")} subtitle={t("tasks.page.subtitle")} />
-      <AppPageGrid className="mt-5 md:grid-cols-3">
-        <AppStatCard title={t("tasks.page.stats.todo")} value={todo} />
-        <AppStatCard title={t("tasks.page.stats.inProgress")} value={inProgress} />
-        <AppStatCard title={t("tasks.page.stats.done")} value={done} />
-      </AppPageGrid>
+      <AppStatsRail
+        className="mt-5 max-w-xl"
+        items={[
+          { label: t("tasks.page.stats.todo"), value: todo },
+          { label: t("tasks.page.stats.inProgress"), value: inProgress },
+          { label: t("tasks.page.stats.done"), value: done },
+        ]}
+      />
 
       <div className="mt-5">
         <AppSectionCard title={t("tasks.page.table.title")} description={t("tasks.page.table.description")}>
@@ -69,6 +72,6 @@ export function WeddingTasksPage() {
           />
         </AppSectionCard>
       </div>
-    </main>
+    </AppWorkspacePage>
   );
 }

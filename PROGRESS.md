@@ -2,7 +2,452 @@
 
 ## Current Phase
 
-Phase 236 - Dashboard RSVP progress row (completed)
+Phase 248-HF3 - Expandable clamped note bodies (completed)
+
+## Completed Work
+
+- Clamped long note bodies to a compact four-line preview by default.
+- Added per-note show-more/show-less disclosure controls with accessible expanded state.
+- Preserved user-entered newlines when notes are expanded.
+- Kept short notes, edit/delete controls, and persistence behavior unchanged.
+- Files changed:
+  - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm lint -- src/features/wedding-notes/components/WeddingNotesPage.tsx` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `git diff --check` (pass)
+- Known issues:
+  - authenticated browser QA remains unavailable because the active browser session is signed out
+- Next recommended step:
+  - visually verify compact and expanded note-card states.
+
+## Current Phase
+
+Phase 248-HF2 - Preserve note body line breaks (completed)
+
+## Completed Work
+
+- Updated Notes card body rendering to preserve user-entered newlines and repeated line breaks.
+- Added safe long-word wrapping to prevent card overflow.
+- Kept note persistence and editor behavior unchanged.
+- Files changed:
+  - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm lint -- src/features/wedding-notes/components/WeddingNotesPage.tsx` (pass)
+  - `pnpm typecheck` (pass)
+  - `git diff --check` (pass)
+- Known issues:
+  - authenticated browser QA remains unavailable because the active browser session is signed out
+- Next recommended step:
+  - visually verify notes containing multiple lines and blank lines.
+
+## Current Phase
+
+Phase 248-HF1 - Note category combobox modal click fix (completed)
+
+## Completed Work
+
+- Fixed note category combobox options closing without selection inside the Notes modal:
+  - identified that the Base UI popup portal was mounted outside the Radix dialog interactive subtree
+  - added configurable combobox portal containers
+  - mounted the Notes category popup inside its modal-local combobox container
+  - existing and create-new options can now receive pointer selection before the popup closes
+  - files changed:
+    - `src/components/ui/combobox.tsx`
+    - `src/features/wedding-notes/components/NoteCategoryCombobox.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/components/ui/combobox.tsx src/features/wedding-notes/components/NoteCategoryCombobox.tsx` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm build` (pass)
+    - `git diff --check` (pass)
+  - known issues:
+    - authenticated browser QA remains unavailable because the active browser session is signed out
+  - next recommended step:
+    - verify clicking and keyboard-selecting existing and create-new categories inside the authenticated Notes modal.
+
+## Current Phase
+
+Phase 248 - Creatable note category combobox (completed)
+
+## Completed Work
+
+- Implemented a creatable shadcn/Base UI combobox for note categories:
+  - installed `@base-ui/react` and added an adapted local shadcn combobox primitive
+  - added a reusable Notes category combobox with filtering, keyboard selection, clearing, and a create-new option
+  - derived category options from existing wedding notes and returned them from the Notes GET API
+  - canonicalized note categories in create/update APIs by trimming, collapsing repeated whitespace, and matching case-insensitively
+  - preserved the oldest matching category spelling and left existing variants unchanged until future edits
+  - added focused category normalization tests and EN/PL combobox copy
+  - files changed:
+    - `src/components/ui/combobox.tsx`
+    - `src/features/wedding-notes/components/NoteCategoryCombobox.tsx`
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `src/features/wedding-notes/lib/note-categories.ts`
+    - `src/features/wedding-notes/lib/note-categories.test.ts`
+    - `src/app/api/weddings/[weddingId]/notes/route.ts`
+    - `src/app/api/weddings/[weddingId]/notes/[noteId]/route.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `package.json`
+    - `pnpm-lock.yaml`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/components/ui/combobox.tsx src/features/wedding-notes/components/NoteCategoryCombobox.tsx src/features/wedding-notes/lib/note-categories.ts src/features/wedding-notes/lib/note-categories.test.ts src/features/wedding-notes/components/WeddingNotesPage.tsx 'src/app/api/weddings/[weddingId]/notes/route.ts' 'src/app/api/weddings/[weddingId]/notes/[noteId]/route.ts'` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm build` (pass)
+    - `node --test src/features/wedding-notes/lib/note-categories.test.ts` (cannot run because the repo has no TypeScript test loader)
+    - `pnpm dlx tsx --test src/features/wedding-notes/lib/note-categories.test.ts` (pass, 3 tests)
+    - `pnpm i18n:audit` (fails on pre-existing hardcoded text in `src/app/page.tsx`)
+    - shadcn component audit checklist (pass)
+    - Browser QA at `http://localhost:3000/weddings/test/notes` (redirected to `/sign-in`)
+  - known issues:
+    - authenticated browser QA remains unavailable because the active browser session is signed out
+    - repository i18n audit has pre-existing failures in `src/app/page.tsx`
+  - next recommended step:
+    - visually verify category selection, creation, clearing, and keyboard behavior in the authenticated Notes modal.
+
+## Current Phase
+
+Phase 247 - Notes modal hierarchy and spacing (completed)
+
+## Completed Work
+
+- Refined the add/edit Notes modal:
+  - added a compact header with contextual description
+  - replaced placeholder-only fields with visible labels and clearer placeholder examples
+  - changed note content to a multiline textarea
+  - clarified the optional category and pin-note hierarchy
+  - separated footer actions with a subtle background and border
+  - files changed:
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/features/wedding-notes/components/WeddingNotesPage.tsx src/i18n/messages/en.json src/i18n/messages/pl.json` (pass with JSON files ignored by ESLint)
+    - `pnpm typecheck` (pass)
+    - `pnpm build` (pass)
+    - `pnpm i18n:audit` (fails on pre-existing hardcoded text in `src/app/page.tsx`)
+    - `git diff --check` (pass)
+  - known issues:
+    - authenticated modal visual QA remains unavailable because the active browser is on `/sign-in`
+    - repository i18n audit has pre-existing failures in `src/app/page.tsx`
+  - next recommended step:
+    - visually verify add/edit Notes modal spacing in Polish and English.
+
+## Current Phase
+
+Phase 246 - Notes search input slot (completed)
+
+## Completed Work
+
+- Updated the Notes search control to use shadcn input-group composition:
+  - added focused `InputGroup`, `InputGroupAddon`, and `InputGroupInput` primitives
+  - moved the search icon inside the input as a leading addon slot
+  - preserved existing search behavior and sizing
+  - files changed:
+    - `src/components/ui/input-group.tsx`
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/components/ui/input-group.tsx src/features/wedding-notes/components/WeddingNotesPage.tsx` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm build` (pass)
+    - shadcn component audit checklist (pass; authenticated browser QA unavailable)
+  - known issues:
+    - authenticated Notes page visual QA remains unavailable because the active browser is on `/sign-in`
+  - next recommended step:
+    - visually verify the Notes search field in the authenticated workspace.
+
+## Current Phase
+
+Phase 245 - True inline compact stats row (completed)
+
+## Completed Work
+
+- Corrected the compact shared stats treatment:
+  - changed each stat from a stacked mini-column to a single-line `value label` pair
+  - shortened separators to the text row height
+  - reduced value size and overall vertical footprint
+  - preserved responsive wrapping for narrow screens
+  - files changed:
+    - `src/components/app/AppStatsRail.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/components/app/AppStatsRail.tsx` (pass)
+    - `pnpm typecheck` (pass)
+    - Browser tab inspection (only signed-out `/sign-in` tab available)
+  - known issues:
+    - authenticated visual QA remains unavailable in the current browser session
+  - next recommended step:
+    - visually verify the true inline row on notes, documents, and tasks.
+
+## Current Phase
+
+Phase 244 - Compact shared stats rail refactor (completed)
+
+## Completed Work
+
+- Implemented Phase 244 compact shared stats rail refactor:
+  - added semantic, borderless `AppStatsRail` with three compact columns and thin vertical separators
+  - replaced oversized stat cards on notes, documents, and tasks pages
+  - preserved all existing stat values, labels, ordering, and page behavior
+  - retained `AppStatCard` because budget and vendors still use it outside this phase's scope
+  - files changed:
+    - `src/components/app/AppStatsRail.tsx`
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+    - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm lint -- src/components/app/AppStatsRail.tsx src/features/wedding-notes/components/WeddingNotesPage.tsx src/features/wedding-documents/components/WeddingDocumentsPage.tsx src/features/wedding-tasks/components/WeddingTasksPage.tsx` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm build` (pass)
+    - Browser QA at `http://localhost:3000/weddings/test/notes` (redirected to `/sign-in`)
+  - known issues:
+    - authenticated visual QA for notes, documents, and tasks could not be completed because the available browser session is signed out
+  - next recommended step:
+    - visually QA compact stats on notes, documents, and tasks in Polish and English.
+
+## Current Phase
+
+Phase 243 - Workspace subpage shared component polish (completed)
+
+## Completed Work
+
+- Implemented Phase 243 workspace subpage shared component polish:
+  - added `AppWorkspacePage` for left-aligned workspace subpage content with a consistent max width
+  - replaced repeated centered `max-w-6xl` wrappers on vendors, budget, tasks, notes, documents, events, settings, and collaborators pages
+  - refined shared `WorkspacePageHeader` spacing, title leading, subtitle width, and responsive action wrapping
+  - tightened shared `AppStatCard` padding, radius, height, and value rhythm
+  - tightened shared `AppSectionCard` header/content padding and title/description spacing
+  - refined `AppDataTable` to avoid a heavy nested card frame inside section cards while preserving aligned columns and empty states
+  - adjusted shared grid spacing and removed remaining `space-y-*` usage in touched workspace surfaces
+  - files changed:
+    - `src/components/app/AppWorkspacePage.tsx`
+    - `src/components/app/AppPageGrid.tsx`
+    - `src/components/app/AppStatCard.tsx`
+    - `src/components/app/AppSectionCard.tsx`
+    - `src/components/app/AppDataTable.tsx`
+    - `src/features/wedding-dashboard/components/WorkspacePageHeader.tsx`
+    - `src/features/wedding-dashboard/components/WorkspaceRouteLoading.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+    - `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+    - `src/features/wedding-settings/components/WeddingSettingsPage.tsx`
+    - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+    - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/components/app/AppWorkspacePage.tsx src/components/app/AppPageGrid.tsx src/components/app/AppStatCard.tsx src/components/app/AppSectionCard.tsx src/components/app/AppDataTable.tsx src/features/wedding-dashboard/components/WorkspacePageHeader.tsx src/features/wedding-dashboard/components/WorkspaceRouteLoading.tsx "src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx" "src/app/weddings/[weddingId]/(workspace)/budget/page.tsx" src/features/wedding-documents/components/WeddingDocumentsPage.tsx src/features/wedding-notes/components/WeddingNotesPage.tsx src/features/wedding-tasks/components/WeddingTasksPage.tsx src/features/wedding-settings/components/WeddingSettingsPage.tsx src/features/wedding-events/components/WeddingEventsListPage.tsx src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx` (pass)
+    - `pnpm build` (pass)
+    - `pnpm dev` (attempted; existing Next dev server already running on port 3000)
+    - `Invoke-WebRequest http://localhost:3000/sign-in` (pass, HTTP 200)
+    - `Invoke-WebRequest http://localhost:3000/weddings/test/vendors -MaximumRedirection 0` (pass, HTTP 307 redirect to `/sign-in`)
+  - known issues:
+    - authenticated visual QA for the workspace subpages was not completed because the Browser plugin's required Node browser-control tool was unavailable in this session
+    - fallback Playwright CLI QA was also unavailable because `playwright` is not installed in the project
+    - a read-only database lookup for existing wedding IDs timed out against the configured PostgreSQL endpoint
+  - next recommended step:
+    - run authenticated browser QA on vendors, budget, documents, and notes once Browser control or Playwright is available and the database is reachable.
+
+## Current Phase
+
+Phase 242 - Documents page (completed)
+
+## Completed Work
+
+- Implemented Phase 242 documents page:
+  - added additive `WeddingDocument` Prisma model and migration for document metadata/checklist records
+  - linked document metadata optionally to existing wedding events and vendors
+  - added document CRUD APIs:
+    - `GET/POST /api/weddings/[weddingId]/documents`
+    - `PUT/DELETE /api/weddings/[weddingId]/documents/[documentId]`
+  - added Zod validation for create/update document payloads
+  - replaced the mock documents page with persisted document loading, status filtering, summary stats, external URL open action, and add/edit/delete dialogs
+  - changed the dashboard `documents` progress row to open `/weddings/[weddingId]/documents`
+  - added EN/PL document page strings
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260522232000_add_wedding_documents/migration.sql`
+    - `src/app/api/weddings/[weddingId]/documents/route.ts`
+    - `src/app/api/weddings/[weddingId]/documents/[documentId]/route.ts`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm prisma:validate` (pass)
+    - `pnpm exec prisma generate` (pass)
+    - `pnpm typecheck` (failed first because local Button does not support `asChild`; fixed with an icon button using `window.open`)
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-documents/components/WeddingDocumentsPage.tsx 'src/app/api/weddings/[weddingId]/documents/route.ts' 'src/app/api/weddings/[weddingId]/documents/[documentId]/route.ts' src/features/wedding/schemas/wedding.schema.ts src/features/wedding-dashboard/dashboard.mock.ts` (pass)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/documents` was not completed in this session
+    - file upload/storage is intentionally out of scope; documents store metadata and optional external URLs only
+  - next recommended step:
+    - run database migrations in the target environment, then visually QA dashboard row navigation and CRUD flows for events, budget, vendors, schedule, notes, and documents.
+
+## Completed Work
+
+- Implemented Phase 241 notes page:
+  - added additive `WeddingNote` Prisma model and migration for persisted planning notes
+  - added wedding notes CRUD APIs:
+    - `GET/POST /api/weddings/[weddingId]/notes`
+    - `PUT/DELETE /api/weddings/[weddingId]/notes/[noteId]`
+  - added Zod validation for create/update note payloads
+  - replaced the mock notes page with persisted note loading, search, summary stats, pinned notes, and add/edit/delete dialogs
+  - changed the dashboard `notesIdeas` progress row to open `/weddings/[weddingId]/notes`
+  - added EN/PL note page strings
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260522231000_add_wedding_notes/migration.sql`
+    - `src/app/api/weddings/[weddingId]/notes/route.ts`
+    - `src/app/api/weddings/[weddingId]/notes/[noteId]/route.ts`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm prisma:validate` (pass)
+    - `pnpm exec prisma generate` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- src/features/wedding-notes/components/WeddingNotesPage.tsx 'src/app/api/weddings/[weddingId]/notes/route.ts' 'src/app/api/weddings/[weddingId]/notes/[noteId]/route.ts' src/features/wedding/schemas/wedding.schema.ts src/features/wedding-dashboard/dashboard.mock.ts` (pass)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/notes` was not completed in this session
+    - note body uses a single-line input in this first pass, not a multiline editor
+  - next recommended step:
+    - Phase 242 - Documents page: add document metadata persistence and document checklist UI without file uploads.
+
+## Completed Work
+
+- Implemented Phase 240 event schedule tab:
+  - added additive `EventTimelineItem` Prisma model and migration for event-day timeline items
+  - added timeline CRUD APIs:
+    - `GET/POST /api/weddings/[weddingId]/events/[eventId]/timeline-items`
+    - `PUT/DELETE /api/weddings/[weddingId]/events/[eventId]/timeline-items/[itemId]`
+  - added Zod validation for create/update timeline item payloads
+  - implemented the event detail `?tab=schedule` UI with persisted timeline rows, add/edit/delete dialogs, completed state, sort order, and notes
+  - changed the dashboard `schedule` progress row to open the primary event schedule tab
+  - added EN/PL schedule tab strings
+  - files changed:
+    - `prisma/schema.prisma`
+    - `prisma/migrations/20260522230000_add_event_timeline_items/migration.sql`
+    - `src/app/api/weddings/[weddingId]/events/[eventId]/timeline-items/route.ts`
+    - `src/app/api/weddings/[weddingId]/events/[eventId]/timeline-items/[itemId]/route.ts`
+    - `src/features/wedding/schemas/wedding.schema.ts`
+    - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm prisma:validate` (pass)
+    - `pnpm typecheck` (failed before Prisma client regenerate because generated client was stale)
+    - `pnpm exec prisma generate` (pass)
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- 'src/features/wedding-events/components/WeddingEventDetailPage.tsx' 'src/app/api/weddings/[weddingId]/events/[eventId]/timeline-items/route.ts' 'src/app/api/weddings/[weddingId]/events/[eventId]/timeline-items/[itemId]/route.ts' src/features/wedding/schemas/wedding.schema.ts src/features/wedding-dashboard/dashboard.mock.ts` (pass)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/events/[eventId]?tab=schedule` was not completed in this session
+    - timeline sorting is manual via numeric order for this phase
+  - next recommended step:
+    - Phase 241 - Notes page: replace mock notes with persisted wedding notes and CRUD UI.
+
+## Completed Work
+
+- Implemented Phase 239 vendors page:
+  - replaced the rough vendor input/list with vendor summary cards and a table for contact, event links, payment totals, and payment status
+  - added add/edit/delete vendor dialogs using the existing `/api/weddings/[weddingId]/vendors` and `/api/weddings/[weddingId]/vendors/[vendorId]` APIs
+  - kept vendor-to-event linking through the existing `VendorEvent` relation by editing linked event checkboxes
+  - added currency formatting based on the wedding currency
+  - kept write controls disabled for users without edit access
+  - added EN/PL strings for vendor page labels, statuses, form fields, errors, and delete confirmation
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- 'src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx'` (pass)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/vendors` was not completed in this session
+  - next recommended step:
+    - Phase 240 - Event schedule tab: add persisted event-day timeline items and wire dashboard `schedule` progress to the primary event schedule tab.
+
+## Completed Work
+
+- Implemented Phase 238 budget page:
+  - replaced the rough budget input/list with summary cards, status filter, categorized expense table, and add/edit/delete dialogs
+  - used the existing `/api/weddings/[weddingId]/expenses` and `/api/weddings/[weddingId]/expenses/[expenseId]` contracts
+  - preserved the existing `/weddings/[weddingId]/expenses` redirect to `/budget`
+  - added currency formatting based on the wedding currency
+  - kept write controls disabled for users without edit access
+  - added EN/PL strings for budget page labels, statuses, form fields, errors, and delete confirmation
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- 'src/app/weddings/[weddingId]/(workspace)/budget/page.tsx'` (pass)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/budget` was not completed in this session
+    - event/vendor linking is displayed when present but not edited from the first budget dialog
+  - next recommended step:
+    - Phase 239 - Vendors page: replace the rough vendor page with vendor cards/table, edit/delete flow, event links, and payment totals using existing vendor APIs.
+
+## Completed Work
+
+- Implemented Phase 237 events coverage page:
+  - repurposed the dashboard `eventGuests` progress row as an event coverage shortcut to `/weddings/[weddingId]/events`
+  - extended the events route loader with existing per-event counts for linked seating plans and vendors
+  - added event coverage metrics to the events list page:
+    - total event guests
+    - total RSVP responses
+    - linked seating plans
+    - linked vendors
+  - extended event rows with responded RSVP count, seating plan count, vendor count, and the next missing setup action
+  - kept the change read-only/additive and did not touch seating editor routes, seating APIs, seating persistence, or seating store behavior
+  - added EN/PL copy for coverage metrics and next-action labels
+  - files changed:
+    - `src/app/weddings/[weddingId]/(workspace)/events/page.tsx`
+    - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+    - `src/features/wedding-events/components/WeddingEventListRow.tsx`
+    - `src/features/wedding-events/lib/map-wedding-event-list-item.ts`
+    - `src/features/wedding-dashboard/dashboard.mock.ts`
+    - `src/i18n/messages/en.json`
+    - `src/i18n/messages/pl.json`
+    - `PROGRESS.md`
+  - commands run:
+    - `pnpm typecheck` (pass)
+    - `pnpm lint -- 'src/app/weddings/[weddingId]/(workspace)/events/page.tsx' src/features/wedding-events/components/WeddingEventsListPage.tsx src/features/wedding-events/components/WeddingEventListRow.tsx src/features/wedding-events/lib/map-wedding-event-list-item.ts src/features/wedding-dashboard/dashboard.mock.ts` (pass after removing one unused import)
+    - `pnpm typecheck` (pass after lint cleanup)
+    - `pnpm build` (pass)
+  - known issues:
+    - authenticated visual QA for `/weddings/[weddingId]/events` was not completed in this session
+    - add-event and delete-event actions remain existing placeholders/disabled controls
+  - next recommended step:
+    - Phase 238 - Budget page: replace the rough budget/expense page with summary cards, categorized expense table, status filter, and add/edit/delete expense dialogs using existing expense APIs.
 
 ## Completed Work
 

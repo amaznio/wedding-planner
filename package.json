@@ -13,6 +13,7 @@
     "i18n:audit": "node scripts/i18n-audit.mjs"
   },
   "dependencies": {
+    "@base-ui/react": "^1.5.0",
     "@better-auth/prisma-adapter": "^1.6.11",
     "@fontsource/noto-sans": "^5.2.10",
     "@pdf-lib/fontkit": "^1.1.1",
