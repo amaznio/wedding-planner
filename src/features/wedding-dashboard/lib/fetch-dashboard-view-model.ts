@@ -53,6 +53,12 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
     spentMinor: dashboardJson.vendorSummary.totalPaidMinor || expenseSpentMinor || undefined,
     events: mappedEvents,
+    activeTaskCount: dashboardJson.activeTaskCount,
+    upcomingTasks: dashboardJson.upcomingTasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      dueInDays: getCalendarDayDifference(task.dueDate),
+    })),
   });
 
   return {
@@ -67,6 +73,14 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     },
     dashboardData,
   };
+}
+
+function getCalendarDayDifference(value: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = new Date(value);
+  dueDate.setHours(0, 0, 0, 0);
+  return Math.round((dueDate.getTime() - today.getTime()) / 86_400_000);
 }
 
 function mapEvents(

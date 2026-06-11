@@ -23,22 +23,28 @@ export function UpcomingTasksCard({ tasks, onOpenAll }: UpcomingTasksCardProps) 
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {tasks.map((task) => (
+        {tasks.length ? tasks.map((task) => (
           <div key={task.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50/40 p-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-semibold text-zinc-700">
-              {task.dueInDays}
+              {task.dueInDays < 0 ? Math.abs(task.dueInDays) : task.dueInDays}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-zinc-900">
-                {t(`dashboard.widgets.upcomingTasks.items.${task.title}`)}
+                {task.title}
               </p>
               <p className="text-xs text-zinc-600">
-                {t("dashboard.widgets.upcomingTasks.dueIn", { count: task.dueInDays })}
+                {task.dueInDays < 0
+                  ? t("dashboard.widgets.upcomingTasks.overdue", { count: Math.abs(task.dueInDays) })
+                  : task.dueInDays === 0
+                    ? t("dashboard.widgets.upcomingTasks.dueToday")
+                    : t("dashboard.widgets.upcomingTasks.dueIn", { count: task.dueInDays })}
               </p>
             </div>
-            <Badge>{t("dashboard.widgets.upcomingTasks.badge")}</Badge>
+            <Badge className={task.dueInDays < 0 ? "border-red-200 bg-red-50 text-red-700" : undefined}>
+              {task.dueInDays < 0 ? t("dashboard.widgets.upcomingTasks.overdueBadge") : t("dashboard.widgets.upcomingTasks.badge")}
+            </Badge>
           </div>
-        ))}
+        )) : <p className="py-3 text-sm text-zinc-500">{t("dashboard.widgets.upcomingTasks.empty")}</p>}
       </CardContent>
     </Card>
   );

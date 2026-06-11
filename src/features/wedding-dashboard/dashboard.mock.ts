@@ -19,6 +19,8 @@ type BuildDashboardDataInput = {
   budgetMinor?: number;
   spentMinor?: number;
   events?: DashboardEventCard[];
+  activeTaskCount?: number;
+  upcomingTasks?: WeddingDashboardData["upcomingTasks"];
 };
 
 const DEFAULT_WEDDING_DATE = new Date("2026-06-20T12:00:00.000Z");
@@ -97,7 +99,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
       { id: "seating", href: routes.seating },
       { id: "budget", href: routes.budget },
       { id: "vendors", href: routes.vendors },
-      { id: "tasks", href: routes.tasks, counter: 12 },
+      { id: "tasks", href: routes.tasks, counter: input.activeTaskCount ?? 0 },
       { id: "notes", href: routes.notes },
       { id: "documents", href: routes.documents },
       { id: "collaborators", href: routes.collaborators },
@@ -115,12 +117,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
     },
     events,
     planningProgress,
-    upcomingTasks: [
-      { id: "task_1", title: "confirmMenu", dueInDays: 5 },
-      { id: "task_2", title: "chooseDecor", dueInDays: 8 },
-      { id: "task_3", title: "meetPhotographer", dueInDays: 12 },
-      { id: "task_4", title: "dressFitting", dueInDays: 20 },
-    ],
+    upcomingTasks: input.upcomingTasks ?? [],
     recentExpenses: [
       { id: "exp_1", title: "catering", amountMinor: 12_000_00, incurredAt: new Date("2026-05-12") },
       { id: "exp_2", title: "photographer", amountMinor: 6_500_00, incurredAt: new Date("2026-05-10") },
@@ -130,7 +127,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
     quickActions,
     notesCount: 12,
     documentsCount: 8,
-    activeTasksCount: 12,
+    activeTasksCount: input.activeTaskCount ?? 0,
   };
 }
 

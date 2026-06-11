@@ -52,6 +52,12 @@ export type WeddingDashboardApiResponse = {
     _sum: { amountMinor: number | null };
     _count: { _all: number };
   }>;
+  activeTaskCount: number;
+  upcomingTasks: Array<{
+    id: string;
+    title: string;
+    dueDate: string;
+  }>;
   vendorSummary: {
     totalCostMinor: number;
     totalDepositMinor: number;

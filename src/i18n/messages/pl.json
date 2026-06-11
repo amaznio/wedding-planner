@@ -567,6 +567,10 @@
         "title": "Nadchodzące zadania",
         "badge": "Wkrótce",
         "dueIn": "za {{count}} dni",
+        "dueToday": "termin dzisiaj",
+        "overdue": "{{count}} dni po terminie",
+        "overdueBadge": "Po terminie",
+        "empty": "Brak aktywnych zadań z terminem.",
         "items": {
           "confirmMenu": "Potwierdź menu z cateringiem",
           "chooseDecor": "Wybierz dekoracje sali",
@@ -1311,11 +1315,26 @@
         "inProgress": "W trakcie",
         "done": "Gotowe"
       },
+      "actions": {
+        "add": "Dodaj zadanie",
+        "manageGroups": "Zarządzaj grupami"
+      },
+      "filters": {
+        "search": "Szukaj zadań...",
+        "allStatuses": "Wszystkie statusy"
+      },
+      "groupBy": {
+        "group": "Grupuj według grupy",
+        "event": "Grupuj według wydarzenia",
+        "status": "Grupuj według statusu",
+        "none": "Bez grupowania"
+      },
       "table": {
         "title": "Lista zadań",
         "description": "Bieżące zadania zespołu weselnego.",
         "columns": {
           "task": "Zadanie",
+          "links": "Grupa / wydarzenie",
           "assignee": "Osoba",
           "due": "Termin",
           "priority": "Priorytet",
@@ -1332,6 +1351,59 @@
         "in_progress": "W trakcie",
         "done": "Gotowe"
       },
+      "dialog": {
+        "createTitle": "Dodaj zadanie",
+        "editTitle": "Edytuj zadanie",
+        "description": "Ustaw odpowiedzialną osobę, organizację, termin i listę kontrolną."
+      },
+      "form": {
+        "title": "Tytuł zadania",
+        "dueDate": "Termin",
+        "priority": "Priorytet",
+        "status": "Status",
+        "event": "Wydarzenie",
+        "group": "Grupa własna",
+        "assignee": "Osoba odpowiedzialna",
+        "checklist": "Lista kontrolna",
+        "addChecklistItem": "Dodaj pozycję",
+        "checklistPlaceholder": "Pozycja listy kontrolnej",
+        "checklistStatusHelp": "Status zadania jest synchronizowany z ukończeniem listy kontrolnej."
+      },
+      "groups": {
+        "title": "Grupy zadań",
+        "description": "Twórz własne grupy do organizowania zadań niezależnie od wydarzeń.",
+        "createSectionTitle": "Utwórz grupę",
+        "createSectionDescription": "Dodaj grupę do organizowania powiązanych zadań.",
+        "editSectionTitle": "Zmień nazwę grupy",
+        "editSectionDescription": "Zaktualizuj nazwę grupy bez zmieniania jej zadań.",
+        "existingTitle": "Istniejące grupy",
+        "existingDescription": "Zmieniaj nazwy grup lub usuwaj te, których już nie potrzebujesz.",
+        "nameLabel": "Nazwa grupy",
+        "namePlaceholder": "Nazwa grupy",
+        "add": "Dodaj grupę",
+        "taskCount": "Zadania: {{count}}",
+        "empty": "Brak własnych grup zadań.",
+        "emptyDescription": "Utwórz pierwszą grupę powyżej, aby uporządkować powiązane zadania.",
+        "editAction": "Edytuj grupę zadań",
+        "deleteAction": "Usuń grupę zadań",
+        "deleteTitle": "Usuń grupę zadań",
+        "deleteDescription": "Usunąć {{name}}? Zadania z tej grupy pozostaną bez grupy."
+      },
+      "delete": {
+        "title": "Usuń zadanie",
+        "description": "Usunąć {{title}}?"
+      },
+      "errors": {
+        "load": "Nie udało się załadować zadań.",
+        "save": "Nie udało się zapisać zadania.",
+        "delete": "Nie udało się usunąć zadania.",
+        "groupSave": "Nie udało się zapisać grupy zadań.",
+        "groupDelete": "Nie udało się usunąć grupy zadań.",
+        "invalidForm": "Podaj tytuł zadania i uzupełnij wszystkie pozycje listy kontrolnej."
+      },
+      "ungrouped": "Bez grupy",
+      "noEvent": "Bez wydarzenia",
+      "unassigned": "Nieprzypisane",
       "empty": "Brak zadań."
     }
   },

@@ -567,6 +567,10 @@
         "title": "Upcoming tasks",
         "badge": "Soon",
         "dueIn": "in {{count}} days",
+        "dueToday": "due today",
+        "overdue": "{{count}} days overdue",
+        "overdueBadge": "Overdue",
+        "empty": "No active tasks with a deadline.",
         "items": {
           "confirmMenu": "Confirm catering menu",
           "chooseDecor": "Choose venue decorations",
@@ -1311,11 +1315,26 @@
         "inProgress": "In progress",
         "done": "Done"
       },
+      "actions": {
+        "add": "Add task",
+        "manageGroups": "Manage groups"
+      },
+      "filters": {
+        "search": "Search tasks...",
+        "allStatuses": "All statuses"
+      },
+      "groupBy": {
+        "group": "Group by custom group",
+        "event": "Group by event",
+        "status": "Group by status",
+        "none": "No grouping"
+      },
       "table": {
         "title": "Task list",
         "description": "Current tasks for the wedding team.",
         "columns": {
           "task": "Task",
+          "links": "Group / event",
           "assignee": "Assignee",
           "due": "Due",
           "priority": "Priority",
@@ -1332,6 +1351,59 @@
         "in_progress": "In progress",
         "done": "Done"
       },
+      "dialog": {
+        "createTitle": "Add task",
+        "editTitle": "Edit task",
+        "description": "Set task ownership, organization, deadline, and checklist."
+      },
+      "form": {
+        "title": "Task title",
+        "dueDate": "Due date",
+        "priority": "Priority",
+        "status": "Status",
+        "event": "Event",
+        "group": "Custom group",
+        "assignee": "Assignee",
+        "checklist": "Checklist",
+        "addChecklistItem": "Add item",
+        "checklistPlaceholder": "Checklist item",
+        "checklistStatusHelp": "Task status is synchronized with checklist completion."
+      },
+      "groups": {
+        "title": "Task groups",
+        "description": "Create custom groups for organizing tasks independently of events.",
+        "createSectionTitle": "Create a group",
+        "createSectionDescription": "Add a reusable group for related planning tasks.",
+        "editSectionTitle": "Rename group",
+        "editSectionDescription": "Update the group name without changing its tasks.",
+        "existingTitle": "Existing groups",
+        "existingDescription": "Rename groups or remove groups you no longer need.",
+        "nameLabel": "Group name",
+        "namePlaceholder": "Group name",
+        "add": "Add group",
+        "taskCount": "{{count}} tasks",
+        "empty": "No custom task groups yet.",
+        "emptyDescription": "Create your first group above to organize related tasks.",
+        "editAction": "Edit task group",
+        "deleteAction": "Delete task group",
+        "deleteTitle": "Delete task group",
+        "deleteDescription": "Delete {{name}}? Its tasks will become ungrouped."
+      },
+      "delete": {
+        "title": "Delete task",
+        "description": "Delete {{title}}?"
+      },
+      "errors": {
+        "load": "Failed to load tasks.",
+        "save": "Failed to save task.",
+        "delete": "Failed to delete task.",
+        "groupSave": "Failed to save task group.",
+        "groupDelete": "Failed to delete task group.",
+        "invalidForm": "Enter a task title and complete every checklist item title."
+      },
+      "ungrouped": "Ungrouped",
+      "noEvent": "No event",
+      "unassigned": "Unassigned",
       "empty": "No tasks yet."
     }
   },

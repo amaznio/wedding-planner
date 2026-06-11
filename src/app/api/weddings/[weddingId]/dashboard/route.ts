@@ -18,7 +18,7 @@ export async function GET(_: Request, context: RouteContext) {
   });
   if (!wedding) return NextResponse.json({ error: "Wedding not found" }, { status: 404 });
 
-  const [events, expenseAgg, vendors] = await Promise.all([
+  const [events, expenseAgg, vendors, activeTaskCount, upcomingTasks] = await Promise.all([
     prisma.weddingEvent.findMany({
       where: { weddingId },
       select: {
@@ -50,6 +50,23 @@ export async function GET(_: Request, context: RouteContext) {
         paymentStatus: true,
       },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.weddingTask.count({
+      where: { weddingId, status: { not: "done" } },
+    }),
+    prisma.weddingTask.findMany({
+      where: {
+        weddingId,
+        status: { not: "done" },
+        dueDate: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        dueDate: true,
+      },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+      take: 4,
     }),
   ]);
 
@@ -104,6 +121,8 @@ export async function GET(_: Request, context: RouteContext) {
     currency: wedding.currency,
     rsvpByEvent,
     expenseSummary: expenseAgg,
+    activeTaskCount,
+    upcomingTasks,
     vendorSummary: {
       ...vendorSummary,
       remainingMinor: Math.max(0, vendorSummary.totalCostMinor - vendorSummary.totalPaidMinor),

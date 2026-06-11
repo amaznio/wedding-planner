@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
 import { NoteCategoryCombobox } from "@/features/wedding-notes/components/NoteCategoryCombobox";
+import { CreateWeddingNoteDialog } from "@/features/wedding-notes/components/CreateWeddingNoteDialog";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
@@ -56,7 +57,8 @@ export function WeddingNotesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"edit" | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(() => new Set());
@@ -108,10 +110,7 @@ export function WeddingNotesPage() {
   }
 
   const openCreateDialog = () => {
-    setForm(emptyForm);
-    setEditingNoteId(null);
-    setError(null);
-    setDialogMode("create");
+    setCreateOpen(true);
   };
 
   const openEditDialog = (note: WeddingNote) => {
@@ -249,14 +248,16 @@ export function WeddingNotesPage() {
       </AppPageGrid>
       {!visibleNotes.length ? <p className="mt-5 text-sm text-zinc-600">{t("notes.page.empty")}</p> : null}
 
+      <CreateWeddingNoteDialog weddingId={weddingId} open={createOpen} onOpenChange={setCreateOpen} onCreated={load} />
+
       <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="overflow-hidden p-0 sm:max-w-xl" closeLabel={t("common.close")}>
           <DialogHeader className="border-b border-zinc-200 px-6 py-5 pr-12">
             <DialogTitle className="text-xl">
-              {dialogMode === "edit" ? t("notes.page.dialog.editTitle") : t("notes.page.dialog.createTitle")}
+              {t("notes.page.dialog.editTitle")}
             </DialogTitle>
             <DialogDescription>
-              {dialogMode === "edit" ? t("notes.page.dialog.editDescription") : t("notes.page.dialog.createDescription")}
+              {t("notes.page.dialog.editDescription")}
             </DialogDescription>
           </DialogHeader>
           <form

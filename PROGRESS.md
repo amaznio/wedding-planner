@@ -2,6 +2,235 @@
 
 ## Current Phase
 
+Phase 253-HF1 - Task group management modal hierarchy (completed)
+
+## Completed Work
+
+- Improved the Zadania group management modal with clearer visual hierarchy and spacing.
+- Split the modal into distinct create/edit and existing-groups sections with supporting descriptions.
+- Added a visible group-name label, contextual create/edit copy, a group count, and a clearer empty state.
+- Improved group-row spacing, task-count hierarchy, action accessibility labels, scroll behavior, and footer separation.
+- Added matching Polish and English translations for the new modal copy.
+- Files changed:
+  - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm lint -- src/features/wedding-tasks/components/WeddingTasksPage.tsx` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser QA at `http://localhost:3000/weddings/test/tasks` (redirected to `/sign-in`; no console warnings or errors)
+- Known issues:
+  - authenticated visual QA for the group management modal remains unavailable because the active Browser session is signed out
+- Next recommended step:
+  - authenticate and visually verify the group management modal with empty, populated, and rename states.
+
+## Current Phase
+
+Phase 253 - Reusable dashboard task and note create modals (completed)
+
+## Completed Work
+
+- Extracted self-contained reusable create dialogs:
+  - `CreateWeddingTaskDialog` with task fields, event/group/assignee loading, checklist creation, and persistence
+  - `CreateWeddingNoteDialog` with category loading, note fields, pinning, and persistence
+- Reused the same create-dialog components from:
+  - dashboard quick actions
+  - Zadania page add action
+  - Notes page add action
+- Dashboard `Add task` and `Add note` now open their respective modals in place without navigating away.
+- After dashboard creation, refreshed persisted dashboard data and the server-rendered sidebar badge.
+- Kept existing page-specific edit dialogs unchanged.
+- Removed the temporary query-parameter navigation approach.
+- Files changed:
+  - `src/features/wedding-tasks/components/CreateWeddingTaskDialog.tsx`
+  - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `src/features/wedding-notes/components/CreateWeddingNoteDialog.tsx`
+  - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/lib/routes.ts`
+  - `PROGRESS.md`
+- Commands run:
+  - focused `pnpm lint -- ...` for shared modal and integration files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `git diff --check` (pass before final progress update)
+  - Browser QA at `http://localhost:3000/weddings/test` (redirected to `/sign-in`; no console warnings or errors)
+- Known issues:
+  - authenticated browser interaction QA for dashboard quick-action modals remains unavailable because the active Browser session is signed out
+- Next recommended step:
+  - authenticate and verify Add task/Add note open in-place, cancel without navigation, create successfully, and refresh dashboard/sidebar data.
+
+## Current Phase
+
+Phase 252 - Persisted dashboard and sidebar task data (completed)
+
+## Completed Work
+
+- Replaced the hardcoded sidebar Tasks badge with the persisted count of active tasks (`status != done`) for the current wedding.
+- Replaced dashboard upcoming-task mock rows with the next four persisted active tasks that have deadlines.
+- Displayed real task titles and deadline state:
+  - upcoming tasks show days remaining
+  - tasks due today show a dedicated label
+  - overdue tasks show days overdue and a red overdue badge
+  - weddings without active dated tasks show an empty state
+- Changed the upcoming-task widget `View all` action to open the Zadania page directly.
+- Kept event-detail task mocks unchanged.
+- Files changed:
+  - `src/app/weddings/[weddingId]/(workspace)/layout.tsx`
+  - `src/app/api/weddings/[weddingId]/dashboard/route.ts`
+  - `src/features/wedding-dashboard/types.api.ts`
+  - `src/features/wedding-dashboard/types.ts`
+  - `src/features/wedding-dashboard/dashboard.mock.ts`
+  - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+  - `src/features/wedding-dashboard/components/UpcomingTasksCard.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/features/wedding-dashboard/components/DashboardWidgetsGrid.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused `pnpm lint -- ...` for dashboard task-integration files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser QA at `http://localhost:3000/weddings/test` (redirected to `/sign-in`; no console warnings or errors)
+- Known issues:
+  - authenticated visual QA for the persisted sidebar badge and homepage upcoming-task widget remains unavailable because the active Browser session is signed out
+  - active tasks without a due date count toward the sidebar badge but are intentionally omitted from the upcoming-task widget
+  - event-detail task mocks remain unchanged
+- Next recommended step:
+  - authenticate and verify sidebar active-task count, upcoming/overdue/today task states, empty state, and `View all` navigation.
+
+## Current Phase
+
+Phase 251-HF1 - Wider Zadania group-by select (completed)
+
+## Completed Work
+
+- Increased the desktop width of the Zadania group-by select so longer Polish labels are shown without truncation.
+- Preserved full-width behavior on narrow screens.
+- Files changed:
+  - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm lint -- src/features/wedding-tasks/components/WeddingTasksPage.tsx` (pass)
+  - `pnpm typecheck` (pass)
+  - `git diff --check` (pass before final progress update)
+- Known issues:
+  - authenticated browser visual QA remains unavailable because the active browser session is signed out
+- Next recommended step:
+  - visually verify the Polish group-by labels in the authenticated Zadania page.
+
+## Current Phase
+
+Phase 251 - Grouped standalone Zadania table (completed)
+
+## Completed Work
+
+- Completed persisted Zadania UI through Phases 2 and 3:
+  - removed all task mock data from the Zadania page
+  - loaded persisted tasks, events, custom task groups, workspace members, and edit permissions
+  - added task create/edit/delete dialogs with title, deadline, priority, status, event, group, assignee, and checklist editing
+  - added custom task-group create/rename/delete management
+  - added direct checklist toggles in task rows with persisted parent-status synchronization
+  - applied the task migration to the configured PostgreSQL database
+- Replaced the card-wrapped task table with direct grouped table sections:
+  - added search and status filtering
+  - added group-by selection for custom group, event, status, and no grouping
+  - defaulted grouping to custom group
+  - kept custom group and event names visible in every task row
+  - sorted sections alphabetically with ungrouped last
+  - sorted tasks by due date with undated tasks last
+  - displayed checklist progress and checklist items
+  - highlighted overdue unfinished tasks
+- Added complete EN/PL task CRUD, grouping, checklist, filter, empty-state, and error copy.
+- Preserved checklist synchronization rules, including the edge case where the final checklist is removed from a task.
+- Files changed:
+  - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm exec prisma migrate deploy` (pass; applied `20260610130000_add_wedding_tasks`)
+  - `pnpm prisma:validate` (pass)
+  - `pnpm exec prisma migrate status` (pass; database schema is up to date)
+  - `pnpm dlx tsx --test src/features/wedding-tasks/lib/task-rules.test.ts` (pass, 2 tests)
+  - focused `pnpm lint -- ...` for task UI and task API files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser QA at `http://localhost:3000/weddings/test/tasks` (redirected to `/sign-in`; no console warnings or errors)
+  - unauthenticated task API check (returned expected HTTP 401)
+- Known issues:
+  - authenticated browser QA for task CRUD, group management, grouping controls, and responsive table layout remains unavailable because the active Browser session is signed out
+  - dashboard upcoming-task widgets and event-detail task mocks remain unchanged as planned
+- Next recommended step:
+  - authenticate and visually verify task CRUD, custom groups, checklist synchronization, grouping modes, overdue styling, and narrow-screen horizontal table scrolling.
+
+## Current Phase
+
+Phase 249 - Persisted task data model and APIs (completed)
+
+## Completed Work
+
+- Added additive persisted task foundation:
+  - added wedding-scoped tasks with optional event, custom task group, and workspace-member assignee links
+  - added wedding-scoped custom task groups with normalized unique names
+  - added ordered task checklist items with cascade deletion
+  - kept event, group, and assignee deletion non-destructive by unlinking tasks with `SetNull`
+- Added task validation and authenticated CRUD APIs:
+  - `GET/POST /api/weddings/[weddingId]/tasks`
+  - `PUT/DELETE /api/weddings/[weddingId]/tasks/[taskId]`
+  - `GET/POST /api/weddings/[weddingId]/task-groups`
+  - `PUT/DELETE /api/weddings/[weddingId]/task-groups/[groupId]`
+  - `POST /api/weddings/[weddingId]/tasks/[taskId]/checklist-items`
+  - `PUT/DELETE /api/weddings/[weddingId]/tasks/[taskId]/checklist-items/[itemId]`
+- Enforced wedding ownership for linked events, groups, and assignees.
+- Added transactional checklist/status synchronization:
+  - no completed checklist items -> `todo`
+  - some completed checklist items -> `in_progress`
+  - all completed checklist items -> `done`
+  - setting a task to `done` or `todo` synchronizes every checklist item
+  - manual `in_progress` is rejected for tasks with checklist items
+- Added focused tests for task-group normalization and checklist status derivation.
+- Files changed:
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260610130000_add_wedding_tasks/migration.sql`
+  - `src/features/wedding/schemas/wedding.schema.ts`
+  - `src/features/wedding-tasks/lib/task-rules.ts`
+  - `src/features/wedding-tasks/lib/task-rules.test.ts`
+  - `src/features/wedding-tasks/lib/task-server.ts`
+  - `src/app/api/weddings/[weddingId]/tasks/route.ts`
+  - `src/app/api/weddings/[weddingId]/tasks/[taskId]/route.ts`
+  - `src/app/api/weddings/[weddingId]/tasks/[taskId]/checklist-items/route.ts`
+  - `src/app/api/weddings/[weddingId]/tasks/[taskId]/checklist-items/[itemId]/route.ts`
+  - `src/app/api/weddings/[weddingId]/task-groups/route.ts`
+  - `src/app/api/weddings/[weddingId]/task-groups/[groupId]/route.ts`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm prisma:validate` (pass)
+  - `pnpm exec prisma generate` (pass)
+  - `pnpm dlx tsx --test src/features/wedding-tasks/lib/task-rules.test.ts` (pass, 2 tests)
+  - focused `pnpm lint -- ...` for Phase 249 files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `git diff --check` (pass before final progress update)
+  - `pnpm exec prisma migrate status` (expected non-zero: new task migration is valid and pending)
+- Known issues:
+  - `20260610130000_add_wedding_tasks` has not yet been applied to the configured PostgreSQL database
+  - database-backed authorization and CRUD integration tests are not configured in this repository
+  - Zadania UI still uses mock data until the next requested phase
+- Next recommended step:
+  - Phase 250 - replace Zadania mock data with persisted task, custom-group, assignee, and checklist CRUD UI.
+
+## Current Phase
+
 Phase 248-HF3 - Expandable clamped note bodies (completed)
 
 ## Completed Work

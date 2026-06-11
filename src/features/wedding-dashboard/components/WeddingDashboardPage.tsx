@@ -18,6 +18,8 @@ import { authClient } from "@/lib/auth-client";
 import { fetchWeddingDashboardViewModel } from "@/features/wedding-dashboard/lib/fetch-dashboard-view-model";
 import { getWeddingRoutes } from "@/lib/routes";
 import { WeddingDashboardDetailsDialog } from "@/features/wedding-dashboard/components/WeddingDashboardDetailsDialog";
+import { CreateWeddingNoteDialog } from "@/features/wedding-notes/components/CreateWeddingNoteDialog";
+import { CreateWeddingTaskDialog } from "@/features/wedding-tasks/components/CreateWeddingTaskDialog";
 
 type WeddingFormState = {
   name: string;
@@ -93,6 +95,9 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   const [isCoverImageUploading, setIsCoverImageUploading] = useState(false);
   const coverImageInputRef = useRef<HTMLInputElement | null>(null);
   const [canEditWedding, setCanEditWedding] = useState(false);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [createNoteOpen, setCreateNoteOpen] = useState(false);
+  const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -124,7 +129,7 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
     return () => {
       active = false;
     };
-  }, [weddingId, t]);
+  }, [weddingId, t, dashboardReloadKey]);
 
   const firstEventHref = useMemo(() => data?.events.find((event) => event.href)?.href, [data?.events]);
 
@@ -145,6 +150,16 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   };
 
   const handleQuickAction = (action: DashboardQuickActionId) => {
+    if (action === "task") {
+      setCreateTaskOpen(true);
+      return;
+    }
+
+    if (action === "note") {
+      setCreateNoteOpen(true);
+      return;
+    }
+
     if (action === "expense") {
       router.push(routes.budget);
       return;
@@ -392,6 +407,7 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
           locale={locale as Locale}
           onQuickAction={handleQuickAction}
           onPlaceholderAction={handlePlaceholderAction}
+          onOpenTasks={() => router.push(routes.tasks)}
         />
 
         <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")} />
@@ -427,6 +443,25 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
           setCoverImageError(null);
         }}
         canEditWedding={canEditWedding}
+      />
+
+      <CreateWeddingTaskDialog
+        weddingId={weddingId}
+        open={createTaskOpen}
+        onOpenChange={setCreateTaskOpen}
+        onCreated={() => {
+          router.refresh();
+          setDashboardReloadKey((current) => current + 1);
+        }}
+      />
+      <CreateWeddingNoteDialog
+        weddingId={weddingId}
+        open={createNoteOpen}
+        onOpenChange={setCreateNoteOpen}
+        onCreated={() => {
+          router.refresh();
+          setDashboardReloadKey((current) => current + 1);
+        }}
       />
 
       <Dialog open={placeholderKey !== null} onOpenChange={(open) => { if (!open) setPlaceholderKey(null); }}>

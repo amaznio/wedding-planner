@@ -13,6 +13,8 @@ export const eventRsvpStatusSchema = z.enum(["unknown", "confirmed", "declined",
 export const householdMemberRoleSchema = z.enum(["adult", "child"]);
 export const vendorPaymentStatusSchema = z.enum(["not_started", "partial", "paid", "canceled"]);
 export const expenseStatusSchema = z.enum(["planned", "committed", "paid", "reimbursed", "canceled"]);
+export const weddingTaskStatusSchema = z.enum(["todo", "in_progress", "done"]);
+export const weddingTaskPrioritySchema = z.enum(["low", "medium", "high"]);
 export const weddingMemberRoleSchema = z.enum(["owner", "editor", "viewer"]);
 export const weddingMemberAssignableRoleSchema = z.enum(["editor", "viewer"]);
 
@@ -107,6 +109,51 @@ export const updateWeddingDocumentSchema = z.object({
   dueDate: z.coerce.date().nullable().optional(),
   eventId: z.string().min(1).nullable().optional(),
   vendorId: z.string().min(1).nullable().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one field must be provided",
+});
+
+export const createWeddingTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  dueDate: z.coerce.date().nullable().optional(),
+  priority: weddingTaskPrioritySchema.default("medium"),
+  status: weddingTaskStatusSchema.default("todo"),
+  eventId: z.string().min(1).nullable().optional(),
+  groupId: z.string().min(1).nullable().optional(),
+  assigneeMembershipId: z.string().min(1).nullable().optional(),
+});
+
+export const updateWeddingTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  priority: weddingTaskPrioritySchema.optional(),
+  status: weddingTaskStatusSchema.optional(),
+  eventId: z.string().min(1).nullable().optional(),
+  groupId: z.string().min(1).nullable().optional(),
+  assigneeMembershipId: z.string().min(1).nullable().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one field must be provided",
+});
+
+export const createWeddingTaskGroupSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+});
+
+export const updateWeddingTaskGroupSchema = createWeddingTaskGroupSchema.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  { message: "At least one field must be provided" },
+);
+
+export const createWeddingTaskChecklistItemSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  completed: z.boolean().default(false),
+  sortOrder: z.int().min(0).optional(),
+});
+
+export const updateWeddingTaskChecklistItemSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  completed: z.boolean().optional(),
+  sortOrder: z.int().min(0).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: "At least one field must be provided",
 });

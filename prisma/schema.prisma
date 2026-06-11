@@ -60,6 +60,18 @@ enum ExpenseStatus {
   canceled
 }
 
+enum WeddingTaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum WeddingTaskPriority {
+  low
+  medium
+  high
+}
+
 enum WeddingMemberRole {
   owner
   editor
@@ -98,6 +110,8 @@ model Wedding {
   expenses Expense[]
   planningNotes WeddingNote[]
   documents WeddingDocument[]
+  tasks WeddingTask[]
+  taskGroups WeddingTaskGroup[]
   memberships WeddingMembership[]
 
   @@index([ownerId])
@@ -136,6 +150,7 @@ model WeddingEvent {
   expenses Expense[]
   timelineItems EventTimelineItem[]
   documents WeddingDocument[]
+  tasks WeddingTask[]
 
   @@index([weddingId])
 }
@@ -348,6 +363,62 @@ model WeddingDocument {
   @@index([status])
 }
 
+model WeddingTaskGroup {
+  id             String   @id @default(cuid())
+  weddingId      String
+  wedding        Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name           String
+  nameNormalized String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tasks WeddingTask[]
+
+  @@unique([weddingId, nameNormalized])
+  @@index([weddingId])
+}
+
+model WeddingTask {
+  id                   String              @id @default(cuid())
+  weddingId            String
+  wedding              Wedding             @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  eventId              String?
+  event                WeddingEvent?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  groupId              String?
+  group                WeddingTaskGroup?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  assigneeMembershipId String?
+  assigneeMembership   WeddingMembership?  @relation(fields: [assigneeMembershipId], references: [id], onDelete: SetNull)
+  title                String
+  dueDate              DateTime?
+  priority             WeddingTaskPriority @default(medium)
+  status               WeddingTaskStatus   @default(todo)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  checklistItems WeddingTaskChecklistItem[]
+
+  @@index([weddingId])
+  @@index([eventId])
+  @@index([groupId])
+  @@index([assigneeMembershipId])
+  @@index([weddingId, status])
+  @@index([weddingId, dueDate])
+}
+
+model WeddingTaskChecklistItem {
+  id        String      @id @default(cuid())
+  taskId    String
+  task      WeddingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean     @default(false)
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([taskId])
+  @@index([taskId, sortOrder])
+}
+
 model VendorEvent {
   id        String      @id @default(cuid())
   vendorId  String
@@ -503,6 +574,8 @@ model WeddingMembership {
   role      WeddingMemberRole
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+
+  assignedTasks WeddingTask[]
 
   @@unique([weddingId, userId])
   @@index([weddingId])

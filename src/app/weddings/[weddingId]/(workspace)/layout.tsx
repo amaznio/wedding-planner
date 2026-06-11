@@ -45,6 +45,9 @@ export default async function WeddingWorkspaceLayout({
 
   const eventNamesById = Object.fromEntries(wedding.events.map((event) => [event.id, event.name]));
   const routes = getWeddingRoutes(weddingId);
+  const activeTaskCount = await prisma.weddingTask.count({
+    where: { weddingId, status: { not: "done" } },
+  });
 
   const navigation: DashboardNavItem[] = [
     { id: "home", href: routes.root },
@@ -53,7 +56,7 @@ export default async function WeddingWorkspaceLayout({
     { id: "seating", href: routes.seating },
     { id: "budget", href: routes.budget },
     { id: "vendors", href: routes.vendors },
-    { id: "tasks", href: routes.tasks, counter: 12 },
+    { id: "tasks", href: routes.tasks, counter: activeTaskCount },
     { id: "notes", href: routes.notes },
     { id: "documents", href: routes.documents },
     { id: "collaborators", href: routes.collaborators },
