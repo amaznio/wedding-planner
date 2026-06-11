@@ -20,6 +20,8 @@ import { getWeddingRoutes } from "@/lib/routes";
 import { WeddingDashboardDetailsDialog } from "@/features/wedding-dashboard/components/WeddingDashboardDetailsDialog";
 import { CreateWeddingNoteDialog } from "@/features/wedding-notes/components/CreateWeddingNoteDialog";
 import { CreateWeddingTaskDialog } from "@/features/wedding-tasks/components/CreateWeddingTaskDialog";
+import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
+import { CreateWeddingVendorDialog } from "@/features/wedding-vendors/components/CreateWeddingVendorDialog";
 import { toast } from "@/components/ui/use-toast";
 
 type WeddingFormState = {
@@ -99,6 +101,8 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   const [canEditWedding, setCanEditWedding] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [createNoteOpen, setCreateNoteOpen] = useState(false);
+  const [createPaymentOpen, setCreatePaymentOpen] = useState(false);
+  const [createVendorOpen, setCreateVendorOpen] = useState(false);
   const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
   const [completingTaskIds, setCompletingTaskIds] = useState<Set<string>>(new Set());
 
@@ -164,12 +168,12 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
     }
 
     if (action === "expense") {
-      router.push(routes.budget);
+      setCreatePaymentOpen(true);
       return;
     }
 
     if (action === "vendor") {
-      router.push(routes.vendors);
+      setCreateVendorOpen(true);
       return;
     }
 
@@ -465,8 +469,8 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
           totalSpentMinor={data.overview.spentMinor}
           locale={locale as Locale}
           onQuickAction={handleQuickAction}
-          onPlaceholderAction={handlePlaceholderAction}
           onOpenTasks={() => router.push(routes.tasks)}
+          onOpenFinances={() => router.push(routes.budget)}
           canEditTasks={canEditWedding}
           completingTaskIds={completingTaskIds}
           onCompleteTask={(taskId) => void handleCompleteTask(taskId)}
@@ -520,6 +524,24 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
         weddingId={weddingId}
         open={createNoteOpen}
         onOpenChange={setCreateNoteOpen}
+        onCreated={() => {
+          router.refresh();
+          setDashboardReloadKey((current) => current + 1);
+        }}
+      />
+      <CreateWeddingPaymentDialog
+        weddingId={weddingId}
+        open={createPaymentOpen}
+        onOpenChange={setCreatePaymentOpen}
+        onCreated={() => {
+          router.refresh();
+          setDashboardReloadKey((current) => current + 1);
+        }}
+      />
+      <CreateWeddingVendorDialog
+        weddingId={weddingId}
+        open={createVendorOpen}
+        onOpenChange={setCreateVendorOpen}
         onCreated={() => {
           router.refresh();
           setDashboardReloadKey((current) => current + 1);

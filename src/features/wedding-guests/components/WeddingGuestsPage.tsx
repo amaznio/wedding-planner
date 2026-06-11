@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
 import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
 import { AddGuestDialog } from "./AddGuestDialog";
@@ -221,13 +222,13 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   }
 
   return (
-    <>
+    <AppWorkspacePage>
       <GuestsPageHeader
         notificationCount={data.notificationCount}
         onAction={handleQuickAction}
       />
       <div className="mt-5 flex flex-col gap-5">
-        <GuestStatsCards stats={data.stats} shares={rsvpShare} isLoading={false} />
+        <GuestStatsCards stats={data.stats} isLoading={false} />
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <GuestManagementTable
             weddingId={weddingId}
@@ -255,7 +256,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
           onCreated={() => setReloadKey((prev) => prev + 1)}
         />
       ) : null}
-    </>
+    </AppWorkspacePage>
   );
 }
 

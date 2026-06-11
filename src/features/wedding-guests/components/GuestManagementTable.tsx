@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Filter, MessageSquare, MoreHorizontal, Search } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -197,8 +197,8 @@ export function GuestManagementTable({
   };
 
   return (
-    <Card className="gap-0 overflow-hidden py-0">
-      <CardHeader className="flex flex-col gap-3 px-4 py-4 sm:px-5">
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {tabs.map((tab) => (
             <Button
@@ -255,16 +255,16 @@ export function GuestManagementTable({
             {saveError ? <p className="text-sm text-rose-600">{saveError}</p> : null}
           </div>
         ) : null}
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-0">
+      <div>
         {isLoading ? (
           <p className="px-4 py-4 text-sm text-zinc-500">{t("common.loading")}</p>
         ) : filteredHouseholds.length === 0 ? (
           <p className="px-4 py-4 text-sm text-zinc-500">{t("weddingGuestsPage.table.empty")}</p>
         ) : (
           <>
-            <div className="hidden lg:block">
+            <div className="hidden overflow-hidden rounded-lg border border-zinc-200 bg-white lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -353,9 +353,9 @@ export function GuestManagementTable({
             </div>
           </>
         )}
-      </CardContent>
+      </div>
 
-      <CardFooter className="flex flex-col gap-3 border-t border-zinc-200 px-4 py-3 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="flex flex-col gap-3 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
         <p>
           {t("weddingGuestsPage.table.showing", {
             from: showFrom,
@@ -420,8 +420,8 @@ export function GuestManagementTable({
             {">"}
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
 

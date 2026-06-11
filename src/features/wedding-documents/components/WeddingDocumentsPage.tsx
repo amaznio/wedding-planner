@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit3, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AppDataTable } from "@/components/app/AppDataTable";
-import { AppSectionCard } from "@/components/app/AppSectionCard";
 import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppStatusBadge } from "@/components/app/AppStatusBadge";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
@@ -240,9 +239,12 @@ export function WeddingDocumentsPage() {
         ]}
       />
 
-      <div className="mt-5">
-        <AppSectionCard title={t("documents.page.table.title")} description={t("documents.page.table.description")}>
-          <div className="mb-4 max-w-xs">
+      <section className="mt-5">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900">{t("documents.page.table.title")}</h2>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">{t("documents.page.table.description")}</p>
+        </div>
+        <div className="mt-4 max-w-xs">
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as DocumentStatus | "all")}>
               <SelectTrigger>
                 <SelectValue />
@@ -253,8 +255,10 @@ export function WeddingDocumentsPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+        </div>
+        <div className="mt-4">
           <AppDataTable
+            variant="standalone"
             columns={[
               { key: "name", label: t("documents.page.table.columns.name") },
               { key: "category", label: t("documents.page.table.columns.category") },
@@ -288,8 +292,8 @@ export function WeddingDocumentsPage() {
             }))}
             emptyLabel={t("documents.page.empty")}
           />
-        </AppSectionCard>
-      </div>
+        </div>
+      </section>
 
       <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-2xl">

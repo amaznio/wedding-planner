@@ -12,6 +12,7 @@ export const eventInvitationStatusSchema = z.enum(["not_invited", "invited"]);
 export const eventRsvpStatusSchema = z.enum(["unknown", "confirmed", "declined", "maybe"]);
 export const householdMemberRoleSchema = z.enum(["adult", "child"]);
 export const vendorPaymentStatusSchema = z.enum(["not_started", "partial", "paid", "canceled"]);
+export const vendorLifecycleStatusSchema = z.enum(["considering", "booked", "contract_signed", "canceled"]);
 export const expenseStatusSchema = z.enum(["planned", "committed", "paid", "reimbursed", "canceled"]);
 export const weddingTaskStatusSchema = z.enum(["todo", "in_progress", "done"]);
 export const weddingTaskPrioritySchema = z.enum(["low", "medium", "high"]);
@@ -234,6 +235,7 @@ export const createVendorSchema = z.object({
   depositMinor: z.int().min(0).default(0),
   amountPaidMinor: z.int().min(0).default(0),
   paymentStatus: vendorPaymentStatusSchema.default("not_started"),
+  lifecycleStatus: vendorLifecycleStatusSchema.default("considering"),
   dueDate: z.coerce.date().optional(),
   eventIds: z.array(z.string().min(1)).max(200).default([]),
 });
@@ -248,6 +250,7 @@ export const updateVendorSchema = z.object({
   depositMinor: z.int().min(0).optional(),
   amountPaidMinor: z.int().min(0).optional(),
   paymentStatus: vendorPaymentStatusSchema.optional(),
+  lifecycleStatus: vendorLifecycleStatusSchema.optional(),
   dueDate: z.coerce.date().nullable().optional(),
   eventIds: z.array(z.string().min(1)).max(200).optional(),
 }).refine((value) => Object.keys(value).length > 0, {

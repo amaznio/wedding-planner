@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { requireWeddingRole } from "@/lib/wedding-authz";
+import { getVendorPaymentSummary } from "@/features/wedding-finances/lib/vendor-payment-summary";
 
 type RouteContext = {
   params: Promise<{ weddingId: string }>;
@@ -18,7 +19,7 @@ export async function GET(_: Request, context: RouteContext) {
   });
   if (!wedding) return NextResponse.json({ error: "Wedding not found" }, { status: 404 });
 
-  const [events, expenseAgg, vendors, activeTaskCount, upcomingTasks] = await Promise.all([
+  const [events, expenseAgg, vendors, recentPayments, activeTaskCount, upcomingTasks] = await Promise.all([
     prisma.weddingEvent.findMany({
       where: { weddingId },
       select: {
@@ -45,11 +46,29 @@ export async function GET(_: Request, context: RouteContext) {
         id: true,
         name: true,
         totalCostMinor: true,
-        depositMinor: true,
-        amountPaidMinor: true,
         paymentStatus: true,
+        lifecycleStatus: true,
+        expenses: {
+          select: {
+            amountMinor: true,
+            category: true,
+            status: true,
+          },
+        },
       },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.expense.findMany({
+      where: { weddingId, status: "paid" },
+      select: {
+        id: true,
+        title: true,
+        amountMinor: true,
+        incurredAt: true,
+        vendor: { select: { id: true, name: true } },
+      },
+      orderBy: [{ incurredAt: "desc" }, { createdAt: "desc" }],
+      take: 4,
     }),
     prisma.weddingTask.count({
       where: { weddingId, status: { not: "done" } },
@@ -109,23 +128,38 @@ export async function GET(_: Request, context: RouteContext) {
 
   const vendorSummary = vendors.reduce(
     (acc, vendor) => {
+      const paymentSummary = getVendorPaymentSummary(vendor);
+      if (vendor.lifecycleStatus === "canceled") return acc;
+      acc.activeCount += 1;
+      if (vendor.lifecycleStatus === "booked" || vendor.lifecycleStatus === "contract_signed") {
+        acc.securedCount += 1;
+      }
       acc.totalCostMinor += vendor.totalCostMinor;
-      acc.totalDepositMinor += vendor.depositMinor;
-      acc.totalPaidMinor += vendor.amountPaidMinor;
+      acc.totalDepositMinor += paymentSummary.depositPaidMinor;
+      acc.totalPaidMinor += paymentSummary.amountPaidMinor;
+      acc.remainingMinor += paymentSummary.remainingMinor;
       return acc;
     },
-    { totalCostMinor: 0, totalDepositMinor: 0, totalPaidMinor: 0 },
+    {
+      activeCount: 0,
+      securedCount: 0,
+      totalCostMinor: 0,
+      totalDepositMinor: 0,
+      totalPaidMinor: 0,
+      remainingMinor: 0,
+    },
   );
 
   return NextResponse.json({
     currency: wedding.currency,
     rsvpByEvent,
     expenseSummary: expenseAgg,
+    recentPayments,
     activeTaskCount,
     upcomingTasks,
     vendorSummary: {
       ...vendorSummary,
-      remainingMinor: Math.max(0, vendorSummary.totalCostMinor - vendorSummary.totalPaidMinor),
+      remainingMinor: vendorSummary.remainingMinor,
     },
   });
 }

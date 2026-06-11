@@ -37,7 +37,7 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     : 0;
   const rsvpTotalCount = primaryRsvp?.totalEventGuests ?? weddingJson.wedding._count.guests;
   const expenseSpentMinor = dashboardJson.expenseSummary
-    .filter((row) => row.status !== "canceled")
+    .filter((row) => row.status === "paid")
     .reduce((sum, row) => sum + (row._sum.amountMinor ?? 0), 0);
 
   const dashboardData = buildDashboardMockData({
@@ -50,8 +50,10 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     guestCount: weddingJson.wedding._count.guests,
     rsvpRespondedCount,
     rsvpTotalCount,
-    budgetMinor: dashboardJson.vendorSummary.totalCostMinor || undefined,
-    spentMinor: dashboardJson.vendorSummary.totalPaidMinor || expenseSpentMinor || undefined,
+    budgetMinor: dashboardJson.vendorSummary.totalCostMinor,
+    spentMinor: expenseSpentMinor,
+    activeVendorCount: dashboardJson.vendorSummary.activeCount,
+    securedVendorCount: dashboardJson.vendorSummary.securedCount,
     events: mappedEvents,
     activeTaskCount: dashboardJson.activeTaskCount,
     upcomingTasks: dashboardJson.upcomingTasks.map((task) => ({
@@ -59,6 +61,12 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
       title: task.title,
       dueDate: new Date(task.dueDate),
       dueInDays: getCalendarDayDifference(task.dueDate),
+    })),
+    recentExpenses: dashboardJson.recentPayments.map((payment) => ({
+      id: payment.id,
+      title: payment.title,
+      amountMinor: payment.amountMinor,
+      incurredAt: new Date(payment.incurredAt),
     })),
   });
 

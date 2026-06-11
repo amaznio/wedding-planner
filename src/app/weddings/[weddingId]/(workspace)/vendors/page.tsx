@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AppDataTable } from "@/components/app/AppDataTable";
-import { AppPageGrid } from "@/components/app/AppPageGrid";
-import { AppSectionCard } from "@/components/app/AppSectionCard";
-import { AppStatCard } from "@/components/app/AppStatCard";
+import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppStatusBadge } from "@/components/app/AppStatusBadge";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { Button } from "@/components/ui/button";
@@ -15,11 +13,14 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { CreateWeddingVendorDialog } from "@/features/wedding-vendors/components/CreateWeddingVendorDialog";
+import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
 type VendorPaymentStatus = "not_started" | "partial" | "paid" | "canceled";
+type VendorLifecycleStatus = "considering" | "booked" | "contract_signed" | "canceled";
+const lifecycleStatuses: VendorLifecycleStatus[] = ["considering", "booked", "contract_signed", "canceled"];
 
 type WeddingEvent = {
   id: string;
@@ -35,9 +36,10 @@ type Vendor = {
   notes: string | null;
   totalCostMinor: number;
   depositMinor: number;
+  depositPaidMinor: number;
   amountPaidMinor: number;
   paymentStatus: VendorPaymentStatus;
-  dueDate: string | null;
+  lifecycleStatus: VendorLifecycleStatus;
   vendorEvents: Array<{ eventId: string; event?: WeddingEvent }>;
 };
 
@@ -53,14 +55,10 @@ type VendorForm = {
   contactPhone: string;
   totalCost: string;
   deposit: string;
-  paid: string;
-  paymentStatus: VendorPaymentStatus;
-  dueDate: string;
+  lifecycleStatus: VendorLifecycleStatus;
   notes: string;
   eventIds: string[];
 };
-
-const statuses: VendorPaymentStatus[] = ["not_started", "partial", "paid", "canceled"];
 
 const emptyForm: VendorForm = {
   name: "",
@@ -69,9 +67,7 @@ const emptyForm: VendorForm = {
   contactPhone: "",
   totalCost: "",
   deposit: "",
-  paid: "",
-  paymentStatus: "not_started",
-  dueDate: "",
+  lifecycleStatus: "considering",
   notes: "",
   eventIds: [],
 };
@@ -88,6 +84,7 @@ export default function WeddingVendorsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const [form, setForm] = useState<VendorForm>(emptyForm);
@@ -133,9 +130,9 @@ export default function WeddingVendorsPage() {
     () =>
       vendors.reduce(
         (acc, vendor) => {
-          if (vendor.paymentStatus === "canceled") return acc;
+          if (vendor.lifecycleStatus === "canceled") return acc;
           acc.total += vendor.totalCostMinor;
-          acc.deposit += vendor.depositMinor;
+          acc.deposit += vendor.depositPaidMinor;
           acc.paid += vendor.amountPaidMinor;
           return acc;
         },
@@ -149,10 +146,7 @@ export default function WeddingVendorsPage() {
   }
 
   const openCreateDialog = () => {
-    setForm(emptyForm);
-    setEditingVendorId(null);
-    setError(null);
-    setDialogMode("create");
+    setCreateDialogOpen(true);
   };
 
   const openEditDialog = (vendor: Vendor) => {
@@ -163,9 +157,7 @@ export default function WeddingVendorsPage() {
       contactPhone: vendor.contactPhone ?? "",
       totalCost: formatMajorAmount(vendor.totalCostMinor),
       deposit: formatMajorAmount(vendor.depositMinor),
-      paid: formatMajorAmount(vendor.amountPaidMinor),
-      paymentStatus: vendor.paymentStatus,
-      dueDate: vendor.dueDate ? vendor.dueDate.slice(0, 10) : "",
+      lifecycleStatus: vendor.lifecycleStatus,
       notes: vendor.notes ?? "",
       eventIds: vendor.vendorEvents.map((event) => event.eventId),
     });
@@ -187,8 +179,7 @@ export default function WeddingVendorsPage() {
     if (!canEdit || !dialogMode) return;
     const totalCostMinor = parseAmountToMinor(form.totalCost);
     const depositMinor = parseAmountToMinor(form.deposit || "0");
-    const amountPaidMinor = parseAmountToMinor(form.paid || "0");
-    if (!form.name.trim() || totalCostMinor === null || depositMinor === null || amountPaidMinor === null) {
+    if (!form.name.trim() || totalCostMinor === null || depositMinor === null) {
       setError(t("vendors.page.errors.invalidForm"));
       return;
     }
@@ -204,9 +195,7 @@ export default function WeddingVendorsPage() {
         notes: form.notes.trim() || null,
         totalCostMinor,
         depositMinor,
-        amountPaidMinor,
-        paymentStatus: form.paymentStatus,
-        dueDate: form.dueDate ? new Date(`${form.dueDate}T00:00:00`).toISOString() : null,
+        lifecycleStatus: form.lifecycleStatus,
         eventIds: form.eventIds,
       };
       const payload = dialogMode === "create"
@@ -242,7 +231,7 @@ export default function WeddingVendorsPage() {
 
   return (
     <AppWorkspacePage>
-      <WorkspacePageHeader
+      <WeddingPageHeader
         title={t("vendors.page.title")}
         subtitle={t("vendors.page.subtitle")}
         actions={(
@@ -253,16 +242,23 @@ export default function WeddingVendorsPage() {
         )}
       />
 
-      <AppPageGrid className="mt-5 md:grid-cols-4">
-        <AppStatCard title={t("vendors.page.stats.totalVendors")} value={vendors.length} />
-        <AppStatCard title={t("vendors.page.stats.totalCost")} value={formatCurrency(totals.total, currency, locale)} />
-        <AppStatCard title={t("vendors.page.stats.deposits")} value={formatCurrency(totals.deposit, currency, locale)} />
-        <AppStatCard title={t("vendors.page.stats.paid")} value={formatCurrency(totals.paid, currency, locale)} />
-      </AppPageGrid>
+      <AppStatsRail
+        className="mt-5"
+        items={[
+          { label: t("vendors.page.stats.totalVendors"), value: vendors.length },
+          { label: t("vendors.page.stats.totalCost"), value: formatCurrency(totals.total, currency, locale) },
+          { label: t("vendors.page.stats.deposits"), value: formatCurrency(totals.deposit, currency, locale) },
+          { label: t("vendors.page.stats.paid"), value: formatCurrency(totals.paid, currency, locale) },
+        ]}
+      />
 
-      <div className="mt-5">
-        <AppSectionCard title={t("vendors.page.table.title")} description={t("vendors.page.table.description")}>
+      <section className="mt-5">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-zinc-900">{t("vendors.page.table.title")}</h2>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">{t("vendors.page.table.description")}</p>
+        </div>
           <AppDataTable
+            variant="standalone"
             columns={[
               { key: "name", label: t("vendors.page.table.columns.name") },
               { key: "contact", label: t("vendors.page.table.columns.contact") },
@@ -277,7 +273,7 @@ export default function WeddingVendorsPage() {
               contact: vendor.contactName || vendor.contactEmail || vendor.contactPhone || "-",
               events: vendor.vendorEvents.map((event) => event.event?.name).filter(Boolean).join(", ") || "-",
               payment: `${formatCurrency(vendor.amountPaidMinor, currency, locale)} / ${formatCurrency(vendor.totalCostMinor, currency, locale)}`,
-              status: <AppStatusBadge label={t(`vendors.page.status.${vendor.paymentStatus}`)} variant={vendor.paymentStatus === "paid" ? "success" : vendor.paymentStatus === "partial" ? "secondary" : "default"} />,
+              status: <AppStatusBadge label={t(`vendors.page.status.${vendor.lifecycleStatus}`)} variant={vendor.lifecycleStatus === "contract_signed" ? "success" : vendor.lifecycleStatus === "booked" ? "secondary" : "default"} />,
               actions: (
                 <div className="flex justify-end gap-1">
                   <Button type="button" variant="ghost" size="icon" onClick={() => openEditDialog(vendor)} disabled={!canEdit} aria-label={t("vendors.page.actions.edit")}>
@@ -291,13 +287,19 @@ export default function WeddingVendorsPage() {
             }))}
             emptyLabel={t("vendors.page.empty")}
           />
-        </AppSectionCard>
-      </div>
+      </section>
 
-      <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
+      <CreateWeddingVendorDialog
+        weddingId={weddingId}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreated={load}
+      />
+
+      <Dialog open={dialogMode === "edit"} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{dialogMode === "edit" ? t("vendors.page.dialog.editTitle") : t("vendors.page.dialog.createTitle")}</DialogTitle>
+            <DialogTitle>{t("vendors.page.dialog.editTitle")}</DialogTitle>
           </DialogHeader>
           <form
             className="grid gap-4"
@@ -312,22 +314,28 @@ export default function WeddingVendorsPage() {
               <Input value={form.contactEmail} onChange={(event) => setForm((current) => ({ ...current, contactEmail: event.target.value }))} placeholder={t("vendors.page.form.contactEmail")} />
               <Input value={form.contactPhone} onChange={(event) => setForm((current) => ({ ...current, contactPhone: event.target.value }))} placeholder={t("vendors.page.form.contactPhone")} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-4">
+            <div className={dialogMode === "create" ? "grid gap-3 sm:grid-cols-2" : "grid gap-3"}>
               <Input value={form.totalCost} onChange={(event) => setForm((current) => ({ ...current, totalCost: event.target.value }))} placeholder={t("vendors.page.form.totalCost")} />
-              <Input value={form.deposit} onChange={(event) => setForm((current) => ({ ...current, deposit: event.target.value }))} placeholder={t("vendors.page.form.deposit")} />
-              <Input value={form.paid} onChange={(event) => setForm((current) => ({ ...current, paid: event.target.value }))} placeholder={t("vendors.page.form.paid")} />
-              <Input type="date" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} />
+              {dialogMode === "create" ? (
+                <div className="grid gap-1">
+                  <Input value={form.deposit} onChange={(event) => setForm((current) => ({ ...current, deposit: event.target.value }))} placeholder={t("vendors.page.form.deposit")} />
+                  <p className="text-xs text-zinc-500">{t("vendors.page.form.depositHint")}</p>
+                </div>
+              ) : null}
             </div>
-            <Select value={form.paymentStatus} onValueChange={(value) => setForm((current) => ({ ...current, paymentStatus: value as VendorPaymentStatus }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{t(`vendors.page.status.${status}`)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-zinc-900">{t("vendors.page.form.status")}</p>
+              <Select value={form.lifecycleStatus} onValueChange={(value) => setForm((current) => ({ ...current, lifecycleStatus: value as VendorLifecycleStatus }))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {lifecycleStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>{t(`vendors.page.status.${status}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("vendors.page.form.notes")} />
             <div className="grid gap-2">
               <p className="text-sm font-medium text-zinc-900">{t("vendors.page.form.events")}</p>

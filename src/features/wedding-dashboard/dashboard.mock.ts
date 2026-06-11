@@ -18,9 +18,12 @@ type BuildDashboardDataInput = {
   rsvpTotalCount?: number;
   budgetMinor?: number;
   spentMinor?: number;
+  activeVendorCount?: number;
+  securedVendorCount?: number;
   events?: DashboardEventCard[];
   activeTaskCount?: number;
   upcomingTasks?: WeddingDashboardData["upcomingTasks"];
+  recentExpenses?: WeddingDashboardData["recentExpenses"];
 };
 
 const DEFAULT_WEDDING_DATE = new Date("2026-06-20T12:00:00.000Z");
@@ -30,6 +33,12 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
   const weddingDate = input.weddingDate ?? DEFAULT_WEDDING_DATE;
   const budgetMinor = input.budgetMinor ?? 120_000_00;
   const spentMinor = input.spentMinor ?? 65_000_00;
+  const financeProgress = budgetMinor > 0 ? Math.min(100, Math.round((spentMinor / budgetMinor) * 100)) : 0;
+  const activeVendorCount = input.activeVendorCount ?? 0;
+  const securedVendorCount = input.securedVendorCount ?? 0;
+  const vendorProgress = activeVendorCount > 0
+    ? Math.min(100, Math.round((securedVendorCount / activeVendorCount) * 100))
+    : 0;
   const guestCount = input.guestCount ?? 120;
   const rsvpTotalCount = input.rsvpTotalCount ?? guestCount;
   const rsvpRespondedCount = input.rsvpRespondedCount ?? 81;
@@ -52,14 +61,14 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
     },
     {
       id: "budgetExpenses",
-      progress: 54,
+      progress: financeProgress,
       detailLabel: `${spentMinor / 100} / ${budgetMinor / 100}`,
       href: routes.budget,
     },
     {
       id: "vendors",
-      progress: 60,
-      detailLabel: "6 / 10",
+      progress: vendorProgress,
+      detailLabel: `${securedVendorCount} / ${activeVendorCount}`,
       href: routes.vendors,
     },
     {
@@ -118,12 +127,7 @@ export function buildDashboardMockData(input: BuildDashboardDataInput): WeddingD
     events,
     planningProgress,
     upcomingTasks: input.upcomingTasks ?? [],
-    recentExpenses: [
-      { id: "exp_1", title: "catering", amountMinor: 12_000_00, incurredAt: new Date("2026-05-12") },
-      { id: "exp_2", title: "photographer", amountMinor: 6_500_00, incurredAt: new Date("2026-05-10") },
-      { id: "exp_3", title: "decorations", amountMinor: 3_200_00, incurredAt: new Date("2026-05-08") },
-      { id: "exp_4", title: "band", amountMinor: 9_000_00, incurredAt: new Date("2026-05-05") },
-    ],
+    recentExpenses: input.recentExpenses ?? [],
     quickActions,
     notesCount: 12,
     documentsCount: 8,

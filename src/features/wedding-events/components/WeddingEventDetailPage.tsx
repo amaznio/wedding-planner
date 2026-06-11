@@ -110,6 +110,7 @@ type VendorsApiResponse = {
     id: string;
     name: string;
     paymentStatus: "not_started" | "partial" | "paid" | "canceled";
+    lifecycleStatus: "considering" | "booked" | "contract_signed" | "canceled";
     vendorEvents: Array<{
       eventId: string;
     }>;
@@ -1034,15 +1035,20 @@ function mergeEventWithApi(
   const declinedGuests = guests.filter((guest) => guest.rsvpStatus === "declined").length;
   const guestsTotal = guests.length || base.guests.total;
 
-  const eventExpenses = expenses.filter((expense) => expense.eventId === eventId && expense.status !== "canceled");
-  const spentAmount = eventExpenses.reduce((sum, item) => sum + item.amountMinor, 0) / 100;
+  const eventExpenses = expenses.filter(
+    (expense) => expense.eventId === eventId && expense.status !== "canceled" && expense.status !== "reimbursed",
+  );
+  const trackedAmount = eventExpenses.reduce((sum, item) => sum + item.amountMinor, 0) / 100;
+  const paidAmount = eventExpenses
+    .filter((expense) => expense.status === "paid")
+    .reduce((sum, item) => sum + item.amountMinor, 0) / 100;
 
   const eventVendors = vendors.filter((vendor) => vendor.vendorEvents.some((relation) => relation.eventId === eventId));
   const mappedVendors: WeddingEventDetail["vendors"] = eventVendors.slice(0, 4).map((vendor, index) => ({
     id: vendor.id,
     categoryKey: categoryKeys[index] ?? "events.detail.vendors.category.vendor",
     name: vendor.name,
-    status: vendor.paymentStatus === "not_started" ? "pending" : "confirmed",
+    status: vendor.lifecycleStatus === "considering" || vendor.lifecycleStatus === "canceled" ? "pending" : "confirmed",
   }));
 
   const firstPlan = plans[0];
@@ -1078,8 +1084,8 @@ function mergeEventWithApi(
       warnings,
     },
     budget: {
-      total: Math.max(base.budget.total, spentAmount || base.budget.spent),
-      spent: spentAmount || base.budget.spent,
+      total: trackedAmount,
+      spent: paidAmount,
     },
     vendors: mappedVendors.length ? mappedVendors : base.vendors,
     notes: event.notes ? [event.notes, ...base.notes] : base.notes,

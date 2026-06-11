@@ -33,11 +33,15 @@ export function RecentExpensesCard({
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {expenses.map((expense) => (
+        {expenses.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-zinc-200 px-3 py-6 text-center text-sm text-zinc-500">
+            {t("dashboard.widgets.recentExpenses.empty")}
+          </p>
+        ) : expenses.map((expense) => (
           <div key={expense.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50/40 p-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-zinc-900">
-                {t(`dashboard.widgets.recentExpenses.items.${expense.title}`)}
+                {expense.title}
               </p>
               <p className="text-xs text-zinc-600">{formatShortDate(expense.incurredAt, locale)}</p>
             </div>

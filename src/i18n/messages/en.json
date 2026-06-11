@@ -458,7 +458,7 @@
         "collaborators": "Collaborators",
         "events": "Events",
         "seating": "Seating",
-        "budget": "Budget",
+        "budget": "Finances",
         "vendors": "Vendors",
         "notes": "Notes",
         "documents": "Documents",
@@ -467,7 +467,7 @@
     },
     "actions": {
       "task": "Add task",
-      "expense": "Add expense",
+      "expense": "Add payment",
       "vendor": "Add vendor",
       "event": "Add event",
       "note": "Add note"
@@ -479,8 +479,8 @@
       "venue": "Venue",
       "guestEstimate": "Guest estimate",
       "guestsCount": "{{count}} guests",
-      "totalBudget": "Total budget",
-      "spent": "Spent",
+      "totalBudget": "Vendor commitments",
+      "spent": "Paid",
       "cover": {
         "title": "Cover photo",
         "description": "Upload a header image for this wedding dashboard.",
@@ -530,8 +530,8 @@
           "description": "Guests assigned to specific events"
         },
         "budgetExpenses": {
-          "title": "Budget & expenses",
-          "description": "Track wedding budget and spending"
+          "title": "Finances & payments",
+          "description": "Track vendor commitments and payments"
         },
         "vendors": {
           "title": "Vendors",
@@ -556,7 +556,7 @@
         "documents": "{{count}} files",
         "guestsSuffix": "guests",
         "eventsSuffix": "events",
-        "vendorsSuffix": "booked",
+        "vendorsSuffix": "secured",
         "tasksSuffix": "tasks",
         "itemsSuffix": "items"
       }
@@ -581,8 +581,9 @@
         }
       },
       "recentExpenses": {
-        "title": "Recent expenses",
-        "total": "Total spent",
+        "title": "Recent payments",
+        "total": "Total paid",
+        "empty": "No completed payments yet.",
         "items": {
           "catering": "Catering",
           "photographer": "Photographer",
@@ -612,10 +613,10 @@
       },
       "expenses": {
         "totalTracked": "Total tracked: {{total}}",
-        "titlePlaceholder": "Expense title",
+        "titlePlaceholder": "Payment title",
         "categoryPlaceholder": "Category",
         "amountPlaceholder": "Amount (minor)",
-        "add": "Add expense",
+        "add": "Add payment",
         "adding": "Adding..."
       }
     },
@@ -631,7 +632,7 @@
         "weddingDetails": "Wedding details panel is coming soon.",
         "addEvent": "Event creation flow is coming soon.",
         "upcomingTasks": "Full tasks module is coming soon.",
-        "recentExpenses": "Extended expense analytics are coming soon.",
+        "recentExpenses": "Extended payment analytics are coming soon.",
         "tip": "Guided planning tips are coming soon.",
         "schedule": "Schedule module is coming soon.",
         "tasks": "Tasks module is coming soon.",
@@ -640,10 +641,10 @@
         "inspiration": "Inspiration board is coming soon.",
         "guestList": "Guest list details are available in the Guests section.",
         "eventGuests": "Advanced event guest assignment is coming soon.",
-        "budgetExpenses": "Budget deep dive is coming soon.",
+        "budgetExpenses": "Finance details are available in Finances.",
         "vendors": "Vendor workspace is already available in the Vendors section.",
         "task": "Task creation flow is coming soon.",
-        "expense": "You can already add expenses in the Expenses section.",
+        "expense": "You can already add payments in Finances.",
         "vendor": "You can already add vendors in the Vendors section.",
         "event": "Use the events strip to open an event workspace.",
         "note": "Notes module is coming soon."
@@ -971,12 +972,12 @@
         "openSeatingPlan": "Open seating plan",
         "manageEventGuests": "Manage event guests",
         "viewVendors": "View vendors",
-        "viewBudget": "View budget",
+        "viewBudget": "View finances",
         "viewAllTasks": "View all tasks",
         "addTimelineItem": "Add timeline item",
         "addTask": "Add task",
         "addVendor": "Add vendor",
-        "addExpense": "Add expense"
+        "addExpense": "Add payment"
       },
       "tabs": {
         "overview": "Overview",
@@ -984,7 +985,7 @@
         "guests": "Guests",
         "seating": "Seating plan",
         "vendors": "Vendors",
-        "budget": "Budget",
+        "budget": "Finances",
         "tasks": "Tasks",
         "notes": "Notes",
         "settings": "Settings",
@@ -1040,11 +1041,11 @@
           "title": "Vendors for this event"
         },
         "budget": {
-          "title": "Event budget",
-          "total": "Total budget",
-          "spent": "Spent",
-          "remaining": "Remaining",
-          "used": "{{percent}}% used"
+          "title": "Event finances",
+          "total": "Tracked payments",
+          "spent": "Paid",
+          "remaining": "Outstanding",
+          "used": "{{percent}}% paid"
         },
         "tasks": {
           "title": "Event tasks"
@@ -1187,16 +1188,19 @@
   },
   "budget": {
     "page": {
-      "title": "Budget & expenses",
-      "subtitle": "Track committed, planned and paid wedding costs.",
+      "title": "Finances",
+      "subtitle": "Track vendor commitments and individual planned or completed payments.",
       "stats": {
-        "total": "Active total",
-        "paid": "Paid",
-        "committed": "Committed",
-        "planned": "Planned"
+        "total": "Vendor commitments",
+        "paid": "Payments made",
+        "remaining": "Remaining commitments",
+        "upcoming": "Upcoming payments"
       },
       "filters": {
         "all": "All statuses"
+      },
+      "categories": {
+        "deposit": "Deposit"
       },
       "status": {
         "planned": "Planned",
@@ -1206,15 +1210,15 @@
         "canceled": "Canceled"
       },
       "actions": {
-        "add": "Add expense",
-        "edit": "Edit expense",
-        "delete": "Delete expense"
+        "add": "Add payment",
+        "edit": "Edit payment",
+        "delete": "Delete payment"
       },
       "table": {
-        "title": "Expenses",
-        "description": "Categorized expense tracking for the wedding.",
+        "title": "Payments",
+        "description": "Planned and completed vendor-linked or standalone payments.",
         "columns": {
-          "title": "Expense",
+          "title": "Payment",
           "category": "Category",
           "amount": "Amount",
           "status": "Status",
@@ -1222,27 +1226,31 @@
         }
       },
       "dialog": {
-        "createTitle": "Add expense",
-        "editTitle": "Edit expense"
+        "createTitle": "Add payment",
+        "editTitle": "Edit payment"
       },
       "form": {
-        "title": "Expense title",
+        "title": "Payment title",
         "category": "Category",
         "amount": "Amount",
         "paidBy": "Paid by",
-        "notes": "Notes"
+        "notes": "Notes",
+        "vendor": "Vendor",
+        "noVendor": "No vendor",
+        "event": "Event",
+        "noEvent": "No event"
       },
       "delete": {
-        "title": "Delete expense",
-        "description": "Delete {{title}} from the budget?"
+        "title": "Delete payment",
+        "description": "Delete payment {{title}} from Finances?"
       },
       "errors": {
-        "load": "Failed to load expenses.",
-        "save": "Failed to save expense.",
-        "delete": "Failed to delete expense.",
+        "load": "Failed to load payments.",
+        "save": "Failed to save payment.",
+        "delete": "Failed to delete payment.",
         "invalidForm": "Enter a title, category and valid amount."
       },
-      "empty": "No expenses match this filter."
+      "empty": "No payments match this filter."
     }
   },
   "vendors": {
@@ -1256,9 +1264,9 @@
         "paid": "Paid"
       },
       "status": {
-        "not_started": "Not started",
-        "partial": "Partial",
-        "paid": "Paid",
+        "considering": "Considering",
+        "booked": "Booked",
+        "contract_signed": "Contract signed",
         "canceled": "Canceled"
       },
       "actions": {
@@ -1268,7 +1276,7 @@
       },
       "table": {
         "title": "Vendor list",
-        "description": "Contacts, event links and payment state.",
+        "description": "Contacts, event links and contractor lifecycle.",
         "columns": {
           "name": "Vendor",
           "contact": "Contact",
@@ -1288,7 +1296,9 @@
         "contactPhone": "Phone",
         "totalCost": "Total cost",
         "deposit": "Deposit",
+        "depositHint": "Creates a completed payment in Finances.",
         "paid": "Paid amount",
+        "status": "Lifecycle status",
         "notes": "Notes",
         "events": "Linked events"
       },

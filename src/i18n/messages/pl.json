@@ -458,8 +458,8 @@
         "collaborators": "Współpraca",
         "events": "Wydarzenia",
         "seating": "Seating",
-        "budget": "Budżet",
-        "vendors": "Dostawcy",
+        "budget": "Finanse",
+        "vendors": "Wykonawcy",
         "notes": "Notatki",
         "documents": "Dokumenty",
         "settings": "Ustawienia"
@@ -467,8 +467,8 @@
     },
     "actions": {
       "task": "Dodaj zadanie",
-      "expense": "Dodaj wydatek",
-      "vendor": "Dodaj dostawcę",
+      "expense": "Dodaj płatność",
+      "vendor": "Dodaj wykonawcę",
       "event": "Dodaj wydarzenie",
       "note": "Dodaj notatkę"
     },
@@ -479,8 +479,8 @@
       "venue": "Miejsce wesela",
       "guestEstimate": "Liczba gości (szac.)",
       "guestsCount": "{{count}} gości",
-      "totalBudget": "Budżet całkowity",
-      "spent": "Wydano",
+      "totalBudget": "Zobowiązania wobec wykonawców",
+      "spent": "Opłacono",
       "cover": {
         "title": "Zdjęcie nagłówkowe",
         "description": "Wgraj zdjęcie do nagłówka panelu ślubnego.",
@@ -530,12 +530,12 @@
           "description": "Goście przypisani do konkretnych wydarzeń"
         },
         "budgetExpenses": {
-          "title": "Budżet i wydatki",
-          "description": "Kontroluj budżet i śledź wydatki"
+          "title": "Finanse i płatności",
+          "description": "Śledź zobowiązania wobec wykonawców i płatności"
         },
         "vendors": {
-          "title": "Dostawcy",
-          "description": "Zarządzaj dostawcami i umowami"
+          "title": "Wykonawcy",
+          "description": "Zarządzaj wykonawcami i umowami"
         },
         "schedule": {
           "title": "Harmonogram",
@@ -556,7 +556,7 @@
         "documents": "{{count}} plików",
         "guestsSuffix": "gości",
         "eventsSuffix": "wydarzenia",
-        "vendorsSuffix": "zarezerwowanych",
+        "vendorsSuffix": "potwierdzonych",
         "tasksSuffix": "zadań",
         "itemsSuffix": "pozycji"
       }
@@ -581,8 +581,9 @@
         }
       },
       "recentExpenses": {
-        "title": "Ostatnie wydatki",
-        "total": "Łącznie wydatków",
+        "title": "Ostatnie płatności",
+        "total": "Łącznie opłacono",
+        "empty": "Brak zakończonych płatności.",
         "items": {
           "catering": "Catering",
           "photographer": "Fotograf",
@@ -602,9 +603,9 @@
     },
     "workspace": {
       "vendors": {
-        "subtitle": "Zarządzaj dostawcami weselnymi i postępem płatności.",
-        "namePlaceholder": "Nazwa dostawcy",
-        "add": "Dodaj dostawcę",
+        "subtitle": "Zarządzaj wykonawcami weselnymi i postępem płatności.",
+        "namePlaceholder": "Nazwa wykonawcy",
+        "add": "Dodaj wykonawcę",
         "adding": "Dodawanie...",
         "statusLabel": "status",
         "totalLabel": "łączny koszt",
@@ -612,10 +613,10 @@
       },
       "expenses": {
         "totalTracked": "Łącznie ujęte: {{total}}",
-        "titlePlaceholder": "Tytuł wydatku",
+        "titlePlaceholder": "Tytuł płatności",
         "categoryPlaceholder": "Kategoria",
         "amountPlaceholder": "Kwota (jednostka mniejsza)",
-        "add": "Dodaj wydatek",
+        "add": "Dodaj płatność",
         "adding": "Dodawanie..."
       }
     },
@@ -631,7 +632,7 @@
         "weddingDetails": "Panel szczegółów ślubu pojawi się wkrótce.",
         "addEvent": "Dodawanie wydarzeń pojawi się wkrótce.",
         "upcomingTasks": "Pełny moduł zadań pojawi się wkrótce.",
-        "recentExpenses": "Rozszerzona analityka wydatków pojawi się wkrótce.",
+        "recentExpenses": "Rozszerzona analityka płatności pojawi się wkrótce.",
         "tip": "Rozbudowane wskazówki planowania pojawią się wkrótce.",
         "schedule": "Moduł harmonogramu pojawi się wkrótce.",
         "tasks": "Moduł zadań pojawi się wkrótce.",
@@ -640,11 +641,11 @@
         "inspiration": "Tablica inspiracji pojawi się wkrótce.",
         "guestList": "Szczegóły listy gości są dostępne w sekcji Goście.",
         "eventGuests": "Zaawansowane przypisania gości do wydarzeń pojawią się wkrótce.",
-        "budgetExpenses": "Szczegółowa analiza budżetu pojawi się wkrótce.",
-        "vendors": "Panel dostawców jest już dostępny w sekcji Dostawcy.",
+        "budgetExpenses": "Szczegóły finansów są dostępne w sekcji Finanse.",
+        "vendors": "Panel wykonawców jest już dostępny w sekcji Wykonawcy.",
         "task": "Dodawanie zadań pojawi się wkrótce.",
-        "expense": "Wydatki możesz już dodawać w sekcji Wydatki.",
-        "vendor": "Dostawców możesz już dodawać w sekcji Dostawcy.",
+        "expense": "Płatności możesz już dodawać w sekcji Finanse.",
+        "vendor": "Wykonawców możesz już dodawać w sekcji Wykonawcy.",
         "event": "Użyj paska wydarzeń, aby otworzyć przestrzeń wydarzenia.",
         "note": "Moduł notatek pojawi się wkrótce."
       }
@@ -924,18 +925,18 @@
         "confirmedRatio": "{{confirmed}} ({{percent}}%)",
         "respondedRatio": "{{responded}} z odpowiedzią ({{percent}}%)",
         "seatingPlans": "{{count}} planów stołów",
-        "vendors": "{{count}} dostawców"
+        "vendors": "{{count}} wykonawców"
       },
       "coverage": {
         "guests": "Goście wydarzeń",
         "responded": "Odpowiedzi RSVP",
         "seatingPlans": "Plany stołów",
-        "vendors": "Podpięci dostawcy",
+        "vendors": "Podpięci wykonawcy",
         "nextAction": {
           "missingGuests": "Dodaj gości",
           "missingRsvps": "Zbierz RSVP",
           "missingSeating": "Dodaj plan stołów",
-          "missingVendors": "Podepnij dostawców",
+          "missingVendors": "Podepnij wykonawców",
           "ready": "Gotowe"
         }
       },
@@ -970,21 +971,21 @@
         "editEvent": "Edytuj wydarzenie",
         "openSeatingPlan": "Otwórz plan stołów",
         "manageEventGuests": "Zarządzaj gośćmi wydarzenia",
-        "viewVendors": "Zobacz dostawców",
-        "viewBudget": "Zobacz budżet",
+        "viewVendors": "Zobacz wykonawców",
+        "viewBudget": "Zobacz finanse",
         "viewAllTasks": "Zobacz wszystkie zadania",
         "addTimelineItem": "Dodaj punkt harmonogramu",
         "addTask": "Dodaj zadanie",
-        "addVendor": "Dodaj dostawcę",
-        "addExpense": "Dodaj wydatek"
+        "addVendor": "Dodaj wykonawcę",
+        "addExpense": "Dodaj płatność"
       },
       "tabs": {
         "overview": "Przegląd",
         "timeline": "Harmonogram",
         "guests": "Goście",
         "seating": "Plan stołów",
-        "vendors": "Dostawcy",
-        "budget": "Budżet",
+        "vendors": "Wykonawcy",
+        "budget": "Finanse",
         "tasks": "Zadania",
         "notes": "Notatki",
         "settings": "Ustawienia",
@@ -1037,14 +1038,14 @@
           "notAttending": "Nieobecni"
         },
         "vendors": {
-          "title": "Dostawcy wydarzenia"
+          "title": "Wykonawcy wydarzenia"
         },
         "budget": {
-          "title": "Budżet wydarzenia",
-          "total": "Budżet całkowity",
-          "spent": "Wydano",
-          "remaining": "Pozostało",
-          "used": "Wykorzystano {{percent}}%"
+          "title": "Finanse wydarzenia",
+          "total": "Ujęte płatności",
+          "spent": "Opłacono",
+          "remaining": "Do opłacenia",
+          "used": "Opłacono {{percent}}%"
         },
         "tasks": {
           "title": "Zadania wydarzenia"
@@ -1062,7 +1063,7 @@
           "catering": "Catering",
           "photographer": "Fotograf",
           "band": "Zespół muzyczny",
-          "vendor": "Dostawca"
+          "vendor": "Wykonawca"
         },
         "status": {
           "confirmed": "Potwierdzony",
@@ -1187,16 +1188,19 @@
   },
   "budget": {
     "page": {
-      "title": "Budżet i wydatki",
-      "subtitle": "Śledź koszty zaplanowane, zakontraktowane i opłacone.",
+      "title": "Finanse",
+      "subtitle": "Śledź zobowiązania wobec wykonawców oraz pojedyncze planowane i zakończone płatności.",
       "stats": {
-        "total": "Aktywna suma",
-        "paid": "Opłacone",
-        "committed": "Zakontraktowane",
-        "planned": "Zaplanowane"
+        "total": "Zobowiązania wobec wykonawców",
+        "paid": "Wykonane płatności",
+        "remaining": "Pozostałe zobowiązania",
+        "upcoming": "Nadchodzące płatności"
       },
       "filters": {
         "all": "Wszystkie statusy"
+      },
+      "categories": {
+        "deposit": "Zadatek"
       },
       "status": {
         "planned": "Zaplanowane",
@@ -1206,15 +1210,15 @@
         "canceled": "Anulowane"
       },
       "actions": {
-        "add": "Dodaj wydatek",
-        "edit": "Edytuj wydatek",
-        "delete": "Usuń wydatek"
+        "add": "Dodaj płatność",
+        "edit": "Edytuj płatność",
+        "delete": "Usuń płatność"
       },
       "table": {
-        "title": "Wydatki",
-        "description": "Kategorie i statusy kosztów weselnych.",
+        "title": "Płatności",
+        "description": "Planowane i zakończone płatności powiązane z wykonawcami lub samodzielne.",
         "columns": {
-          "title": "Wydatek",
+          "title": "Płatność",
           "category": "Kategoria",
           "amount": "Kwota",
           "status": "Status",
@@ -1222,55 +1226,59 @@
         }
       },
       "dialog": {
-        "createTitle": "Dodaj wydatek",
-        "editTitle": "Edytuj wydatek"
+        "createTitle": "Dodaj płatność",
+        "editTitle": "Edytuj płatność"
       },
       "form": {
-        "title": "Tytuł wydatku",
+        "title": "Tytuł płatności",
         "category": "Kategoria",
         "amount": "Kwota",
         "paidBy": "Opłacone przez",
-        "notes": "Notatki"
+        "notes": "Notatki",
+        "vendor": "Wykonawca",
+        "noVendor": "Bez wykonawcy",
+        "event": "Wydarzenie",
+        "noEvent": "Bez wydarzenia"
       },
       "delete": {
-        "title": "Usuń wydatek",
-        "description": "Usunąć {{title}} z budżetu?"
+        "title": "Usuń płatność",
+        "description": "Usunąć płatność {{title}} z Finansów?"
       },
       "errors": {
-        "load": "Nie udało się załadować wydatków.",
-        "save": "Nie udało się zapisać wydatku.",
-        "delete": "Nie udało się usunąć wydatku.",
+        "load": "Nie udało się załadować płatności.",
+        "save": "Nie udało się zapisać płatności.",
+        "delete": "Nie udało się usunąć płatności.",
         "invalidForm": "Podaj tytuł, kategorię i poprawną kwotę."
       },
-      "empty": "Brak wydatków dla tego filtra."
+      "empty": "Brak płatności dla tego filtra."
     }
   },
   "vendors": {
     "page": {
-      "title": "Dostawcy",
-      "subtitle": "Zarządzaj kontaktami, wydarzeniami i postępem płatności.",
+      "title": "Wykonawcy",
+      "subtitle": "Zarządzaj wykonawcami, umowami i płatnościami.",
       "stats": {
-        "totalVendors": "Dostawcy",
+        "totalVendors": "Wykonawcy",
         "totalCost": "Łączny koszt",
-        "deposits": "Zaliczki",
+        "deposits": "Zadatki",
         "paid": "Opłacone"
       },
       "status": {
-        "not_started": "Nie rozpoczęto",
-        "partial": "Częściowo",
-        "paid": "Opłacone",
-        "canceled": "Anulowane"
+        "considering": "Rozważany",
+        "booked": "Zarezerwowany",
+        "contract_signed": "Umowa podpisana",
+        "canceled": "Anulowany"
       },
       "actions": {
-        "add": "Dodaj dostawcę",
-        "edit": "Edytuj dostawcę",
-        "delete": "Usuń dostawcę"
+        "add": "Dodaj wykonawcę",
+        "edit": "Edytuj wykonawcę",
+        "delete": "Usuń wykonawcę"
       },
       "table": {
-        "title": "Lista dostawców",
-        "description": "Kontakty, powiązane wydarzenia i status płatności.",
+        "title": "Lista wykonawców",
+        "description": "Kontakty, powiązane wydarzenia i etap współpracy.",
         "columns": {
-          "name": "Dostawca",
+          "name": "Wykonawca",
           "contact": "Kontakt",
           "events": "Wydarzenia",
           "payment": "Opłacone / całość",
@@ -1278,31 +1286,33 @@
         }
       },
       "dialog": {
-        "createTitle": "Dodaj dostawcę",
-        "editTitle": "Edytuj dostawcę"
+        "createTitle": "Dodaj wykonawcę",
+        "editTitle": "Edytuj wykonawcę"
       },
       "form": {
-        "name": "Nazwa dostawcy",
+        "name": "Nazwa wykonawcy",
         "contactName": "Osoba kontaktowa",
         "contactEmail": "Email",
         "contactPhone": "Telefon",
         "totalCost": "Łączny koszt",
-        "deposit": "Zaliczka",
+        "deposit": "Zadatek",
+        "depositHint": "Utworzy zakończoną płatność w Finansach.",
         "paid": "Opłacona kwota",
+        "status": "Status współpracy",
         "notes": "Notatki",
         "events": "Powiązane wydarzenia"
       },
       "delete": {
-        "title": "Usuń dostawcę",
-        "description": "Usunąć {{name}} z dostawców?"
+        "title": "Usuń wykonawcę",
+        "description": "Usunąć {{name}} z wykonawców?"
       },
       "errors": {
-        "load": "Nie udało się załadować dostawców.",
-        "save": "Nie udało się zapisać dostawcy.",
-        "delete": "Nie udało się usunąć dostawcy.",
-        "invalidForm": "Podaj nazwę dostawcy i poprawne kwoty."
+        "load": "Nie udało się załadować wykonawców.",
+        "save": "Nie udało się zapisać wykonawcy.",
+        "delete": "Nie udało się usunąć wykonawcy.",
+        "invalidForm": "Podaj nazwę wykonawcy i poprawne kwoty."
       },
-      "empty": "Brak dostawców."
+      "empty": "Brak wykonawców."
     }
   },
   "seating": {
@@ -1508,7 +1518,7 @@
         "externalUrl": "Adres URL",
         "notes": "Notatki",
         "noEvent": "Brak wydarzenia",
-        "noVendor": "Brak dostawcy"
+        "noVendor": "Brak wykonawcy"
       },
       "delete": {
         "title": "Usuń dokument",
@@ -1534,7 +1544,7 @@
           "notifications": "Powiadomienia systemowe",
           "weeklyDigest": "Tygodniowe podsumowanie",
           "guestUpdates": "Aktualizacje gości",
-          "vendorReminders": "Przypomnienia o dostawcach"
+          "vendorReminders": "Przypomnienia o wykonawcach"
         }
       },
       "workspace": {

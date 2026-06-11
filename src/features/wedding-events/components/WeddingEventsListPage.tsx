@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarCheck2, Handshake, Plus, UsersRound, UtensilsCrossed } from "lucide-react";
+import { Plus } from "lucide-react";
+import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -220,31 +221,29 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
       />
 
       <div className="mt-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CoverageMetric
-            icon={UsersRound}
-            label={t("events.list.coverage.guests")}
-            value={eventsState.reduce((sum, event) => sum + event._count.eventGuests, 0)}
-          />
-          <CoverageMetric
-            icon={CalendarCheck2}
-            label={t("events.list.coverage.responded")}
-            value={eventsState.reduce(
-              (sum, event) => sum + event.eventGuests.filter((guest) => guest.rsvpStatus !== "unknown").length,
-              0,
-            )}
-          />
-          <CoverageMetric
-            icon={UtensilsCrossed}
-            label={t("events.list.coverage.seatingPlans")}
-            value={eventsState.reduce((sum, event) => sum + event._count.seatingPlans, 0)}
-          />
-          <CoverageMetric
-            icon={Handshake}
-            label={t("events.list.coverage.vendors")}
-            value={eventsState.reduce((sum, event) => sum + event._count.vendorEvents, 0)}
-          />
-        </div>
+        <AppStatsRail
+          items={[
+            {
+              label: t("events.list.coverage.guests"),
+              value: eventsState.reduce((sum, event) => sum + event._count.eventGuests, 0),
+            },
+            {
+              label: t("events.list.coverage.responded"),
+              value: eventsState.reduce(
+                (sum, event) => sum + event.eventGuests.filter((guest) => guest.rsvpStatus !== "unknown").length,
+                0,
+              ),
+            },
+            {
+              label: t("events.list.coverage.seatingPlans"),
+              value: eventsState.reduce((sum, event) => sum + event._count.seatingPlans, 0),
+            },
+            {
+              label: t("events.list.coverage.vendors"),
+              value: eventsState.reduce((sum, event) => sum + event._count.vendorEvents, 0),
+            },
+          ]}
+        />
 
         <div className="mt-5">
         <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "upcoming" | "completed")}>
@@ -390,26 +389,6 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
         </DialogContent>
       </Dialog>
     </AppWorkspacePage>
-  );
-}
-
-function CoverageMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: number;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase text-zinc-500">
-        <Icon className="size-4 text-violet-600" />
-        {label}
-      </div>
-      <div className="mt-2 text-2xl font-semibold text-zinc-900">{value}</div>
-    </div>
   );
 }
 

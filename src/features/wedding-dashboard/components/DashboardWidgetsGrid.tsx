@@ -18,8 +18,8 @@ type DashboardWidgetsGridProps = {
   totalSpentMinor: number;
   locale: Locale;
   onQuickAction: (id: DashboardQuickActionId) => void;
-  onPlaceholderAction: (id: string) => void;
   onOpenTasks: () => void;
+  onOpenFinances: () => void;
   canEditTasks: boolean;
   completingTaskIds: Set<string>;
   onCompleteTask: (taskId: string) => void;
@@ -33,8 +33,8 @@ export function DashboardWidgetsGrid({
   totalSpentMinor,
   locale,
   onQuickAction,
-  onPlaceholderAction,
   onOpenTasks,
+  onOpenFinances,
   canEditTasks,
   completingTaskIds,
   onCompleteTask,
@@ -54,7 +54,7 @@ export function DashboardWidgetsGrid({
         currency={currency}
         totalSpentMinor={totalSpentMinor}
         locale={locale}
-        onOpenAll={() => onPlaceholderAction("recentExpenses")}
+        onOpenAll={onOpenFinances}
       />
       <QuickActionsCard actions={actions} onAction={onQuickAction} />
     </section>

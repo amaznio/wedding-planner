@@ -2,6 +2,274 @@
 
 ## Current Phase
 
+Phase 262 - Dashboard payment and contractor quick-action dialogs (completed)
+
+## Completed Work
+
+- Added reusable create-payment and create-contractor dialogs following the existing task/note quick-action dialog pattern.
+- Wired dashboard `Add payment` and `Add vendor` quick actions to open dialogs instead of navigating away.
+- Refreshes dashboard data after successful creation so finance totals, recent payments, and contractor progress update immediately.
+- Reused the same create dialogs from the Finanse and Wykonawcy page add buttons.
+- Kept page-local dialogs for editing existing payments and contractors.
+- Preserved contractor Zadatek behavior, including automatic linked completed payment creation.
+- Files changed:
+  - `src/features/wedding-finances/components/CreateWeddingPaymentDialog.tsx`
+  - `src/features/wedding-vendors/components/CreateWeddingVendorDialog.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - focused shared-dialog/page/dashboard `pnpm lint -- ...` (pass)
+  - `pnpm typecheck` (pass)
+  - old page create-trigger audit (pass)
+  - dashboard quick-action navigation audit (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass; line-ending warnings only)
+- Known issues:
+  - Authenticated visual and interaction verification remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Authenticate and verify all four dashboard quick-action dialogs and their post-create dashboard refresh behavior.
+
+## Previous Phase
+
+Phase 261 - Dashboard contractor lifecycle progress (completed)
+
+- Replaced the dashboard Wykonawcy planning-progress mock (`60%`, `6 / 10`) with persisted lifecycle counts.
+- Defined secured contractors as lifecycle `Booked` or `Contract signed`.
+- Defined the denominator as all active non-canceled contractors; `Considering` remains incomplete and `Canceled` is excluded.
+- Added active and secured contractor counts to the dashboard API and view-model flow.
+- Updated progress detail copy to `secured` / `potwierdzonych`.
+- Added regression coverage for persisted ratios and the empty `0 / 0` state.
+- Files changed:
+  - `src/app/api/weddings/[weddingId]/dashboard/route.ts`
+  - `src/features/wedding-dashboard/dashboard.mock.ts`
+  - `src/features/wedding-dashboard/dashboard.mock.test.ts`
+  - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+  - `src/features/wedding-dashboard/types.api.ts`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused dashboard progress test (pass, 2 tests)
+  - focused dashboard/API `pnpm lint -- ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass; line-ending warnings only)
+- Known issues:
+  - Authenticated visual verification remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Replace the remaining dashboard planning-progress mock rows with persisted metrics.
+
+## Previous Phase
+
+Phase 260 - Contractor deposit payment creation (completed)
+
+- Made contractor creation atomic: creating a Wykonawca with a non-zero `Zadatek` now creates a linked completed payment in Finanse.
+- Used the wedding currency for generated deposit payments and skipped payment creation for zero deposits.
+- Derived displayed deposit totals from linked paid `Deposit` payments instead of the legacy contractor deposit field.
+- Limited the Zadatek input to contractor creation; later payment changes belong in Finanse.
+- Renamed Polish deposit copy from `Zaliczka` to `Zadatek` and added helper text explaining the generated payment.
+- Localized the generated `Deposit` category as `Zadatek` in the Polish Finanse table.
+- Files changed:
+  - `src/app/api/weddings/[weddingId]/dashboard/route.ts`
+  - `src/app/api/weddings/[weddingId]/vendors/route.ts`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `src/features/wedding-finances/lib/vendor-deposit-payment.ts`
+  - `src/features/wedding-finances/lib/vendor-deposit-payment.test.ts`
+  - `src/features/wedding-finances/lib/vendor-payment-summary.ts`
+  - `src/features/wedding-finances/lib/vendor-payment-summary.test.ts`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused deposit/payment `pnpm lint -- ...` (pass)
+  - focused finance tests (pass, 5 tests)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass; line-ending warnings only)
+- Known issues:
+  - Legacy non-zero `Vendor.depositMinor` values are not automatically backfilled into payments to avoid creating duplicates.
+  - Authenticated visual verification remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Remove the legacy `Vendor.depositMinor` field after deciding whether existing values need a reviewed one-time conversion.
+
+## Previous Phase
+
+Phase 259 - Contractor lifecycle status (completed)
+
+- Replaced the Wykonawcy table's payment-derived status badge with an explicit contractor lifecycle status.
+- Added lifecycle options: `Considering`, `Booked`, `Contract signed`, and `Canceled`, with Polish equivalents.
+- Added lifecycle selection to the contractor create/edit dialog, defaulting new contractors to `Considering`.
+- Added `VendorLifecycleStatus` to Prisma, API validation, vendor create/update flows, and cancellation-aware finance summaries.
+- Migrated existing payment-canceled contractors to lifecycle `Canceled`; all other existing contractors default to `Considering`.
+- Kept payment progress derived from linked payments and represented by the paid/total column.
+- Files changed:
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260611120000_add_vendor_lifecycle_status/migration.sql`
+  - `src/app/api/weddings/[weddingId]/dashboard/route.ts`
+  - `src/app/api/weddings/[weddingId]/vendors/route.ts`
+  - `src/app/api/weddings/[weddingId]/vendors/[vendorId]/route.ts`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `src/features/wedding-finances/lib/vendor-payment-summary.ts`
+  - `src/features/wedding-finances/lib/vendor-payment-summary.test.ts`
+  - `src/features/wedding/schemas/wedding.schema.ts`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm prisma format` (pass)
+  - `pnpm prisma validate` (pass)
+  - `pnpm prisma generate` (pass)
+  - `pnpm prisma migrate deploy` (pass; lifecycle migration applied)
+  - focused lifecycle/API/UI `pnpm lint -- ...` (pass)
+  - `pnpm dlx tsx --test src/features/wedding-finances/lib/vendor-payment-summary.test.ts` (pass, 2 tests)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass; line-ending warnings only)
+- Known issues:
+  - The legacy `Vendor.paymentStatus` and `Vendor.dueDate` fields remain for compatibility.
+  - Authenticated visual verification remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Remove legacy vendor payment status and due-date fields in a later cleanup migration after confirming no external clients rely on them.
+
+## Previous Phase
+
+Phase 258 - Remove contractor due date input (completed)
+
+- Removed the ambiguous contractor-level due date from the Wykonawca create/edit dialog.
+- Removed due-date form state and submission handling so editing a contractor does not clear legacy stored values.
+- Kept the existing `Vendor.dueDate` database and API field unchanged for compatibility.
+- Realigned total cost and deposit inputs into a two-column row.
+- Files changed:
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - focused `pnpm lint -- src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx` (pass)
+  - `pnpm typecheck` (pass)
+  - vendor form `dueDate` audit (pass, no occurrences)
+  - `pnpm build` (pass)
+  - focused `git diff --check` (pass; line-ending warning only)
+- Known issues:
+  - Legacy contractor due-date values remain stored but are no longer exposed in the UI.
+- Next recommended step:
+  - Use linked Finanse payments as the only source of upcoming contractor payment deadlines.
+
+## Previous Phase
+
+Phase 257 - Wykonawcy terminology rename (completed)
+
+- Renamed all Polish user-facing `Dostawcy` / `Dostawca` terminology to the grammatically appropriate `Wykonawcy` / `Wykonawca` forms.
+- Updated sidebar, dashboard, event, Finanse, Wykonawcy, Dokumenty, Settings, dialog, error, and empty-state copy.
+- Standardized English finance copy on `vendor`, replacing user-facing `supplier` wording.
+- Kept translation keys, internal `Vendor` identifiers, Prisma models, APIs, CSV contracts, and `/vendors` routes unchanged.
+- Files changed:
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - Polish `dostawc*` translation audit (pass, no occurrences)
+  - English `supplier` translation audit (pass, no occurrences)
+  - `pnpm typecheck` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` types and seating editor hook/ref rules)
+  - `pnpm i18n:audit` (fails on pre-existing hardcoded `WeddingPlan`, `Sign in`, and `Sign up` text in `src/app/page.tsx`)
+  - `pnpm build` (pass)
+  - `git diff --check` (pass; line-ending warnings only)
+- Known issues:
+  - Authenticated visual verification of both locales remains unavailable in the current browser session.
+- Next recommended step:
+  - Perform an authenticated Polish and English visual terminology pass across the workspace.
+
+## Previous Phase
+
+Phase 256 - Zadania-aligned workspace page layout (completed)
+
+- Standardized top-level workspace management pages around the Zadania page layout:
+  - shared page header and aligned `AppWorkspacePage` content width
+  - compact `AppStatsRail` summaries instead of dashboard-style metric cards
+  - direct filter/tool rows
+  - direct section headings and descriptions
+  - standalone bordered tables without outer section-card wrappers
+- Updated Finanse, Dostawcy, and Dokumenty list sections to remove oversized summary and table cards.
+- Updated Wydarzenia and Goście summaries to use the same compact stats rail.
+- Updated Seating to use the shared workspace width, page header, compact stats rail, and direct controls section.
+- Wrapped the Goście page in `AppWorkspacePage` so its header and content align with the other workspace routes.
+- Separated Goście filters, table, and pagination from the previous single large card wrapper.
+- Removed the now-unused legacy `AppStatCard` component.
+- Preserved content cards where cards represent actual content, such as individual Notes, Settings groups, collaborator panels, and mobile guest rows.
+- Files changed:
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+  - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+  - `src/features/wedding-guests/components/GuestStatsCards.tsx`
+  - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+  - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+  - `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+  - `src/components/app/AppStatCard.tsx` (removed)
+  - `PROGRESS.md`
+- Commands run:
+  - focused `pnpm lint -- ...` for all layout-converted pages (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser smoke test at `http://localhost:3000/weddings/test/budget` (redirected to `/sign-in`)
+- Known issues:
+  - authenticated browser visual QA remains unavailable because the active Browser session is signed out
+- Next recommended step:
+  - authenticate and visually compare Zadania, Finanse, Dostawcy, Dokumenty, Wydarzenia, and Goście at desktop and narrow widths.
+
+## Current Phase
+
+Phase 255 - Rename budget tracking to finances (completed)
+
+## Completed Work
+
+- Renamed user-facing Budget navigation, breadcrumbs, dashboard progress, event detail, and page copy to Finances / Finanse.
+- Reframed expense records as individual planned or completed payments while preserving the existing `/budget` and `/api/.../expenses` compatibility routes.
+- Added supplier and event linking controls to the Finances payment create/edit dialog.
+- Replaced dashboard recent-expense mocks with the four most recent persisted paid payments and linked `View all` directly to Finances.
+- Updated finance summaries to show supplier commitments, completed payments, remaining supplier commitments, and upcoming planned/committed payments.
+- Made linked paid payments authoritative for supplier paid amount, remaining amount, and active payment status in supplier APIs and dashboard aggregates.
+- Removed manual supplier paid amount and payment-status editing from the supplier dialog.
+- Updated event finance calculations so planned/committed payments are tracked while only paid payments count as paid; canceled and reimbursed records are excluded.
+- Added focused supplier payment-summary tests.
+- Files changed:
+  - `src/features/wedding-finances/lib/vendor-payment-summary.ts`
+  - `src/features/wedding-finances/lib/vendor-payment-summary.test.ts`
+  - `src/app/api/weddings/[weddingId]/dashboard/route.ts`
+  - `src/app/api/weddings/[weddingId]/vendors/route.ts`
+  - `src/app/api/weddings/[weddingId]/vendors/[vendorId]/route.ts`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - dashboard and event-detail finance integration files
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm dlx tsx --test src/features/wedding-finances/lib/vendor-payment-summary.test.ts` (pass, 2 tests)
+  - focused `pnpm lint -- ...` for finance, supplier, dashboard, and event-detail files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser smoke test at `http://localhost:3000/weddings/test/budget` (redirected to `/sign-in`)
+- Known issues:
+  - authenticated visual and interaction QA remains unavailable because the active Browser session is signed out
+  - database columns `Vendor.amountPaidMinor` and `Vendor.paymentStatus` remain for compatibility, but active paid/status values shown by supplier and dashboard APIs are derived from linked payments
+- Next recommended step:
+  - authenticate and verify Finanse summaries, supplier/event payment linking, recent dashboard payments, and derived supplier progress using real wedding data.
+
+## Current Phase
+
 Phase 254-HF1 - Dashboard View all button padding (completed)
 
 ## Completed Work

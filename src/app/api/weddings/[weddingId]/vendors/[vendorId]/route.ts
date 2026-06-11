@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { updateVendorSchema } from "@/features/wedding/schemas/wedding.schema";
+import { getVendorPaymentSummary } from "@/features/wedding-finances/lib/vendor-payment-summary";
 import { prisma } from "@/lib/prisma";
 import { validationErrorResponse } from "@/lib/api-errors";
 import { requireWeddingRole } from "@/lib/wedding-authz";
@@ -23,7 +24,12 @@ export async function GET(_: Request, context: RouteContext) {
     },
   });
   if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
-  return NextResponse.json({ vendor });
+  return NextResponse.json({
+    vendor: {
+      ...vendor,
+      ...getVendorPaymentSummary(vendor),
+    },
+  });
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -63,6 +69,7 @@ export async function PUT(request: Request, context: RouteContext) {
           depositMinor: payload.depositMinor,
           amountPaidMinor: payload.amountPaidMinor,
           paymentStatus: payload.paymentStatus,
+          lifecycleStatus: payload.lifecycleStatus,
           dueDate: payload.dueDate,
         },
       });
@@ -85,7 +92,14 @@ export async function PUT(request: Request, context: RouteContext) {
       });
     });
 
-    return NextResponse.json({ vendor: updated });
+    return NextResponse.json({
+      vendor: updated
+        ? {
+            ...updated,
+            ...getVendorPaymentSummary(updated),
+          }
+        : updated,
+    });
   } catch (error) {
     if (error instanceof ZodError) return validationErrorResponse(error);
     return NextResponse.json({ error: "Failed to update vendor" }, { status: 500 });

@@ -8,16 +8,15 @@ import {
   CalendarDays,
   Copy,
   Ellipsis,
-  LayoutPanelTop,
   MapPin,
   Plus,
   Search,
   Trash2,
-  UsersRound,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { AppEmptyState } from "@/components/app/AppEmptyState";
+import { AppStatsRail } from "@/components/app/AppStatsRail";
+import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -39,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
+import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 import { getWeddingRoutes } from "@/lib/routes";
 
@@ -76,28 +75,6 @@ type PlanCardProps = {
   onDeleteRequest: (plan: SeatingPlanSummary) => void;
   t: ReturnType<typeof useI18n>["t"];
 };
-
-function StatBlock({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3">
-      <div className="flex size-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
-        <Icon className="size-4" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-zinc-500">{label}</p>
-        <p className="truncate text-lg font-semibold tracking-tight text-zinc-950">{value}</p>
-      </div>
-    </div>
-  );
-}
 
 function PlanCard({
   plan,
@@ -374,8 +351,8 @@ export function WeddingSeatingPage({
   const canCreatePlan = canEdit && !isCreating && !!selectedEventId && !!planName.trim();
 
   return (
-    <main className="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
-      <WorkspacePageHeader
+    <AppWorkspacePage className="gap-5">
+      <WeddingPageHeader
         title={t("dashboard.sidebar.nav.seating")}
         subtitle={t("events.detail.seatingTab.description")}
         actions={
@@ -401,17 +378,15 @@ export function WeddingSeatingPage({
         </div>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <StatBlock label={t("events.detail.seatingTab.summary.plans")} value={plans.length} icon={LayoutPanelTop} />
-        <StatBlock
-          label={t("events.detail.seatingTab.summary.seated")}
-          value={`${totalSeated} / ${totalCapacity}`}
-          icon={UsersRound}
-        />
-        <StatBlock label={t("events.detail.seatingTab.summary.progress")} value={`${averageCompletion}%`} icon={LayoutPanelTop} />
-      </section>
+      <AppStatsRail
+        items={[
+          { label: t("events.detail.seatingTab.summary.plans"), value: plans.length },
+          { label: t("events.detail.seatingTab.summary.seated"), value: `${totalSeated} / ${totalCapacity}` },
+          { label: t("events.detail.seatingTab.summary.progress"), value: `${averageCompletion}%` },
+        ]}
+      />
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs">
+      <section>
         <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,260px)_minmax(190px,230px)_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
@@ -532,6 +507,6 @@ export function WeddingSeatingPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </AppWorkspacePage>
   );
 }

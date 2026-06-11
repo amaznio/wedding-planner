@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AppDataTable } from "@/components/app/AppDataTable";
-import { AppPageGrid } from "@/components/app/AppPageGrid";
-import { AppSectionCard } from "@/components/app/AppSectionCard";
-import { AppStatCard } from "@/components/app/AppStatCard";
+import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppStatusBadge } from "@/components/app/AppStatusBadge";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { Button } from "@/components/ui/button";
@@ -14,8 +12,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
+import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
 type ExpenseStatus = "planned" | "committed" | "paid" | "reimbursed" | "canceled";
@@ -38,7 +37,16 @@ type Expense = {
 
 type WeddingResponse = {
   access: { canEdit: boolean };
-  wedding: { currency: string };
+  wedding: { currency: string; events: Array<{ id: string; name: string }> };
+};
+
+type Vendor = {
+  id: string;
+  name: string;
+  totalCostMinor: number;
+  remainingMinor: number;
+  paymentStatus: "not_started" | "partial" | "paid" | "canceled";
+  lifecycleStatus: "considering" | "booked" | "contract_signed" | "canceled";
 };
 
 type ExpenseForm = {
@@ -49,6 +57,8 @@ type ExpenseForm = {
   incurredAt: string;
   paidBy: string;
   notes: string;
+  vendorId: string;
+  eventId: string;
 };
 
 const statuses: ExpenseStatus[] = ["planned", "committed", "paid", "reimbursed", "canceled"];
@@ -61,6 +71,8 @@ const emptyForm: ExpenseForm = {
   incurredAt: "",
   paidBy: "",
   notes: "",
+  vendorId: "",
+  eventId: "",
 };
 
 export default function WeddingBudgetPage() {
@@ -69,20 +81,24 @@ export default function WeddingBudgetPage() {
   const weddingId = params.weddingId;
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [currency, setCurrency] = useState("PLN");
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [events, setEvents] = useState<Array<{ id: string; name: string }>>([]);
   const [canEdit, setCanEdit] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ExpenseStatus | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [form, setForm] = useState<ExpenseForm>(emptyForm);
 
   const load = useCallback(async () => {
-    const [expensesResponse, weddingResponse] = await Promise.all([
+    const [expensesResponse, weddingResponse, vendorsResponse] = await Promise.all([
       fetch(`/api/weddings/${weddingId}/expenses`, { cache: "no-store" }),
       fetch(`/api/weddings/${weddingId}`, { cache: "no-store" }),
+      fetch(`/api/weddings/${weddingId}/vendors`, { cache: "no-store" }),
     ]);
     if (!expensesResponse.ok) throw new Error(t("budget.page.errors.load"));
 
@@ -90,6 +106,11 @@ export default function WeddingBudgetPage() {
       const weddingData = (await weddingResponse.json()) as WeddingResponse;
       setCanEdit(weddingData.access?.canEdit ?? false);
       setCurrency(weddingData.wedding.currency ?? "PLN");
+      setEvents(weddingData.wedding.events ?? []);
+    }
+    if (vendorsResponse.ok) {
+      const vendorsData = (await vendorsResponse.json()) as { vendors: Vendor[] };
+      setVendors(vendorsData.vendors ?? []);
     }
 
     const data = (await expensesResponse.json()) as { expenses: Expense[] };
@@ -120,16 +141,14 @@ export default function WeddingBudgetPage() {
     [expenses, statusFilter],
   );
 
-  const activeExpenses = expenses.filter((expense) => expense.status !== "canceled");
-  const totalMinor = activeExpenses.reduce((sum, expense) => sum + expense.amountMinor, 0);
-  const paidMinor = activeExpenses
-    .filter((expense) => expense.status === "paid" || expense.status === "reimbursed")
+  const activeVendors = vendors.filter((vendor) => vendor.lifecycleStatus !== "canceled");
+  const commitmentsMinor = activeVendors.reduce((sum, vendor) => sum + vendor.totalCostMinor, 0);
+  const remainingMinor = activeVendors.reduce((sum, vendor) => sum + vendor.remainingMinor, 0);
+  const paidMinor = expenses
+    .filter((expense) => expense.status === "paid")
     .reduce((sum, expense) => sum + expense.amountMinor, 0);
-  const committedMinor = activeExpenses
-    .filter((expense) => expense.status === "committed")
-    .reduce((sum, expense) => sum + expense.amountMinor, 0);
-  const plannedMinor = activeExpenses
-    .filter((expense) => expense.status === "planned")
+  const upcomingMinor = expenses
+    .filter((expense) => expense.status === "planned" || expense.status === "committed")
     .reduce((sum, expense) => sum + expense.amountMinor, 0);
 
   if (isLoading) {
@@ -137,10 +156,7 @@ export default function WeddingBudgetPage() {
   }
 
   const openCreateDialog = () => {
-    setForm({ ...emptyForm, incurredAt: toDateInputValue(new Date()) });
-    setEditingExpenseId(null);
-    setError(null);
-    setDialogMode("create");
+    setCreateDialogOpen(true);
   };
 
   const openEditDialog = (expense: Expense) => {
@@ -152,6 +168,8 @@ export default function WeddingBudgetPage() {
       incurredAt: expense.incurredAt ? expense.incurredAt.slice(0, 10) : "",
       paidBy: expense.paidBy ?? "",
       notes: expense.notes ?? "",
+      vendorId: expense.vendorId ?? "",
+      eventId: expense.eventId ?? "",
     });
     setEditingExpenseId(expense.id);
     setError(null);
@@ -178,6 +196,8 @@ export default function WeddingBudgetPage() {
         incurredAt: form.incurredAt ? new Date(`${form.incurredAt}T00:00:00`).toISOString() : undefined,
         paidBy: form.paidBy.trim() || null,
         notes: form.notes.trim() || null,
+        vendorId: form.vendorId || null,
+        eventId: form.eventId || null,
       };
       const url = dialogMode === "edit" && editingExpenseId
         ? `/api/weddings/${weddingId}/expenses/${editingExpenseId}`
@@ -209,7 +229,7 @@ export default function WeddingBudgetPage() {
 
   return (
     <AppWorkspacePage>
-      <WorkspacePageHeader
+      <WeddingPageHeader
         title={t("budget.page.title")}
         subtitle={t("budget.page.subtitle")}
         actions={(
@@ -220,16 +240,22 @@ export default function WeddingBudgetPage() {
         )}
       />
 
-      <AppPageGrid className="mt-5 md:grid-cols-4">
-        <AppStatCard title={t("budget.page.stats.total")} value={formatCurrency(totalMinor, currency, locale)} />
-        <AppStatCard title={t("budget.page.stats.paid")} value={formatCurrency(paidMinor, currency, locale)} />
-        <AppStatCard title={t("budget.page.stats.committed")} value={formatCurrency(committedMinor, currency, locale)} />
-        <AppStatCard title={t("budget.page.stats.planned")} value={formatCurrency(plannedMinor, currency, locale)} />
-      </AppPageGrid>
+      <AppStatsRail
+        className="mt-5"
+        items={[
+          { label: t("budget.page.stats.total"), value: formatCurrency(commitmentsMinor, currency, locale) },
+          { label: t("budget.page.stats.paid"), value: formatCurrency(paidMinor, currency, locale) },
+          { label: t("budget.page.stats.remaining"), value: formatCurrency(remainingMinor, currency, locale) },
+          { label: t("budget.page.stats.upcoming"), value: formatCurrency(upcomingMinor, currency, locale) },
+        ]}
+      />
 
-      <div className="mt-5">
-        <AppSectionCard title={t("budget.page.table.title")} description={t("budget.page.table.description")}>
-          <div className="mb-4 max-w-xs">
+      <section className="mt-5">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900">{t("budget.page.table.title")}</h2>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">{t("budget.page.table.description")}</p>
+        </div>
+        <div className="mt-4 max-w-xs">
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ExpenseStatus | "all")}>
               <SelectTrigger>
                 <SelectValue />
@@ -241,8 +267,10 @@ export default function WeddingBudgetPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+        </div>
+        <div className="mt-4">
           <AppDataTable
+            variant="standalone"
             columns={[
               { key: "title", label: t("budget.page.table.columns.title") },
               { key: "category", label: t("budget.page.table.columns.category") },
@@ -254,7 +282,7 @@ export default function WeddingBudgetPage() {
             rows={filteredExpenses.map((expense) => ({
               id: expense.id,
               title: expense.title,
-              category: expense.category,
+              category: expense.category === "Deposit" ? t("budget.page.categories.deposit") : expense.category,
               amount: formatCurrency(expense.amountMinor, expense.currency, locale),
               status: <AppStatusBadge label={t(`budget.page.status.${expense.status}`)} variant={expense.status === "paid" ? "success" : expense.status === "committed" ? "secondary" : "default"} />,
               linked: expense.vendor?.name ?? expense.event?.name ?? "-",
@@ -271,13 +299,20 @@ export default function WeddingBudgetPage() {
             }))}
             emptyLabel={t("budget.page.empty")}
           />
-        </AppSectionCard>
-      </div>
+        </div>
+      </section>
 
-      <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
+      <CreateWeddingPaymentDialog
+        weddingId={weddingId}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreated={load}
+      />
+
+      <Dialog open={dialogMode === "edit"} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{dialogMode === "edit" ? t("budget.page.dialog.editTitle") : t("budget.page.dialog.createTitle")}</DialogTitle>
+            <DialogTitle>{t("budget.page.dialog.editTitle")}</DialogTitle>
           </DialogHeader>
           <form
             className="grid gap-4"
@@ -302,6 +337,30 @@ export default function WeddingBudgetPage() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Select value={form.vendorId || "none"} onValueChange={(value) => setForm((current) => ({ ...current, vendorId: value === "none" ? "" : value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("budget.page.form.vendor")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("budget.page.form.noVendor")}</SelectItem>
+                  {vendors.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.id}>{vendor.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={form.eventId || "none"} onValueChange={(value) => setForm((current) => ({ ...current, eventId: value === "none" ? "" : value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("budget.page.form.event")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("budget.page.form.noEvent")}</SelectItem>
+                  {events.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input value={form.paidBy} onChange={(event) => setForm((current) => ({ ...current, paidBy: event.target.value }))} placeholder={t("budget.page.form.paidBy")} />
             <Input value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("budget.page.form.notes")} />
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -344,11 +403,4 @@ function parseAmountToMinor(value: string): number | null {
   const parsed = Number.parseFloat(normalized);
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.round(parsed * 100);
-}
-
-function toDateInputValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
