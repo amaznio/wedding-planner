@@ -20,6 +20,7 @@ import { getWeddingRoutes } from "@/lib/routes";
 import { WeddingDashboardDetailsDialog } from "@/features/wedding-dashboard/components/WeddingDashboardDetailsDialog";
 import { CreateWeddingNoteDialog } from "@/features/wedding-notes/components/CreateWeddingNoteDialog";
 import { CreateWeddingTaskDialog } from "@/features/wedding-tasks/components/CreateWeddingTaskDialog";
+import { toast } from "@/components/ui/use-toast";
 
 type WeddingFormState = {
   name: string;
@@ -72,6 +73,7 @@ type WeddingCoverSaveApiResponse = {
 
 const COVER_IMAGE_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const COVER_IMAGE_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const TASK_COMPLETION_SUCCESS_DURATION_MS = 800;
 
 type WeddingDashboardPageProps = {
   weddingId: string;
@@ -98,6 +100,7 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [createNoteOpen, setCreateNoteOpen] = useState(false);
   const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
+  const [completingTaskIds, setCompletingTaskIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -176,6 +179,62 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
     }
 
     handlePlaceholderAction(action);
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    if (!canEditWedding || completingTaskIds.has(taskId)) return;
+
+    const startedAt = Date.now();
+    setCompletingTaskIds((current) => new Set(current).add(taskId));
+
+    try {
+      const response = await fetch(`/api/weddings/${weddingId}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" }),
+      });
+      if (!response.ok) throw new Error("taskCompletionFailed");
+
+      const remainingSuccessDuration = Math.max(
+        0,
+        TASK_COMPLETION_SUCCESS_DURATION_MS - (Date.now() - startedAt),
+      );
+      await new Promise((resolve) => setTimeout(resolve, remainingSuccessDuration));
+
+      try {
+        const nextModel = await fetchWeddingDashboardViewModel(weddingId);
+        setCanEditWedding(nextModel.canEditWedding);
+        setData(nextModel.dashboardData);
+        setWeddingForm(nextModel.weddingForm);
+      } catch {
+        setData((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            activeTasksCount: Math.max(0, current.activeTasksCount - 1),
+            upcomingTasks: current.upcomingTasks.filter((task) => task.id !== taskId),
+            navigation: current.navigation.map((item) => (
+              item.id === "tasks"
+                ? { ...item, counter: Math.max(0, (item.counter ?? 0) - 1) }
+                : item
+            )),
+          };
+        });
+      }
+
+      router.refresh();
+    } catch {
+      toast({
+        variant: "destructive",
+        title: t("dashboard.widgets.upcomingTasks.completeError"),
+      });
+    } finally {
+      setCompletingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(taskId);
+        return next;
+      });
+    }
   };
 
   const handleWeddingSave = async () => {
@@ -408,6 +467,9 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
           onQuickAction={handleQuickAction}
           onPlaceholderAction={handlePlaceholderAction}
           onOpenTasks={() => router.push(routes.tasks)}
+          canEditTasks={canEditWedding}
+          completingTaskIds={completingTaskIds}
+          onCompleteTask={(taskId) => void handleCompleteTask(taskId)}
         />
 
         <DashboardTipBanner onAction={() => handlePlaceholderAction("tip")} />

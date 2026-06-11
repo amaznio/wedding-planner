@@ -571,6 +571,8 @@
         "overdue": "{{count}} dni po terminie",
         "overdueBadge": "Po terminie",
         "empty": "Brak aktywnych zadań z terminem.",
+        "completeAction": "Oznacz zadanie {{title}} jako ukończone",
+        "completeError": "Nie udało się oznaczyć zadania jako ukończone.",
         "items": {
           "confirmMenu": "Potwierdź menu z cateringiem",
           "chooseDecor": "Wybierz dekoracje sali",

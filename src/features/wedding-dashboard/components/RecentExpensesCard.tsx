@@ -28,7 +28,7 @@ export function RecentExpensesCard({
     <Card className="border-zinc-200/80 bg-white">
       <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
         <CardTitle className="text-lg">{t("dashboard.widgets.recentExpenses.title")}</CardTitle>
-        <Button type="button" variant="ghost" className="h-auto px-0 text-xs" onClick={onOpenAll}>
+        <Button type="button" variant="ghost" className="h-auto text-xs" onClick={onOpenAll}>
           {t("dashboard.widgets.viewAll")}
         </Button>
       </CardHeader>

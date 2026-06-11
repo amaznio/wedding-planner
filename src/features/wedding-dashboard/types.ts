@@ -48,6 +48,7 @@ export type PlanningProgressRow = {
 export type UpcomingTaskItem = {
   id: string;
   title: string;
+  dueDate: Date;
   dueInDays: number;
 };
 

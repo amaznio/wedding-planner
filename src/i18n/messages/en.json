@@ -571,6 +571,8 @@
         "overdue": "{{count}} days overdue",
         "overdueBadge": "Overdue",
         "empty": "No active tasks with a deadline.",
+        "completeAction": "Mark {{title}} as done",
+        "completeError": "Failed to mark the task as done.",
         "items": {
           "confirmMenu": "Confirm catering menu",
           "chooseDecor": "Choose venue decorations",

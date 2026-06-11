@@ -2,6 +2,69 @@
 
 ## Current Phase
 
+Phase 254-HF1 - Dashboard View all button padding (completed)
+
+## Completed Work
+
+- Restored the shared shadcn-style ghost button's default horizontal padding on both dashboard `View all` actions:
+  - Upcoming tasks
+  - Recent expenses
+- Removed the widget-specific `px-0` overrides that caused the hover backgrounds and button targets to hug the text.
+- Audited remaining dashboard `px-0` usages and kept only intentional card layout padding resets.
+- Files changed:
+  - `src/features/wedding-dashboard/components/UpcomingTasksCard.tsx`
+  - `src/features/wedding-dashboard/components/RecentExpensesCard.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm lint -- src/features/wedding-dashboard/components/UpcomingTasksCard.tsx src/features/wedding-dashboard/components/RecentExpensesCard.tsx` (pass)
+  - `pnpm typecheck` (pass)
+  - `git diff --check` (pass before final progress update)
+- Known issues:
+  - authenticated browser visual QA remains unavailable because the active Browser session is signed out
+- Next recommended step:
+  - visually verify the `View all` ghost-button padding on the authenticated dashboard.
+
+## Current Phase
+
+Phase 254 - Dashboard task completion and due-date tile (completed)
+
+## Completed Work
+
+- Added direct task completion to the dashboard Upcoming tasks widget for editable users.
+- Added an optimistic checked success state that:
+  - immediately checks the task
+  - transitions the row to muted green styling
+  - fades and strikes through the task title
+  - remains visible for at least 800ms before refreshed dashboard data removes it
+- Reused the existing task update API so completing a task also synchronizes its checklist items.
+- Refreshed dashboard task data and the server-rendered sidebar count after completion.
+- Restored the normal row and displayed a localized destructive toast when completion persistence fails.
+- Replaced the countdown number in the task tile with the localized due-date day and abbreviated month.
+- Disabled dashboard completion controls for viewers and while the task completion request is active.
+- Added reduced-motion-safe success styling and matching Polish/English accessibility and error copy.
+- Files changed:
+  - `src/features/wedding-dashboard/components/UpcomingTasksCard.tsx`
+  - `src/features/wedding-dashboard/components/DashboardWidgetsGrid.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/features/wedding-dashboard/lib/fetch-dashboard-view-model.ts`
+  - `src/features/wedding-dashboard/types.ts`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused `pnpm lint -- ...` for dashboard task completion files (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded text in `src/app/page.tsx`)
+  - `git diff --check` (pass before final progress update)
+  - Browser QA at `http://localhost:3000/weddings/test` (redirected to `/sign-in`; no authenticated interaction QA available)
+- Known issues:
+  - authenticated visual QA for due-date formatting, success animation, viewer-disabled controls, and completion refresh remains unavailable because the active Browser session is signed out
+- Next recommended step:
+  - authenticate and verify dashboard task completion in Polish and English, including a task with checklist items and a viewer-role account.
+
+## Current Phase
+
 Phase 253-HF1 - Task group management modal hierarchy (completed)
 
 ## Completed Work

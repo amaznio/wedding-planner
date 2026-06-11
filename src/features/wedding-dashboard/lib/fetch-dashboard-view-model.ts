@@ -57,6 +57,7 @@ export async function fetchWeddingDashboardViewModel(weddingId: string): Promise
     upcomingTasks: dashboardJson.upcomingTasks.map((task) => ({
       id: task.id,
       title: task.title,
+      dueDate: new Date(task.dueDate),
       dueInDays: getCalendarDayDifference(task.dueDate),
     })),
   });

@@ -20,6 +20,9 @@ type DashboardWidgetsGridProps = {
   onQuickAction: (id: DashboardQuickActionId) => void;
   onPlaceholderAction: (id: string) => void;
   onOpenTasks: () => void;
+  canEditTasks: boolean;
+  completingTaskIds: Set<string>;
+  onCompleteTask: (taskId: string) => void;
 };
 
 export function DashboardWidgetsGrid({
@@ -32,10 +35,20 @@ export function DashboardWidgetsGrid({
   onQuickAction,
   onPlaceholderAction,
   onOpenTasks,
+  canEditTasks,
+  completingTaskIds,
+  onCompleteTask,
 }: DashboardWidgetsGridProps) {
   return (
     <section className="grid gap-4 lg:grid-cols-3">
-      <UpcomingTasksCard tasks={tasks} onOpenAll={onOpenTasks} />
+      <UpcomingTasksCard
+        tasks={tasks}
+        locale={locale}
+        canEdit={canEditTasks}
+        completingTaskIds={completingTaskIds}
+        onCompleteTask={onCompleteTask}
+        onOpenAll={onOpenTasks}
+      />
       <RecentExpensesCard
         expenses={expenses}
         currency={currency}
