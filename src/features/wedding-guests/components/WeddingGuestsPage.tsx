@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspacePanelSkeleton, WorkspaceStatsSkeleton } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
 import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
@@ -69,7 +69,7 @@ type WeddingGuestsPageProps = {
 type WeddingEventType = "wedding" | "afterparty" | "bachelorette" | "bachelor" | "other";
 
 export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const router = useRouter();
   const baseData = useMemo(() => buildWeddingGuestsMockData(weddingId), [weddingId]);
   const routes = useMemo(() => getWeddingRoutes(weddingId), [weddingId]);
@@ -92,12 +92,15 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const [availableEvents, setAvailableEvents] = useState<Array<{ id: string; name: string; type: WeddingEventType }>>([]);
   const [linkableGuests, setLinkableGuests] = useState<Array<{ id: string; name: string }>>([]);
   const [canEditWedding, setCanEditWedding] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
-      setIsLoading(true);
+      const isInitialLoad = reloadKey === 0;
+      if (isInitialLoad) setIsLoading(true);
+      setLoadError(null);
 
       try {
         const [weddingResponse, guestsResponse] = await Promise.all([
@@ -162,7 +165,8 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
           );
         }
       } catch {
-        if (active) {
+        if (active) setLoadError(t("weddingGuestsPage.loadError"));
+        if (active && isInitialLoad) {
           setAvailableEvents([]);
           setLinkableGuests([]);
           setData((prev) => ({
@@ -179,7 +183,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
           }));
         }
       } finally {
-        if (active) {
+        if (active && isInitialLoad) {
           setIsLoading(false);
         }
       }
@@ -190,7 +194,7 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     return () => {
       active = false;
     };
-  }, [weddingId, locale, baseData, reloadKey, routes.seating]);
+  }, [weddingId, locale, baseData, reloadKey, routes.seating, t]);
 
   const rsvpShare = useMemo(() => {
     const total = data.stats.totalGuests || 1;
@@ -217,32 +221,39 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     }
   };
 
-  if (isLoading) {
-    return <WorkspaceRouteLoading />;
-  }
-
   return (
     <AppWorkspacePage>
       <GuestsPageHeader
         notificationCount={data.notificationCount}
         onAction={handleQuickAction}
+        isLoading={isLoading}
       />
+      {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
       <div className="mt-5 flex flex-col gap-5">
-        <GuestStatsCards stats={data.stats} isLoading={false} />
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <GuestManagementTable
-            weddingId={weddingId}
-            guests={data.guests}
-            isLoading={false}
-            canEdit={canEditWedding}
-            onSaved={() => setReloadKey((prev) => prev + 1)}
-          />
-          <GuestInsightsPanel
-            stats={data.stats}
-            shares={rsvpShare}
-            isLoading={false}
-            onAction={handleQuickAction}
-          />
+        {isLoading ? <WorkspaceStatsSkeleton count={4} /> : <GuestStatsCards stats={data.stats} isLoading={false} />}
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+          <div className="min-w-0">
+            <GuestManagementTable
+              weddingId={weddingId}
+              guests={data.guests}
+              isLoading={isLoading}
+              canEdit={canEditWedding}
+              onSaved={() => setReloadKey((prev) => prev + 1)}
+            />
+          </div>
+          {isLoading ? (
+            <aside className="flex min-w-0 flex-col gap-4">
+              <WorkspacePanelSkeleton className="min-h-80" />
+              <WorkspacePanelSkeleton />
+            </aside>
+          ) : (
+            <GuestInsightsPanel
+              stats={data.stats}
+              shares={rsvpShare}
+              isLoading={false}
+              onAction={handleQuickAction}
+            />
+          )}
         </div>
       </div>
 

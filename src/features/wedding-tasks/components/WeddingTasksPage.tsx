@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { CreateWeddingTaskDialog } from "@/features/wedding-tasks/components/CreateWeddingTaskDialog";
 import { useI18n } from "@/i18n/provider";
@@ -150,7 +150,16 @@ export function WeddingTasksPage() {
 
   const taskSections = useMemo(() => buildSections(visibleTasks, groupBy, t), [groupBy, t, visibleTasks]);
 
-  if (isLoading) return <WorkspaceRouteLoading />;
+  if (isLoading) {
+    return (
+      <WorkspaceManagementPageLoading
+        title={t("tasks.page.title")}
+        subtitle={t("tasks.page.subtitle")}
+        primaryActionLabel={t("tasks.page.actions.add")}
+        secondaryActionLabel={t("tasks.page.actions.manageGroups")}
+      />
+    );
+  }
 
   const openCreateDialog = () => {
     setCreateOpen(true);

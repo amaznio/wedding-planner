@@ -723,6 +723,7 @@
     }
   },
   "weddingGuestsPage": {
+    "loadError": "Failed to load guests.",
     "breadcrumb": {
       "current": "Guests"
     },
@@ -958,6 +959,7 @@
       }
     },
     "detail": {
+      "title": "Event details",
       "states": {
         "loading": "Loading event command center...",
         "loadError": "Failed to load event details",

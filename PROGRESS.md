@@ -2,6 +2,161 @@
 
 ## Current Phase
 
+Phase 266 - Guests page desktop layout containment (completed)
+
+## Completed Work
+
+- Prevented the wide guests table from expanding beneath the desktop insights sidebar.
+- Allowed the guests page main grid column and table component to shrink within their assigned width.
+- Added horizontal scrolling inside the desktop table card when its columns exceed the available content width.
+- Kept the insights and loading sidebars contained in their reserved desktop grid track.
+- Files changed:
+  - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+  - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+  - `src/features/wedding-guests/components/GuestInsightsPanel.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - focused guests component `pnpm eslint ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - Browser smoke check for `/weddings/test/guests` (redirected cleanly to `/sign-in`)
+- Known issues:
+  - Authenticated visual verification of the guests page remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Authenticate and verify the guests table/sidebar layout at desktop widths, including horizontal table scrolling and fast-edit mode.
+
+## Previous Phase
+
+Phase 265 - Granular streaming for server-fetched workspace routes (completed)
+
+## Completed Work
+
+- Split the Events and Seating workspace routes into persistent static page shells and Suspense-wrapped async data bodies.
+- Made both route page components return immediately without awaiting:
+  - route params
+  - search params
+  - session headers
+  - Prisma queries
+- Kept translated page titles, subtitles, and disabled labeled actions mounted while database-backed content streams in.
+- Limited Suspense fallback replacement to the data-derived stats, controls, and row regions.
+- Added reusable static shell and content-only loading components for Events and Seating.
+- Added embedded rendering support to the Events and Seating client pages so resolved data mounts inside the existing page shell without duplicating headers.
+- Added an `as` override to `AppWorkspacePage` so embedded content does not create nested `<main>` elements.
+- Preserved existing authorization checks, redirects, query filtering, and client interactions.
+- Files changed:
+  - `src/app/weddings/[weddingId]/(workspace)/events/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/seating/page.tsx`
+  - `src/components/app/AppWorkspacePage.tsx`
+  - `src/features/wedding-dashboard/components/WorkspacePageLoading.tsx`
+  - `src/features/wedding-events/components/WeddingEventsListPage.tsx`
+  - `src/features/seating-editor/components/WeddingSeatingPage.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - focused Phase 265 `pnpm lint -- ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass before progress update; line-ending warnings only)
+  - Browser smoke checks for `/weddings/test/events` and `/weddings/test/seating` (both redirected cleanly to `/sign-in`; no console errors)
+- Known issues:
+  - Authenticated visual verification of the streaming transition remains unavailable because the active browser session is signed out.
+  - The shared authenticated workspace layout still waits for auth and navigation data before the workspace shell is available on a direct entry.
+- Next recommended step:
+  - Authenticate and visually verify Events and Seating navigation with throttled database/network responses, checking that headers stay mounted and skeleton replacement does not cause significant layout shift.
+
+## Previous Phase
+
+Phase 264 - Client-fetched workspace data-only loading states (completed)
+
+## Completed Work
+
+- Replaced the remaining client-fetched workspace full-page loading message with page-shaped loading shells.
+- Kept translated page titles, subtitles, and labeled actions visible immediately for:
+  - Guests
+  - Tasks
+  - Notes
+  - Documents
+  - Collaborators
+  - Finances
+  - Vendors
+- Disabled permission-dependent actions until initial access data is available.
+- Used shared skeletons only for data-derived stats, rows, cards, and panels.
+- Updated Guests so post-save reloads preserve the existing guest UI instead of flashing the initial loading state.
+- Replaced the Guests table loading text with row skeletons and added panel skeletons for guest insights.
+- Added visible page-level load errors so failed initial requests do not appear as valid empty pages.
+- Removed the now-unused legacy `WorkspaceRouteLoading` component.
+- Files changed:
+  - `src/features/wedding-dashboard/components/WorkspacePageLoading.tsx`
+  - `src/features/wedding-dashboard/components/WorkspaceRouteLoading.tsx` (removed)
+  - `src/features/wedding-guests/components/GuestsPageHeader.tsx`
+  - `src/features/wedding-guests/components/GuestManagementTable.tsx`
+  - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+  - `src/features/wedding-tasks/components/WeddingTasksPage.tsx`
+  - `src/features/wedding-notes/components/WeddingNotesPage.tsx`
+  - `src/features/wedding-documents/components/WeddingDocumentsPage.tsx`
+  - `src/features/wedding-collaborators/components/WeddingCollaboratorsPage.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/budget/page.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/vendors/page.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused Phase 264 `pnpm lint -- ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass before progress update; line-ending warnings only)
+- Known issues:
+  - Authenticated visual verification remains unavailable because the active browser session is signed out.
+  - The workspace layout still waits for auth and navigation data before the workspace shell is available on a direct entry.
+- Next recommended step:
+  - Phase 265 - split the server-fetched Events and Seating route shells from their database-backed content with granular Suspense boundaries so their static text and controls can stream independently.
+
+## Previous Phase
+
+Phase 263 - Workspace data-only loading foundation (completed)
+
+## Completed Work
+
+- Added reusable workspace loading primitives for:
+  - compact stats rails
+  - list/table-style rows
+  - card grids
+  - content panels
+- Added page-shaped loading shells that keep translated headings and static action labels visible while data regions use skeletons.
+- Replaced the Dashboard full-page loading message with a stable generic Dashboard title, real subtitle, and data skeletons.
+- Replaced the Event Detail full-page loading message with a stable generic Event details title, disabled labeled actions, and data skeletons.
+- Added route-specific App Router loading shells for:
+  - Events list
+  - Event detail
+  - Seating list
+- Kept loading-shell actions disabled until permissions and required data are available.
+- Added localized generic Event details titles in English and Polish.
+- Files changed:
+  - `src/features/wedding-dashboard/components/WorkspacePageLoading.tsx`
+  - `src/features/wedding-dashboard/components/WeddingDashboardPage.tsx`
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/events/loading.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/events/[eventId]/loading.tsx`
+  - `src/app/weddings/[weddingId]/(workspace)/seating/loading.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused Phase 263 `pnpm lint -- ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm build` (pass)
+  - `pnpm i18n:audit` (fails only on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass before progress update; line-ending warnings only)
+- Known issues:
+  - Client-fetched Guests, Finances, Vendors, Tasks, Notes, Documents, and Collaborators pages still use the legacy full-page `WorkspaceRouteLoading`; these are reserved for Phase 264.
+  - The authenticated workspace layout still waits for auth and navigation data before the workspace shell is available on a direct entry.
+  - Authenticated visual verification remains unavailable because the active browser session is signed out.
+- Next recommended step:
+  - Phase 264 - convert client-fetched workspace pages to always render their headers and show skeletons only for initial data regions while preserving content during refreshes.
+
+## Previous Phase
+
 Phase 262 - Dashboard payment and contractor quick-action dialogs (completed)
 
 ## Completed Work

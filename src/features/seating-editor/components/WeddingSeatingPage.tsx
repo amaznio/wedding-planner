@@ -54,6 +54,7 @@ type SeatingPlanSummary = {
 };
 
 type WeddingSeatingPageProps = {
+  embedded?: boolean;
   weddingId: string;
   canEdit: boolean;
   planMismatch?: boolean;
@@ -184,6 +185,7 @@ function PlanCard({
 }
 
 export function WeddingSeatingPage({
+  embedded = false,
   weddingId,
   canEdit,
   plans: initialPlans,
@@ -351,8 +353,8 @@ export function WeddingSeatingPage({
   const canCreatePlan = canEdit && !isCreating && !!selectedEventId && !!planName.trim();
 
   return (
-    <AppWorkspacePage className="gap-5">
-      <WeddingPageHeader
+    <AppWorkspacePage as={embedded ? "div" : "main"} className={embedded ? "contents" : "gap-5"}>
+      {!embedded ? <WeddingPageHeader
         title={t("dashboard.sidebar.nav.seating")}
         subtitle={t("events.detail.seatingTab.description")}
         actions={
@@ -369,7 +371,7 @@ export function WeddingSeatingPage({
             </Button>
           ) : null
         }
-      />
+      /> : null}
 
       {planMismatch ? (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">

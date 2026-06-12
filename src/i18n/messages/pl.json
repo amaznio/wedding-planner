@@ -723,6 +723,7 @@
     }
   },
   "weddingGuestsPage": {
+    "loadError": "Nie udało się załadować gości.",
     "breadcrumb": {
       "current": "Goście"
     },
@@ -958,6 +959,7 @@
       }
     },
     "detail": {
+      "title": "Szczegóły wydarzenia",
       "states": {
         "loading": "Ładowanie centrum wydarzenia...",
         "loadError": "Nie udało się załadować szczegółów wydarzenia",

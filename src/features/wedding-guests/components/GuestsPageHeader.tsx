@@ -9,9 +9,10 @@ import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/Wor
 type GuestsPageHeaderProps = {
   notificationCount: number;
   onAction: (action: "import" | "add" | "send" | "reminder" | "export" | "plan" | "learn") => void;
+  isLoading?: boolean;
 };
 
-export function GuestsPageHeader({ notificationCount, onAction }: GuestsPageHeaderProps) {
+export function GuestsPageHeader({ notificationCount, onAction, isLoading = false }: GuestsPageHeaderProps) {
   const { t } = useI18n();
 
   return (
@@ -26,6 +27,7 @@ export function GuestsPageHeader({ notificationCount, onAction }: GuestsPageHead
             size="icon"
             className="relative"
             aria-label={t("dashboard.header.notifications")}
+            disabled={isLoading}
           >
             <Bell className="size-4" />
             {notificationCount > 0 ? (
@@ -34,11 +36,11 @@ export function GuestsPageHeader({ notificationCount, onAction }: GuestsPageHead
               </Badge>
             ) : null}
           </Button>
-          <Button type="button" variant="outline" onClick={() => onAction("import")}>
+          <Button type="button" variant="outline" onClick={() => onAction("import")} disabled={isLoading}>
             <Upload className="size-4" />
             {t("weddingGuestsPage.actions.import")}
           </Button>
-          <Button type="button" variant="primary" onClick={() => onAction("add")}>
+          <Button type="button" variant="primary" onClick={() => onAction("add")} disabled={isLoading}>
             <Plus className="size-4" />
             {t("weddingGuestsPage.actions.add")}
           </Button>

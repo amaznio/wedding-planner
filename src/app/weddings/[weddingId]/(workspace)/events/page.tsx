@@ -1,14 +1,29 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { WeddingEventsListPage } from "@/features/wedding-events/components/WeddingEventsListPage";
+import {
+  WeddingEventsListContentLoading,
+  WeddingEventsListPageShell,
+} from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 
 type WeddingEventsRoutePageProps = {
   params: Promise<{ weddingId: string }>;
 };
 
-export default async function WeddingEventsRoutePage({ params }: WeddingEventsRoutePageProps) {
+export default function WeddingEventsRoutePage({ params }: WeddingEventsRoutePageProps) {
+  return (
+    <WeddingEventsListPageShell>
+      <Suspense fallback={<WeddingEventsListContentLoading />}>
+        <WeddingEventsData params={params} />
+      </Suspense>
+    </WeddingEventsListPageShell>
+  );
+}
+
+async function WeddingEventsData({ params }: WeddingEventsRoutePageProps) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     redirect("/sign-in");
@@ -53,6 +68,7 @@ export default async function WeddingEventsRoutePage({ params }: WeddingEventsRo
 
   return (
     <WeddingEventsListPage
+      embedded
       weddingId={weddingId}
       events={wedding.events.map((event) => ({
         ...event,

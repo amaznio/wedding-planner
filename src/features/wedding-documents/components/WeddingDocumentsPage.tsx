@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
@@ -141,7 +141,13 @@ export function WeddingDocumentsPage() {
   );
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return (
+      <WorkspaceManagementPageLoading
+        title={t("documents.page.title")}
+        subtitle={t("documents.page.subtitle")}
+        primaryActionLabel={t("documents.page.actions.add")}
+      />
+    );
   }
 
   const openCreateDialog = () => {
@@ -230,6 +236,7 @@ export function WeddingDocumentsPage() {
         )}
       />
 
+      {error && dialogMode === null ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <AppStatsRail
         className="mt-5 max-w-xl"
         items={[

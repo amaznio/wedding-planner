@@ -23,6 +23,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type WeddingEventsListPageProps = {
+  embedded?: boolean;
   weddingId: string;
   nowIso: string;
   events: Array<{
@@ -42,7 +43,7 @@ type WeddingEventsListPageProps = {
   }>;
 };
 
-export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEventsListPageProps) {
+export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, events }: WeddingEventsListPageProps) {
   const { t, locale } = useI18n();
   const [eventsState, setEventsState] = useState(events);
   const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
@@ -208,8 +209,8 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
   };
 
   return (
-    <AppWorkspacePage>
-      <WeddingPageHeader
+    <AppWorkspacePage as={embedded ? "div" : "main"} className={embedded ? "contents" : undefined}>
+      {!embedded ? <WeddingPageHeader
         title={t("events.list.title")}
         subtitle={t("events.list.subtitle")}
         actions={(
@@ -218,7 +219,7 @@ export function WeddingEventsListPage({ weddingId, nowIso, events }: WeddingEven
             {t("events.actions.addEvent")}
           </Button>
         )}
-      />
+      /> : null}
 
       <div className="mt-5">
         <AppStatsRail

@@ -13,7 +13,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { NoteCategoryCombobox } from "@/features/wedding-notes/components/NoteCategoryCombobox";
 import { CreateWeddingNoteDialog } from "@/features/wedding-notes/components/CreateWeddingNoteDialog";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
@@ -106,7 +106,14 @@ export function WeddingNotesPage() {
   }, [notes, query]);
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return (
+      <WorkspaceManagementPageLoading
+        title={t("notes.page.title")}
+        subtitle={t("notes.page.subtitle")}
+        primaryActionLabel={t("notes.page.actions.add")}
+        content="cards"
+      />
+    );
   }
 
   const openCreateDialog = () => {
@@ -181,6 +188,7 @@ export function WeddingNotesPage() {
           </Button>
         )}
       />
+      {error && dialogMode === null ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <AppStatsRail
         className="mt-5 max-w-xl"
         items={[

@@ -10,7 +10,7 @@ import { CollaboratorsHeader } from "./CollaboratorsHeader";
 import { InvitePeopleCard } from "./InvitePeopleCard";
 import { PeopleWithAccessCard } from "./PeopleWithAccessCard";
 import { RemoveCollaboratorDialog } from "./RemoveCollaboratorDialog";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 
 type WeddingCollaboratorsPageProps = {
   weddingId: string;
@@ -204,7 +204,14 @@ export function WeddingCollaboratorsPage({ weddingId }: WeddingCollaboratorsPage
   }, [loadMembers, removeTarget, t, weddingId]);
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return (
+      <WorkspaceManagementPageLoading
+        title={t("weddingCollaboratorsPage.title")}
+        subtitle={t("weddingCollaboratorsPage.subtitleOwner")}
+        content="panels"
+        showFilters={false}
+      />
+    );
   }
 
   return (

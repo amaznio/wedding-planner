@@ -17,7 +17,7 @@ type GuestInsightsPanelProps = {
 
 export function GuestInsightsPanel({ stats, shares, isLoading, onAction }: GuestInsightsPanelProps) {
   return (
-    <aside className="flex flex-col gap-4">
+    <aside className="flex min-w-0 flex-col gap-4">
       <GuestSummaryCard stats={stats} shares={shares} isLoading={isLoading} />
       <GuestQuickActionsCard onAction={onAction} />
       <GuestTipCard onAction={onAction} />

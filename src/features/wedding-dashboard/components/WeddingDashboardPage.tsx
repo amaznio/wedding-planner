@@ -13,7 +13,7 @@ import { WeddingEventsStrip } from "@/features/wedding-dashboard/components/Wedd
 import { PlanningProgressSection } from "@/features/wedding-dashboard/components/PlanningProgressSection";
 import { DashboardWidgetsGrid } from "@/features/wedding-dashboard/components/DashboardWidgetsGrid";
 import { DashboardTipBanner } from "@/features/wedding-dashboard/components/DashboardTipBanner";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WeddingDashboardPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { authClient } from "@/lib/auth-client";
 import { fetchWeddingDashboardViewModel } from "@/features/wedding-dashboard/lib/fetch-dashboard-view-model";
 import { getWeddingRoutes } from "@/lib/routes";
@@ -141,7 +141,7 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   const firstEventHref = useMemo(() => data?.events.find((event) => event.href)?.href, [data?.events]);
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return <WeddingDashboardPageLoading />;
   }
 
   if (error) {
@@ -149,7 +149,7 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
   }
 
   if (!data) {
-    return <WorkspaceRouteLoading />;
+    return <WeddingDashboardPageLoading />;
   }
 
   const handlePlaceholderAction = (key: string) => {

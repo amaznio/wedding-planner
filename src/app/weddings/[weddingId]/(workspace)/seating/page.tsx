@@ -1,15 +1,30 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { WeddingSeatingPage } from "@/features/seating-editor/components/WeddingSeatingPage";
+import {
+  WeddingSeatingContentLoading,
+  WeddingSeatingPageShell,
+} from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 
 type WeddingSeatingRoutePageProps = {
   params: Promise<{ weddingId: string }>;
   searchParams: Promise<{ planMismatch?: string }>;
 };
 
-export default async function WeddingSeatingRoutePage({ params, searchParams }: WeddingSeatingRoutePageProps) {
+export default function WeddingSeatingRoutePage({ params, searchParams }: WeddingSeatingRoutePageProps) {
+  return (
+    <WeddingSeatingPageShell>
+      <Suspense fallback={<WeddingSeatingContentLoading />}>
+        <WeddingSeatingData params={params} searchParams={searchParams} />
+      </Suspense>
+    </WeddingSeatingPageShell>
+  );
+}
+
+async function WeddingSeatingData({ params, searchParams }: WeddingSeatingRoutePageProps) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     redirect("/sign-in");
@@ -65,6 +80,7 @@ export default async function WeddingSeatingRoutePage({ params, searchParams }: 
 
   return (
     <WeddingSeatingPage
+      embedded
       weddingId={weddingId}
       canEdit={membership?.role === "owner" || membership?.role === "editor"}
       events={events}

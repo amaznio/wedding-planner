@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppQuickActionsCard } from "@/components/app/AppQuickActionsCard";
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WeddingEventDetailPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
@@ -489,7 +489,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const timelineItemPendingDelete = timelineItems.find((item) => item.id === deleteTimelineItemId) ?? null;
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return <WeddingEventDetailPageLoading />;
   }
 
   return (

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
+import { WorkspaceRowsSkeleton } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest } from "../types";
 import { GuestEventChips } from "./GuestEventChips";
 import { GuestStatusBadge } from "./GuestStatusBadge";
@@ -197,7 +198,7 @@ export function GuestManagementTable({
   };
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {tabs.map((tab) => (
@@ -257,14 +258,14 @@ export function GuestManagementTable({
         ) : null}
       </div>
 
-      <div>
+      <div className="min-w-0">
         {isLoading ? (
-          <p className="px-4 py-4 text-sm text-zinc-500">{t("common.loading")}</p>
+          <WorkspaceRowsSkeleton />
         ) : filteredHouseholds.length === 0 ? (
           <p className="px-4 py-4 text-sm text-zinc-500">{t("weddingGuestsPage.table.empty")}</p>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-lg border border-zinc-200 bg-white lg:block">
+            <div className="hidden min-w-0 overflow-x-auto rounded-lg border border-zinc-200 bg-white lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>

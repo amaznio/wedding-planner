@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { WorkspaceRouteLoading } from "@/features/wedding-dashboard/components/WorkspaceRouteLoading";
+import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
@@ -152,7 +152,14 @@ export default function WeddingBudgetPage() {
     .reduce((sum, expense) => sum + expense.amountMinor, 0);
 
   if (isLoading) {
-    return <WorkspaceRouteLoading />;
+    return (
+      <WorkspaceManagementPageLoading
+        title={t("budget.page.title")}
+        subtitle={t("budget.page.subtitle")}
+        primaryActionLabel={t("budget.page.actions.add")}
+        statsCount={4}
+      />
+    );
   }
 
   const openCreateDialog = () => {
@@ -240,6 +247,7 @@ export default function WeddingBudgetPage() {
         )}
       />
 
+      {error && dialogMode === null ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <AppStatsRail
         className="mt-5"
         items={[
