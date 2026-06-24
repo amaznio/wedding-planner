@@ -731,6 +731,7 @@
     "subtitle": "Manage your guest list, invitations, and table assignments.",
     "actions": {
       "import": "Import list",
+      "menu": "Actions",
       "add": "Add guest"
     },
     "addGuest": {

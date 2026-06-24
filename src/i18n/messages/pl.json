@@ -731,6 +731,7 @@
     "subtitle": "Zarządzaj listą gości, zaproszeniami i miejscami przy stołach.",
     "actions": {
       "import": "Importuj listę",
+      "menu": "Akcje",
       "add": "Dodaj gościa"
     },
     "addGuest": {

@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { formatDate } from "@/features/wedding-dashboard/lib/formatting";
-import { WorkspacePanelSkeleton, WorkspaceStatsSkeleton } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
+import { WorkspaceStatsSkeleton } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
 import { buildWeddingGuestsMockData, deriveGuestStats } from "../guests.mock";
 import type { GuestAgeCategory, GuestRsvpStatus, GuestSex, WeddingGuest, WeddingGuestsData, WeddingGuestEvent } from "../types";
 import { AddGuestDialog } from "./AddGuestDialog";
-import { GuestInsightsPanel } from "./GuestInsightsPanel";
 import { GuestManagementTable } from "./GuestManagementTable";
+import { GuestTipCard } from "./GuestTipCard";
 import { GuestsPageHeader } from "./GuestsPageHeader";
 import { GuestStatsCards } from "./GuestStatsCards";
 import { getWeddingRoutes } from "@/lib/routes";
@@ -196,16 +196,6 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
     };
   }, [weddingId, locale, baseData, reloadKey, routes.seating, t]);
 
-  const rsvpShare = useMemo(() => {
-    const total = data.stats.totalGuests || 1;
-    return {
-      confirmed: Math.round((data.stats.confirmed / total) * 100),
-      pending: Math.round((data.stats.pending / total) * 100),
-      notAttending: Math.round((data.stats.notAttending / total) * 100),
-      noResponse: Math.round((data.stats.noResponse / total) * 100),
-    };
-  }, [data.stats]);
-
   const handleQuickAction = (action: "import" | "add" | "send" | "reminder" | "export" | "plan" | "learn") => {
     if (!canEditWedding && action !== "plan" && action !== "learn") {
       return;
@@ -231,30 +221,14 @@ export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
       {loadError ? <p className="mt-4 text-sm text-red-600">{loadError}</p> : null}
       <div className="mt-5 flex flex-col gap-5">
         {isLoading ? <WorkspaceStatsSkeleton count={4} /> : <GuestStatsCards stats={data.stats} isLoading={false} />}
-        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-          <div className="min-w-0">
-            <GuestManagementTable
-              weddingId={weddingId}
-              guests={data.guests}
-              isLoading={isLoading}
-              canEdit={canEditWedding}
-              onSaved={() => setReloadKey((prev) => prev + 1)}
-            />
-          </div>
-          {isLoading ? (
-            <aside className="flex min-w-0 flex-col gap-4">
-              <WorkspacePanelSkeleton className="min-h-80" />
-              <WorkspacePanelSkeleton />
-            </aside>
-          ) : (
-            <GuestInsightsPanel
-              stats={data.stats}
-              shares={rsvpShare}
-              isLoading={false}
-              onAction={handleQuickAction}
-            />
-          )}
-        </div>
+        <GuestManagementTable
+          weddingId={weddingId}
+          guests={data.guests}
+          isLoading={isLoading}
+          canEdit={canEditWedding}
+          onSaved={() => setReloadKey((prev) => prev + 1)}
+        />
+        {!isLoading ? <GuestTipCard onAction={handleQuickAction} /> : null}
       </div>
 
       {isAddGuestDialogOpen && canEditWedding ? (

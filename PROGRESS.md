@@ -2,6 +2,45 @@
 
 ## Current Phase
 
+Phase 267 - Full-width guests table and header actions (completed)
+
+## Completed Work
+
+- Removed the guests page desktop insights sidebar so the guest management table uses the full workspace content width.
+- Removed the redundant guest summary card because the status totals remain available in the stats rail.
+- Moved the four guest quick actions into a labeled header `Actions` dropdown:
+  - send invitations
+  - send guest reminder
+  - export guest list
+  - open seating plan
+- Kept Import list and Add guest as visible header actions.
+- Moved the guest tip card below the table and pagination.
+- Removed the unused `GuestInsightsPanel`, `GuestSummaryCard`, and `GuestQuickActionsCard` components and RSVP-share calculations.
+- Added localized EN/PL labels for the new header Actions dropdown.
+- Files changed:
+  - `src/features/wedding-guests/components/WeddingGuestsPage.tsx`
+  - `src/features/wedding-guests/components/GuestsPageHeader.tsx`
+  - `src/features/wedding-guests/components/GuestInsightsPanel.tsx` (removed)
+  - `src/features/wedding-guests/components/GuestSummaryCard.tsx` (removed)
+  - `src/features/wedding-guests/components/GuestQuickActionsCard.tsx` (removed)
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - focused guest-page `pnpm exec eslint ...` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated repo errors)
+  - `pnpm i18n:audit` (fails on pre-existing hardcoded landing-page text)
+  - `git diff --check` (pass; line-ending warnings only)
+  - Browser smoke check for `http://localhost:3000` (app loads and redirects to sign-in)
+- Known issues:
+  - Authenticated desktop and mobile visual verification of the guests page remains unavailable because the active browser session is signed out.
+  - The existing quick-action handlers for send, reminder, and export remain intentionally unchanged and currently have no implemented side effects.
+- Next recommended step:
+  - Authenticate and verify the full-width guest table, header Actions dropdown, and below-table tip at desktop and mobile widths.
+
+## Previous Phase
+
 Phase 266 - Guests page desktop layout containment (completed)
 
 ## Completed Work

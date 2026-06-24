@@ -1,8 +1,14 @@
 "use client";
 
-import { Bell, Plus, Upload } from "lucide-react";
+import { Bell, ChevronDown, Download, Mail, Plus, Upload, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n/provider";
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 
@@ -40,6 +46,32 @@ export function GuestsPageHeader({ notificationCount, onAction, isLoading = fals
             <Upload className="size-4" />
             {t("weddingGuestsPage.actions.import")}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" disabled={isLoading}>
+                {t("weddingGuestsPage.actions.menu")}
+                <ChevronDown className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => onAction("send")}>
+                <Mail className="mr-2 size-4" />
+                {t("weddingGuestsPage.insights.quickActions.sendInvitations")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onAction("reminder")}>
+                <Bell className="mr-2 size-4" />
+                {t("weddingGuestsPage.insights.quickActions.reminder")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onAction("export")}>
+                <Download className="mr-2 size-4" />
+                {t("weddingGuestsPage.insights.quickActions.export")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onAction("plan")}>
+                <UtensilsCrossed className="mr-2 size-4" />
+                {t("weddingGuestsPage.insights.quickActions.seatingPlan")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button type="button" variant="primary" onClick={() => onAction("add")} disabled={isLoading}>
             <Plus className="size-4" />
             {t("weddingGuestsPage.actions.add")}
