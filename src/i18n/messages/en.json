@@ -14,9 +14,19 @@
     "home": "Home"
   },
   "home": {
-    "title": "Wedding Seating Planner MVP",
-    "openEditor": "Open Seating Editor",
-    "openWeddings": "Open weddings"
+    "brand": "WeddingPlan",
+    "headline": "Plan guests and seats.",
+    "description": "Arrange tables, assign seats, and keep the wedding layout ready.",
+    "createWorkspace": "Create workspace",
+    "signIn": "Sign in",
+    "features": {
+      "guests": "Guests",
+      "tables": "Tables",
+      "seats": "Seats",
+      "pdfExport": "PDF export"
+    },
+    "previewAriaLabel": "Interactive seating plan preview",
+    "previewTable": "Table {{number}}"
   },
   "auth": {
     "fields": {
@@ -119,6 +129,7 @@
     "more": "More",
     "tablesObjects": "Tables & Objects",
     "addRectTable": "Add rectangular table",
+    "addRoundTable": "Add round table",
     "roundComing": "Round table (coming soon)",
     "buffetComing": "Buffet (coming soon)",
     "danceComing": "Dance floor (coming soon)",
@@ -383,6 +394,7 @@
   "canvas": {
     "add": "+ Add",
     "rectangularTable": "Rectangular table",
+    "roundTable": "Round table",
     "roundComing": "Round table (coming soon)",
     "buffetComing": "Buffet (coming soon)",
     "danceComing": "Dance floor (coming soon)",
@@ -1119,7 +1131,17 @@
         "title": "Seating plans",
         "description": "Create and open seating plans linked to this event.",
         "planNamePlaceholder": "Seating plan name",
+        "planNameLabel": "Plan name",
+        "eventLabel": "Event",
         "create": "Create plan",
+        "createDialogTitle": "Create seating plan",
+        "createDialogDescription": "Name the plan and choose which event it belongs to.",
+        "edit": "Edit plan",
+        "editDialogTitle": "Edit seating plan",
+        "editDialogDescription": "Update the plan name or move it to another event.",
+        "saveChanges": "Save changes",
+        "saving": "Saving...",
+        "updateError": "Failed to update seating plan",
         "creating": "Creating...",
         "empty": "No seating plans yet.",
         "searchPlaceholder": "Search plans...",

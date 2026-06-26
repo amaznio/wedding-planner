@@ -28,7 +28,10 @@ import type {
   RelationshipType,
   SeatingRelationship,
 } from "@/features/seating-editor/types/relationship.types";
-import type { SeatingPlan } from "@/features/seating-editor/types/seating-plan.types";
+import type {
+  SeatingPlan,
+  SeatingTableType,
+} from "@/features/seating-editor/types/seating-plan.types";
 import type {
   AssignmentMutation,
   AssignmentMutationPayload,
@@ -78,7 +81,7 @@ type ApiPlan = {
   tables: Array<{
     id: string;
     label: string;
-    type: "rectangle";
+    type: SeatingTableType;
     x: number;
     y: number;
     rotation: number;
@@ -397,7 +400,6 @@ export function SeatingPlanEditorScreen() {
   }, []);
 
   const occupiedSeatCount = guests.filter((guest) => guest.assignment !== null).length;
-  const totalSeatCount = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
   const unseatedGuestCount = guests.length - occupiedSeatCount;
   const lastSavedLabel = useMemo(() => {
     if (!lastSavedAt) return null;
@@ -1010,7 +1012,7 @@ export function SeatingPlanEditorScreen() {
     setGuests((current) =>
       current.map((guest) =>
         guest.id === guestId
-          ? { ...guest, assignment: null, plannedTableId: null }
+          ? { ...guest, assignment: null }
           : guest,
       ),
     );
@@ -1038,7 +1040,7 @@ export function SeatingPlanEditorScreen() {
       if (!clickedGuest) return { level: "info" as const, message: t("inspector.unassigned") };
       setGuests((current) =>
         current.map((guest) =>
-          guest.id === clickedGuest.id ? { ...guest, assignment: null, plannedTableId: null } : guest,
+          guest.id === clickedGuest.id ? { ...guest, assignment: null } : guest,
         ),
       );
       enqueueAssignmentMutation({
@@ -1063,6 +1065,7 @@ export function SeatingPlanEditorScreen() {
         pairSidePreference: plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference,
         tables: plan.tables.map((table) => ({
           id: table.id,
+          type: table.type,
           x: table.x,
           y: table.y,
           seatCount: table.seatCount,
@@ -1088,7 +1091,6 @@ export function SeatingPlanEditorScreen() {
           if (!assignment) return guest;
           return {
             ...guest,
-            plannedTableId: assignment.tableId,
             assignment: {
               id: guest.assignment?.id ?? `optimistic-${guest.id}`,
               tableId: assignment.tableId,
@@ -1129,7 +1131,6 @@ export function SeatingPlanEditorScreen() {
         if (guest.id === targetGuest.id) {
           return {
             ...guest,
-            plannedTableId: tableId,
             assignment: {
               id: guest.assignment?.id ?? `optimistic-${guest.id}`,
               tableId,
@@ -1140,7 +1141,6 @@ export function SeatingPlanEditorScreen() {
         if (clickedGuest && guest.id === clickedGuest.id && targetGuest.assignment) {
           return {
             ...guest,
-            plannedTableId: targetGuest.assignment.tableId,
             assignment: {
               id: guest.assignment?.id ?? `optimistic-${guest.id}`,
               tableId: targetGuest.assignment.tableId,
@@ -1198,10 +1198,10 @@ export function SeatingPlanEditorScreen() {
     });
   }, [canEdit, enqueueTableMutation, moveTableInStore]);
 
-  const handleAddTable = useCallback(() => {
+  const handleAddTable = useCallback((type: SeatingTableType = "rectangle") => {
     if (!canEdit) return;
     const previousPlan = useSeatingEditorStore.getState().plan;
-    addTableToStore();
+    addTableToStore(type, t("guestPanel.tableFallback"));
     const nextPlan = useSeatingEditorStore.getState().plan;
     const nextTable = nextPlan.tables.find(
       (table) => !previousPlan.tables.some((current) => current.id === table.id),
@@ -1213,7 +1213,7 @@ export function SeatingPlanEditorScreen() {
       coalesceKey: `table:${nextTable.id}:add`,
       applySnapshot: previousPlan,
     });
-  }, [addTableToStore, canEdit, enqueueTableMutation]);
+  }, [addTableToStore, canEdit, enqueueTableMutation, t]);
 
   const handleUpdateSelectedTableLabel = useCallback((label: string) => {
     if (!canEdit || !selectedTableId) return;
@@ -1915,101 +1915,6 @@ export function SeatingPlanEditorScreen() {
     [groups, guests, handleUpdateGuest, selectedGuestId],
   );
 
-  const handlePlanGuestsToTable = useCallback(
-    async (tableId: string, guestIds: string[]) => {
-      const uniqueGuestIds = Array.from(new Set(guestIds));
-      const guestsToPlan = uniqueGuestIds
-        .map((guestId) => guests.find((item) => item.id === guestId))
-        .filter((guest): guest is ApiGuest => guest !== undefined);
-      if (guestsToPlan.length === 0) {
-        throw new Error("Guest not found");
-      }
-
-      const guestIdSet = new Set(guestsToPlan.map((guest) => guest.id));
-      const previousPlannedTableByGuestId = Object.fromEntries(
-        guestsToPlan.map((guest) => [guest.id, guest.plannedTableId]),
-      ) as Record<string, string | null>;
-
-      setGuests((current) =>
-        current.map((item) =>
-          guestIdSet.has(item.id) ? { ...item, plannedTableId: tableId } : item,
-        ),
-      );
-
-      try {
-        await Promise.all(
-          guestsToPlan.map((guest) =>
-            handleUpdateGuest(guest.id, {
-              name: guest.name,
-              sex: guest.sex,
-              ageCategory: guest.ageCategory,
-              groupId: guest.groupId,
-              notes: guest.notes ?? "",
-              plannedTableId: tableId,
-            }),
-          ),
-        );
-      } catch (error) {
-        setGuests((current) =>
-          current.map((item) =>
-            guestIdSet.has(item.id)
-              ? {
-                  ...item,
-                  plannedTableId: previousPlannedTableByGuestId[item.id] ?? null,
-                }
-              : item,
-          ),
-        );
-        throw error;
-      }
-    },
-    [guests, handleUpdateGuest],
-  );
-
-  const dropGuestOnTable = useCallback(
-    async (tableId: string, guestId: string) => {
-      if (!isDesktopViewport) return;
-      if (isTableDraggingRef.current) return;
-      const dragSession = dragSessionRef.current;
-      endGuestDrag(dragSession);
-      try {
-        const moveTogetherRelationships = getAutoMoveTogetherRelationships(
-          guestId,
-          relationshipsByGuestId,
-        );
-        const guestIdsToPlan = new Set<string>([guestId]);
-        for (const relationship of moveTogetherRelationships) {
-          for (const relationshipGuestId of relationship.guestIds) {
-            guestIdsToPlan.add(relationshipGuestId);
-          }
-        }
-
-        await handlePlanGuestsToTable(tableId, Array.from(guestIdsToPlan));
-        toast({
-          variant: "success",
-          title: t("toasts.success"),
-          description:
-            guestIdsToPlan.size > 1
-              ? t("canvas.plannedTableAssignedGroup", {
-                  count: guestIdsToPlan.size,
-                })
-              : t("canvas.plannedTableAssigned"),
-        });
-        handleSelectGuest(guestId);
-      } catch (error) {
-        setGuestsError(error instanceof Error ? error.message : t("canvas.failedPlanAssign"));
-      }
-    },
-    [
-      endGuestDrag,
-      handlePlanGuestsToTable,
-      handleSelectGuest,
-      isDesktopViewport,
-      relationshipsByGuestId,
-      t,
-    ],
-  );
-
   const handleAutoSeatTable = useCallback(
     async (tableId: string) => {
       const response = await fetch(
@@ -2454,13 +2359,11 @@ export function SeatingPlanEditorScreen() {
               selectedSeat={selectedSeat}
               onSelectSeat={selectSeat}
               seatAssignments={seatAssignments}
-              tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               guests={guests.map((guest) => ({
                 id: guest.id,
                 name: guest.name,
                 sex: guest.sex,
-                plannedTableId: guest.plannedTableId,
                 plusOneHostGuestId: guest.plusOneHostGuestId,
                 group: guest.group,
                 assignment: guest.assignment
@@ -2515,13 +2418,11 @@ export function SeatingPlanEditorScreen() {
             onSelectSeat={handleSelectSeatWithMobileInspector}
             onMoveTable={handleMoveTable}
             seatAssignments={seatAssignments}
-            tableLabelById={tableLabelById}
             selectedGuestId={selectedGuestId}
             guests={guests.map((guest) => ({
               id: guest.id,
               name: guest.name,
               sex: guest.sex,
-              plannedTableId: guest.plannedTableId,
               plusOneHostGuestId: guest.plusOneHostGuestId,
               group: guest.group,
               assignment: guest.assignment
@@ -2529,7 +2430,6 @@ export function SeatingPlanEditorScreen() {
                 : null,
             }))}
             showGroupColors={showGroupColors}
-            onSeatAssign={handleSeatAssign}
             onTableDragStateChange={setIsTableDragging}
             onAddTable={handleAddTable}
             enableTableDrag={mobileTableDragEnabled}
@@ -2756,8 +2656,15 @@ export function SeatingPlanEditorScreen() {
               >
                 {t("editor.addRectTable")}
               </Button>
-              <Button className="w-full justify-start" variant="outline" disabled>
-                {t("editor.roundComing")}
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                onClick={() => {
+                  handleAddTable("circle");
+                  setMobileTablesOpen(false);
+                }}
+              >
+                {t("editor.addRoundTable")}
               </Button>
               <Button className="w-full justify-start" variant="outline" disabled>
                 {t("editor.buffetComing")}
@@ -3109,13 +3016,11 @@ export function SeatingPlanEditorScreen() {
               onSelectSeat={selectSeat}
               onMoveTable={handleMoveTable}
               seatAssignments={seatAssignments}
-              tableLabelById={tableLabelById}
               selectedGuestId={selectedGuestId}
               guests={guests.map((guest) => ({
                 id: guest.id,
                 name: guest.name,
                 sex: guest.sex,
-                plannedTableId: guest.plannedTableId,
                 plusOneHostGuestId: guest.plusOneHostGuestId,
                 group: guest.group,
                 assignment: guest.assignment
@@ -3123,7 +3028,6 @@ export function SeatingPlanEditorScreen() {
                   : null,
               }))}
               showGroupColors={showGroupColors}
-              onSeatAssign={handleSeatAssign}
               onTableDragStateChange={setIsTableDragging}
               onAddTable={handleAddTable}
               enableTableDrag
@@ -3135,7 +3039,6 @@ export function SeatingPlanEditorScreen() {
               onSeatGuestDragEnd={endGuestDrag}
               highlightedSeats={highlightedSeats}
               onGuestDropToSeat={dropGuestOnSeat}
-              onGuestDropToTable={dropGuestOnTable}
               pairSidePreference={
                 plan.pairSidePreference === "auto" ? undefined : plan.pairSidePreference
               }

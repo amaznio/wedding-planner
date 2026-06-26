@@ -141,7 +141,7 @@ export async function POST(request: Request, context: RouteContext) {
               {
                 guestId: payload.guestId,
                 assignment: targetGuestCurrent,
-                plannedTableId: payload.tableId,
+                plannedTableId: null,
               },
             ],
           };
@@ -165,11 +165,6 @@ export async function POST(request: Request, context: RouteContext) {
             seatNumber: payload.seatNumber,
           },
         });
-        await tx.guest.update({
-          where: { id: payload.guestId },
-          data: { plannedTableId: payload.tableId },
-        });
-
         let swappedAssignment: Prisma.SeatAssignmentGetPayload<object> | null = null;
         if (swappedGuestId && targetGuestCurrent) {
           swappedAssignment = await tx.seatAssignment.create({
@@ -179,15 +174,6 @@ export async function POST(request: Request, context: RouteContext) {
               guestId: swappedGuestId,
               seatNumber: targetGuestCurrent.seatNumber,
             },
-          });
-          await tx.guest.update({
-            where: { id: swappedGuestId },
-            data: { plannedTableId: targetGuestCurrent.tableId },
-          });
-        } else if (swappedGuestId && !targetGuestCurrent) {
-          await tx.guest.update({
-            where: { id: swappedGuestId },
-            data: { plannedTableId: null },
           });
         }
 
@@ -207,14 +193,14 @@ export async function POST(request: Request, context: RouteContext) {
             {
               guestId: payload.guestId,
               assignment: created,
-              plannedTableId: payload.tableId,
+              plannedTableId: null,
             },
             ...(swappedGuestId
               ? [
                   {
                     guestId: swappedGuestId,
                     assignment: swappedAssignment,
-                    plannedTableId: swappedAssignment?.tableId ?? null,
+                    plannedTableId: null,
                   },
                 ]
               : []),
@@ -231,11 +217,6 @@ export async function POST(request: Request, context: RouteContext) {
         if (existing) {
           await tx.seatAssignment.delete({ where: { id: existing.id } });
         }
-        await tx.guest.update({
-          where: { id: payload.guestId },
-          data: { plannedTableId: null },
-        });
-
         const event: AssignmentDomainEvent = {
           ...baseEvent,
           actionType: "unassign",
@@ -286,12 +267,6 @@ export async function POST(request: Request, context: RouteContext) {
           seatNumber: item.seatNumber,
         })),
       });
-      for (const item of payload.plannedAssignments) {
-        await tx.guest.update({
-          where: { id: item.guestId },
-          data: { plannedTableId: item.tableId },
-        });
-      }
       const applied = await tx.seatAssignment.findMany({
         where: { planId, guestId: { in: plannedGuestIds } },
       });
@@ -311,7 +286,7 @@ export async function POST(request: Request, context: RouteContext) {
         guestsAssignments: plannedGuestIds.map((guestId) => ({
           guestId,
           assignment: assignmentsByGuest[guestId] ?? null,
-          plannedTableId: assignmentsByGuest[guestId]?.tableId ?? null,
+          plannedTableId: null,
         })),
       };
       return { event, snapshotDelta, serverVersion };

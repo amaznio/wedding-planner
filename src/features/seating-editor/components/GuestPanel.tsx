@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   ChevronRight,
   Download,
@@ -10,13 +9,19 @@ import {
   Shapes,
   Upload,
   Users,
-  X,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +45,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/provider";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import { resolveEffectiveGuestGroup } from "../lib/guest-group";
@@ -676,83 +682,104 @@ export function GuestPanel({
               </div>
             ) : null}
           </div>
-          <DialogPrimitive.Root open={isAddGuestDialogOpen} onOpenChange={setIsAddGuestDialogOpen}>
-            <DialogPrimitive.Portal>
-              <DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-black/30" />
-              <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-[71] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-5 shadow-xl">
-                <div className="mb-5 flex items-center justify-between">
-                  <DialogPrimitive.Title className="text-xl font-semibold text-zinc-900">
-                    {t("guestPanel.addGuest")}
-                  </DialogPrimitive.Title>
-                  <DialogPrimitive.Close asChild>
-                    <Button type="button" variant="ghost" size="icon" aria-label={t("common.close")}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </DialogPrimitive.Close>
+          <Dialog open={isAddGuestDialogOpen} onOpenChange={setIsAddGuestDialogOpen}>
+            <DialogContent className="sm:max-w-xl" closeLabel={t("common.close")}>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{t("guestPanel.addGuest")}</DialogTitle>
+              </DialogHeader>
+              <form
+                className="mt-2 flex flex-col gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleCreateGuest();
+                }}
+              >
+                <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                  <label className="text-sm font-medium text-zinc-700" htmlFor="guest-name">
+                    {t("guestPanel.name")}
+                  </label>
+                  <Input
+                    id="guest-name"
+                    value={newGuestName}
+                    onChange={(event) => setNewGuestName(event.target.value)}
+                    placeholder={t("guestPanel.fullNamePlaceholder")}
+                    disabled={isSubmitting}
+                  />
                 </div>
-                <div className="flex flex-col gap-3">
-                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
-                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.name")}</label>
-                    <Input
-                      value={newGuestName}
-                      onChange={(event) => setNewGuestName(event.target.value)}
-                      placeholder={t("guestPanel.fullNamePlaceholder")}
-                    />
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
-                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.group")}</label>
-                    <select
-                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
-                      value={newGuestGroupId}
-                      onChange={(event) => setNewGuestGroupId(event.target.value)}
-                    >
-                      <option value="">{t("guestPanel.selectGroupPlaceholder")}</option>
-                      {groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
-                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.sex")}</label>
-                    <select
-                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
-                      value={newGuestSex}
-                      onChange={(event) => setNewGuestSex(event.target.value as GuestSex)}
-                    >
-                      <option value="male">{t("guestPanel.sexMale")}</option>
-                      <option value="female">{t("guestPanel.sexFemale")}</option>
-                      <option value="unknown">{t("guestPanel.sexUnknown")}</option>
-                    </select>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
-                    <label className="text-sm font-medium text-zinc-700">{t("guestPanel.ageCategory")}</label>
-                    <select
-                      className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
-                      value={newGuestAgeCategory}
-                      onChange={(event) =>
-                        setNewGuestAgeCategory(event.target.value as GuestAgeCategory)
-                      }
-                    >
-                      <option value="adult">{t("guestPanel.ageCategoryAdult")}</option>
-                      <option value="teen">{t("guestPanel.ageCategoryTeen")}</option>
-                      <option value="child">{t("guestPanel.ageCategoryChild")}</option>
-                      <option value="small_child">{t("guestPanel.ageCategorySmallChild")}</option>
-                      <option value="toddler_0_2">{t("guestPanel.ageCategoryToddler")}</option>
-                    </select>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-start">
-                    <label className="pt-2 text-sm font-medium text-zinc-700">{t("guestPanel.notesOptional")}</label>
-                    <textarea
-                      value={newGuestNotes}
-                      onChange={(event) => setNewGuestNotes(event.target.value)}
-                      placeholder={t("guestPanel.notesPlaceholder")}
-                      className="min-h-24 w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-0 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
-                    />
-                  </div>
+                <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                  <label className="text-sm font-medium text-zinc-700" htmlFor="guest-group">
+                    {t("guestPanel.group")}
+                  </label>
+                  <Select value={newGuestGroupId || "none"} onValueChange={(value) => setNewGuestGroupId(value === "none" ? "" : value)} disabled={isSubmitting}>
+                    <SelectTrigger id="guest-group" className="w-full">
+                      <SelectValue placeholder={t("guestPanel.selectGroupPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="none">{t("guestPanel.selectGroupPlaceholder")}</SelectItem>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="mt-5 flex justify-end gap-2">
+                <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                  <label className="text-sm font-medium text-zinc-700" htmlFor="guest-sex">
+                    {t("guestPanel.sex")}
+                  </label>
+                  <Select value={newGuestSex} onValueChange={(value) => setNewGuestSex(value as GuestSex)} disabled={isSubmitting}>
+                    <SelectTrigger id="guest-sex" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="male">{t("guestPanel.sexMale")}</SelectItem>
+                        <SelectItem value="female">{t("guestPanel.sexFemale")}</SelectItem>
+                        <SelectItem value="unknown">{t("guestPanel.sexUnknown")}</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-center">
+                  <label className="text-sm font-medium text-zinc-700" htmlFor="guest-age-category">
+                    {t("guestPanel.ageCategory")}
+                  </label>
+                  <Select
+                    value={newGuestAgeCategory}
+                    onValueChange={(value) => setNewGuestAgeCategory(value as GuestAgeCategory)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="guest-age-category" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="adult">{t("guestPanel.ageCategoryAdult")}</SelectItem>
+                        <SelectItem value="teen">{t("guestPanel.ageCategoryTeen")}</SelectItem>
+                        <SelectItem value="child">{t("guestPanel.ageCategoryChild")}</SelectItem>
+                        <SelectItem value="small_child">{t("guestPanel.ageCategorySmallChild")}</SelectItem>
+                        <SelectItem value="toddler_0_2">{t("guestPanel.ageCategoryToddler")}</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)] sm:items-start">
+                  <label className="pt-2 text-sm font-medium text-zinc-700" htmlFor="guest-notes">
+                    {t("guestPanel.notesOptional")}
+                  </label>
+                  <Textarea
+                    id="guest-notes"
+                    value={newGuestNotes}
+                    onChange={(event) => setNewGuestNotes(event.target.value)}
+                    placeholder={t("guestPanel.notesPlaceholder")}
+                    className="min-h-24 resize-y"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <DialogFooter className="mt-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -761,13 +788,13 @@ export function GuestPanel({
                   >
                     {t("common.cancel")}
                   </Button>
-                  <Button type="button" onClick={handleCreateGuest} disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {t("guestPanel.addGuest")}
                   </Button>
-                </div>
-              </DialogPrimitive.Content>
-            </DialogPrimitive.Portal>
-          </DialogPrimitive.Root>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Separator />
         </>
       ) : null}

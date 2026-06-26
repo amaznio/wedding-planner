@@ -3,9 +3,6 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { MousePointer2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { toast } from "@/components/ui/use-toast";
 import { useI18n } from "@/i18n/provider";
 import {
   buildGroupMovePlan,
@@ -22,11 +18,10 @@ import {
   type PairSidePreference,
 } from "../lib/group-move";
 import { getCursorColorPreset } from "../lib/cursor-colors";
-import { resolveEffectiveGuestGroup } from "../lib/guest-group";
-import { getSeatPositions } from "../lib/seat-positioning";
-import { getRectangleTableDimensions } from "../lib/table-dimensions";
+import { getTableSeatPositions } from "../lib/seat-positioning";
+import { getTableDimensions } from "../lib/table-dimensions";
 import type { SeatingRelationship } from "../types/relationship.types";
-import type { SeatingPlan } from "../types/seating-plan.types";
+import type { SeatingPlan, SeatingTableType } from "../types/seating-plan.types";
 import { RectTable } from "./RectTable";
 
 type SeatingCanvasProps = {
@@ -48,13 +43,11 @@ type SeatingCanvasProps = {
       }
     >
   >;
-  tableLabelById?: Record<string, string>;
   selectedGuestId?: string | null;
   guests?: Array<{
     id: string;
     name: string;
     sex: "male" | "female" | "unknown";
-    plannedTableId: string | null;
     plusOneHostGuestId?: string | null;
     group: {
       id: string;
@@ -63,13 +56,8 @@ type SeatingCanvasProps = {
     } | null;
     assignment: { tableId: string; seatNumber: number } | null;
   }>;
-  onSeatAssign?: (
-    tableId: string,
-    seatNumber: number,
-    guestId: string | null,
-  ) => Promise<{ message?: string; level?: "info" | "success" }>;
   onTableDragStateChange?: (isDragging: boolean) => void;
-  onAddTable?: () => void;
+  onAddTable?: (type?: SeatingTableType) => void;
   mobileMode?: boolean;
   showGroupColors?: boolean;
   onToggleGroupColors?: () => void;
@@ -86,7 +74,6 @@ type SeatingCanvasProps = {
     seatNumber: number,
     guestId: string,
   ) => Promise<void> | void;
-  onGuestDropToTable?: (tableId: string, guestId: string) => Promise<void> | void;
   pairSidePreference?: PairSidePreference;
   relationshipsByGuestId?: Record<string, SeatingRelationship[]>;
   readOnly?: boolean;
@@ -115,10 +102,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onSelectTable,
   onMoveTable,
   seatAssignments,
-  tableLabelById = {},
   selectedGuestId,
   guests = [],
-  onSeatAssign,
   selectedSeat,
   onSelectSeat,
   onTableDragStateChange,
@@ -135,7 +120,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
   onGuestDropToSeat,
-  onGuestDropToTable,
   pairSidePreference,
   relationshipsByGuestId = {},
   readOnly = false,
@@ -144,19 +128,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   highlightedSeats = {},
 }, ref) {
   const { t } = useI18n();
-  const relationshipTypeLabel: Record<SeatingRelationship["type"], string> = {
-    couple: t("guestPanel.relationshipType.couple"),
-    family: t("guestPanel.relationshipType.family"),
-    group: t("guestPanel.relationshipType.group"),
-    custom: t("guestPanel.relationshipType.custom"),
-    plus_one: t("guestPanel.relationshipType.plus_one"),
-  };
-  const preferredSeatingLabel: Record<SeatingRelationship["preferredSeating"], string> = {
-    none: t("guestPanel.preferredSeating.none"),
-    adjacent: t("guestPanel.preferredSeating.adjacent"),
-    nearby: t("guestPanel.preferredSeating.nearby"),
-    "same-table": t("guestPanel.preferredSeating.same-table"),
-  };
   const [draggedSeatGuestId, setDraggedSeatGuestId] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeTouchPointersRef = useRef<
@@ -180,29 +151,10 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const viewRef = useRef(view);
   const [isPanning, setIsPanning] = useState(false);
-  const [seatMenu, setSeatMenu] = useState<{
-    tableId: string;
-    seatNumber: number;
-    x: number;
-    y: number;
-  } | null>(null);
-  const [isAssigningSeat, setIsAssigningSeat] = useState(false);
-  const [seatMenuError, setSeatMenuError] = useState<string | null>(null);
-  const [seatMenuGuestFilter, setSeatMenuGuestFilter] = useState<"all" | "unseated" | "assigned">(
-    "unseated",
-  );
-  const [seatMenuShowAllGuests, setSeatMenuShowAllGuests] = useState(false);
-  const [seatMenuQuery, setSeatMenuQuery] = useState("");
-  const [isSeatUnassignConfirmOpen, setIsSeatUnassignConfirmOpen] = useState(false);
-  const [conflictSeat, setConflictSeat] = useState<{
-    tableId: string;
-    seatNumber: number;
-  } | null>(null);
   const [dragHoverSeat, setDragHoverSeat] = useState<{
     tableId: string;
     seatNumber: number;
   } | null>(null);
-  const [dragHoverTableId, setDragHoverTableId] = useState<string | null>(null);
   const [linkedDragPreviewSeatsByTable, setLinkedDragPreviewSeatsByTable] = useState<
     Record<string, number[]>
   >({});
@@ -227,8 +179,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     let maxY = Number.NEGATIVE_INFINITY;
 
     for (const table of plan.tables) {
-      const { width, height } = getRectangleTableDimensions(table.seatCount, table.seatLayout);
-      const seatPositions = getSeatPositions(table.seatCount, width, height, table.seatLayout);
+      const { width, height } = getTableDimensions(table);
+      const seatPositions = getTableSeatPositions(table);
       const centerX = table.x + width / 2;
       const centerY = table.y + height / 2;
       const radians = (table.rotation * Math.PI) / 180;
@@ -389,7 +341,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     if (!viewport) return;
 
     viewport.setPointerCapture(event.pointerId);
-    setSeatMenu(null);
     if (event.pointerType === "touch") {
       activeTouchPointersRef.current.set(event.pointerId, {
         clientX: event.clientX,
@@ -497,326 +448,23 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
     }
     const session = panSessionRef.current;
     if (session?.moved) return;
-    setSeatMenu(null);
     onSelectTable?.(null);
   };
 
   const handleSeatClick = (
     tableId: string,
     seatNumber: number,
-    clientX: number,
-    clientY: number,
   ) => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const rect = viewport.getBoundingClientRect();
-    const menuWidth = 280;
-    const menuHeight = 320;
-    const x = Math.max(
-      12,
-      Math.min(clientX - rect.left + 12, rect.width - menuWidth - 12),
-    );
-    const y = Math.max(
-      12,
-      Math.min(clientY - rect.top + 12, rect.height - menuHeight - 12),
-    );
-    setSeatMenuError(null);
-    setConflictSeat(null);
-    setSeatMenuGuestFilter(guests.some((guest) => guest.assignment === null) ? "unseated" : "all");
-    setSeatMenuShowAllGuests(false);
-    setSeatMenuQuery("");
-    setSeatMenu({ tableId, seatNumber, x, y });
     onSelectSeat?.(tableId, seatNumber);
   };
-
-  const menuSeatAssignment = seatMenu
-    ? (seatAssignments?.[seatMenu.tableId]?.[seatMenu.seatNumber] ?? null)
-    : null;
-  const guestsById = useMemo(() => {
-    return Object.fromEntries(guests.map((guest) => [guest.id, guest]));
-  }, [guests]);
-  const seatMenuGuests = useMemo(() => {
-    if (!seatMenu) return [];
-    const query = seatMenuQuery.trim().toLowerCase();
-    const filtered = guests.filter((guest) => {
-      const isCurrentSeatOccupant = menuSeatAssignment?.guestId === guest.id;
-      const matchesPlannedTable =
-        guest.plannedTableId === seatMenu.tableId || isCurrentSeatOccupant;
-      const inPool = seatMenuShowAllGuests ? true : matchesPlannedTable;
-      if (!inPool) return false;
-
-      const matchesFilter =
-        seatMenuGuestFilter === "assigned"
-          ? guest.assignment !== null
-          : seatMenuGuestFilter === "unseated"
-            ? guest.assignment === null
-            : true;
-      const matchesQuery =
-        query.length === 0 || guest.name.toLowerCase().includes(query);
-      return matchesFilter && matchesQuery;
-    });
-
-    const byName = (a: string, b: string) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" });
-
-    if (seatMenuGuestFilter === "all") {
-      return filtered.sort((a, b) => {
-        const assignmentRankA = a.assignment ? 1 : 0;
-        const assignmentRankB = b.assignment ? 1 : 0;
-        if (assignmentRankA !== assignmentRankB) {
-          return assignmentRankA - assignmentRankB;
-        }
-        return byName(a.name, b.name);
-      });
-    }
-
-    return filtered.sort((a, b) => byName(a.name, b.name));
-  }, [guests, menuSeatAssignment?.guestId, seatMenu, seatMenuGuestFilter, seatMenuQuery, seatMenuShowAllGuests]);
-  const closeSeatMenu = () => {
-    setSeatMenu(null);
-    setIsSeatUnassignConfirmOpen(false);
-    setSeatMenuShowAllGuests(false);
-  };
-  const handleSeatMenuAssign = async (guestId: string | null) => {
-    if (!seatMenu) return;
-    setIsAssigningSeat(true);
-    try {
-      setSeatMenuError(null);
-      setConflictSeat(null);
-      const result = await onSeatAssign?.(
-        seatMenu.tableId,
-        seatMenu.seatNumber,
-        guestId,
-      );
-      if (result?.message) {
-        toast({
-          variant: result.level === "info" ? "info" : "success",
-          title: result.level === "info" ? t("toasts.info") : t("toasts.success"),
-          description: result.message,
-        });
-      }
-      closeSeatMenu();
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : guestId === null
-          ? t("canvas.failedUnassign")
-          : t("canvas.failedAssign");
-      setSeatMenuError(message);
-      setConflictSeat({
-        tableId: seatMenu.tableId,
-        seatNumber: seatMenu.seatNumber,
-      });
-    } finally {
-      setIsAssigningSeat(false);
-    }
-  };
-  const seatMenuContent = seatMenu ? (
-    <>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="truncate text-lg font-medium leading-tight text-zinc-900 lg:text-base">
-          {t("canvas.current", {
-            name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
-          })}
-        </p>
-        <button
-          type="button"
-          onClick={closeSeatMenu}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 text-zinc-700 hover:bg-zinc-100"
-          aria-label={t("common.close")}
-        >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 6l12 12" />
-            <path d="M18 6 6 18" />
-          </svg>
-        </button>
-      </div>
-      {seatMenuError ? (
-        <div className="mb-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
-          {seatMenuError}
-        </div>
-      ) : null}
-      {readOnly ? (
-        <div className="mb-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600">
-          {menuSeatAssignment ? t("editor.occupied") : t("editor.empty")}
-        </div>
-      ) : (
-        <>
-      <div className="mb-2 flex items-center gap-1">
-        <Button
-          type="button"
-          size="sm"
-          variant={seatMenuGuestFilter === "unseated" ? "default" : "outline"}
-          className="h-6 rounded-full px-2 text-[10px]"
-          onClick={() => setSeatMenuGuestFilter("unseated")}
-        >
-          {t("guestPanel.filterUnseated")}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={seatMenuGuestFilter === "assigned" ? "default" : "outline"}
-          className="h-6 rounded-full px-2 text-[10px]"
-          onClick={() => setSeatMenuGuestFilter("assigned")}
-        >
-          {t("guestPanel.filterAssigned")}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={seatMenuGuestFilter === "all" ? "default" : "outline"}
-          className="h-6 rounded-full px-2 text-[10px]"
-          onClick={() => setSeatMenuGuestFilter("all")}
-        >
-          {t("guestPanel.filterAll")}
-        </Button>
-      </div>
-      <Input
-        value={seatMenuQuery}
-        onChange={(event) => setSeatMenuQuery(event.target.value)}
-        placeholder={t("guestPanel.searchPlaceholder")}
-        className="mb-2 h-8 text-xs"
-      />
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[11px] text-zinc-500">
-          {seatMenuShowAllGuests
-            ? t("canvas.showingAllGuests")
-            : t("canvas.showingPlannedGuests")}
-        </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => setSeatMenuShowAllGuests((current) => !current)}
-        >
-          {seatMenuShowAllGuests ? t("canvas.showPlannedOnly") : t("canvas.showAllGuests")}
-        </Button>
-      </div>
-      <div
-        className="mb-2 max-h-64 overflow-auto overscroll-contain rounded-lg border border-zinc-200 bg-white/60"
-        onWheelCapture={(event) => event.stopPropagation()}
-      >
-        {seatMenuGuests.map((guest) => {
-          const isCurrent = menuSeatAssignment?.guestId === guest.id;
-          const assignmentLabel = guest.assignment
-            ? `${tableLabelById[guest.assignment.tableId] ?? t("guestPanel.tableFallback")} • ${t("guestPanel.seat", { seat: guest.assignment.seatNumber })}`
-            : t("guestPanel.unseated");
-          const effectiveGroup = resolveEffectiveGuestGroup(guest, guestsById);
-          const guestRelationships = relationshipsByGuestId[guest.id] ?? [];
-          const moveTogetherGuestIds = new Set(
-            guestRelationships
-              .filter((relationship) => relationship.moveTogetherDefault)
-              .flatMap((relationship) => relationship.guestIds),
-          );
-          const moveTogetherPreviewCount = moveTogetherGuestIds.size;
-          return (
-            <button
-              key={guest.id}
-              type="button"
-              disabled={isAssigningSeat}
-              onClick={() => void handleSeatMenuAssign(guest.id)}
-              className={`relative w-full overflow-hidden border-b border-zinc-200/70 px-3 py-1.5 text-left transition-colors last:border-b-0 hover:bg-zinc-100/60 ${
-                isCurrent ? "border-l-2 border-l-amber-500 bg-zinc-50" : ""
-              }`}
-            >
-              {effectiveGroup?.color && !isCurrent ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 top-0 h-full w-1"
-                  style={{ backgroundColor: effectiveGroup.color }}
-                />
-              ) : null}
-              <div className="flex items-start justify-between gap-2">
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span
-                    className={`truncate text-base leading-tight text-zinc-900 lg:text-[15px] ${
-                      isCurrent ? "font-semibold" : "font-medium"
-                    }`}
-                  >
-                    {guest.name}
-                  </span>
-                  {guestRelationships.length > 0 ? (
-                    <span className="truncate text-[11px] leading-tight text-zinc-500 lg:text-[10px]">
-                      {guestRelationships
-                        .map((relationship) =>
-                          relationship.name?.trim().length
-                            ? relationship.name
-                            : relationshipTypeLabel[relationship.type],
-                        )
-                        .join(", ")}
-                      {" • "}
-                      {guestRelationships
-                        .map((relationship) => preferredSeatingLabel[relationship.preferredSeating])
-                        .join(", ")}
-                      {moveTogetherPreviewCount > 0 ? (
-                        <>
-                          {" • "}
-                          {t("canvas.groupMove", { count: moveTogetherPreviewCount })}
-                        </>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-0.5">
-                  <Badge
-                    variant={guest.assignment ? "success" : "default"}
-                    className="px-1.5 py-0 text-[8px] leading-4"
-                  >
-                    {guest.assignment ? t("guestPanel.assigned") : t("guestPanel.unseated")}
-                  </Badge>
-                  <span className="text-right text-xs text-zinc-500 lg:text-[11px]">{assignmentLabel}</span>
-                </span>
-              </div>
-            </button>
-          );
-        })}
-        {seatMenuGuests.length === 0 ? (
-          <div className="space-y-1 px-3 py-2 text-xs text-zinc-500">
-            <p>{t("canvas.noPlannedGuestsForTable")}</p>
-            {!seatMenuShowAllGuests ? (
-              <button
-                type="button"
-                className="font-medium text-zinc-700 underline"
-                onClick={() => setSeatMenuShowAllGuests(true)}
-              >
-                {t("canvas.showAllGuests")}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-      <button
-        type="button"
-        disabled={!menuSeatAssignment || isAssigningSeat}
-        onClick={() => setIsSeatUnassignConfirmOpen(true)}
-        className="w-full rounded-md border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-      >
-        {t("canvas.unassignSeat")}
-      </button>
-        </>
-      )}
-    </>
-  ) : null;
   const effectiveDraggedGuestId = draggedGuestId ?? draggedSeatGuestId;
   const isAnyGuestDragActive = isDraggingGuest || draggedSeatGuestId !== null;
   useEffect(() => {
     if (!isAnyGuestDragActive) {
       setDragHoverSeat(null);
-      setDragHoverTableId(null);
       setLinkedDragPreviewSeatsByTable({});
     }
   }, [isAnyGuestDragActive]);
-  const plannedCountByTable = useMemo(() => {
-    const next: Record<string, number> = {};
-    for (const guest of guests) {
-      if (!guest.plannedTableId) continue;
-      next[guest.plannedTableId] = (next[guest.plannedTableId] ?? 0) + 1;
-    }
-    return next;
-  }, [guests]);
   const totalSeats = plan.tables.reduce((sum, table) => sum + table.seatCount, 0);
   const filledSeats = Object.values(seatAssignments ?? {}).reduce(
     (sum, tableSeats) => sum + Object.keys(tableSeats).length,
@@ -888,8 +536,8 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onAddTable}>{t("canvas.rectangularTable")}</DropdownMenuItem>
-              <DropdownMenuItem disabled>{t("canvas.roundComing")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAddTable("rectangle")}>{t("canvas.rectangularTable")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAddTable("circle")}>{t("canvas.roundTable")}</DropdownMenuItem>
               <DropdownMenuItem disabled>{t("canvas.buffetComing")}</DropdownMenuItem>
               <DropdownMenuItem disabled>{t("canvas.danceComing")}</DropdownMenuItem>
             </DropdownMenuContent>
@@ -1144,14 +792,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               seatOccupants={seatAssignments?.[table.id]}
               selectedGuestId={selectedGuestId}
               showGroupColors={showGroupColors}
-              plannedGuestCount={plannedCountByTable[table.id] ?? 0}
-              isPlannedOverCapacity={(plannedCountByTable[table.id] ?? 0) > table.seatCount}
-              isTableDropTarget={dragHoverTableId === table.id}
-              conflictSeatNumber={
-                conflictSeat?.tableId === table.id
-                  ? conflictSeat.seatNumber
-                  : null
-              }
               dropTargetSeatNumber={
                 dragHoverSeat?.tableId === table.id
                   ? dragHoverSeat.seatNumber
@@ -1168,9 +808,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }
               onSeatClick={handleSeatClick}
               onDragStateChange={(isDragging) => {
-                if (isDragging) {
-                  setSeatMenu(null);
-                }
                 onTableDragStateChange?.(isDragging);
               }}
               onSeatDragEnter={(tableId, seatNumber) => {
@@ -1196,6 +833,7 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
                   pairSidePreference,
                   tables: plan.tables.map((table) => ({
                     id: table.id,
+                    type: table.type,
                     x: table.x,
                     y: table.y,
                     seatCount: table.seatCount,
@@ -1227,40 +865,19 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
               }}
               onSeatDrop={async (tableId, seatNumber, guestId) => {
                 setDragHoverSeat(null);
-                setDragHoverTableId(null);
                 setLinkedDragPreviewSeatsByTable({});
                 if (!isAnyGuestDragActive) return;
                 const effectiveGuestId = guestId || effectiveDraggedGuestId;
                 if (!effectiveGuestId) return;
                 await onGuestDropToSeat?.(tableId, seatNumber, effectiveGuestId);
               }}
-              onTableDragEnter={(tableId) => {
-                if (!isAnyGuestDragActive) return;
-                setDragHoverTableId(tableId);
-              }}
-              onTableDragLeave={(tableId) => {
-                if (dragHoverTableId === tableId) {
-                  setDragHoverTableId(null);
-                }
-              }}
-              onTableDrop={async (tableId, guestId) => {
-                setDragHoverTableId(null);
-                setDragHoverSeat(null);
-                setLinkedDragPreviewSeatsByTable({});
-                if (!isAnyGuestDragActive) return;
-                const effectiveGuestId = guestId || effectiveDraggedGuestId;
-                if (!effectiveGuestId) return;
-                await onGuestDropToTable?.(tableId, effectiveGuestId);
-              }}
               onSeatGuestDragStart={(guestId) => {
-                setSeatMenu(null);
                 setDraggedSeatGuestId(guestId);
                 onSeatGuestDragStart?.(guestId);
               }}
               onSeatGuestDragEnd={() => {
                 setDraggedSeatGuestId(null);
                 setDragHoverSeat(null);
-                setDragHoverTableId(null);
                 setLinkedDragPreviewSeatsByTable({});
                 onSeatGuestDragEnd?.();
               }}
@@ -1298,42 +915,6 @@ export const SeatingCanvas = forwardRef<SeatingCanvasHandle, SeatingCanvasProps>
             </div>
           </div>
         ) : null}
-        {seatMenu && !mobileMode ? (
-          <div
-            className="absolute z-40 w-[min(92vw,380px)] rounded-2xl border border-zinc-300 bg-white/95 p-3 shadow-xl backdrop-blur"
-            style={{ left: seatMenu.x, top: seatMenu.y }}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => event.stopPropagation()}
-            onWheelCapture={(event) => event.stopPropagation()}
-          >
-            {seatMenuContent}
-          </div>
-        ) : null}
-        {seatMenu && mobileMode ? (
-          <Drawer open onOpenChange={(open) => (!open ? closeSeatMenu() : undefined)}>
-            <DrawerContent className="h-auto max-h-[72dvh] p-3">
-              <DrawerTitle className="sr-only">
-                {t("guestPanel.seat", { seat: seatMenu.seatNumber })}
-              </DrawerTitle>
-              {seatMenuContent}
-            </DrawerContent>
-          </Drawer>
-        ) : null}
-        <ConfirmDialog
-          open={isSeatUnassignConfirmOpen}
-          onOpenChange={setIsSeatUnassignConfirmOpen}
-          title={t("canvas.confirmUnassignSeatTitle")}
-          description={t("canvas.confirmUnassignSeatDescription", {
-            name: menuSeatAssignment?.guestName ?? t("inspector.unassigned"),
-            seat: seatMenu?.seatNumber ?? 0,
-          })}
-          confirmLabel={t("common.confirm")}
-          cancelLabel={t("common.cancel")}
-          confirmVariant="default"
-          onConfirm={async () => {
-            await handleSeatMenuAssign(null);
-          }}
-        />
       </div>
     </section>
   );

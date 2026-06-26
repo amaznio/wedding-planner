@@ -107,7 +107,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const [tableAssignments, plannedGuestsRaw] = await Promise.all([
+    const [tableAssignments, candidateGuestsRaw] = await Promise.all([
       prisma.seatAssignment.findMany({
         where: {
           planId,
@@ -118,7 +118,6 @@ export async function POST(request: Request, context: RouteContext) {
       prisma.guest.findMany({
         where: {
           planId,
-          plannedTableId: tableId,
           ...(table.plan.eventId
             ? {
                 eventGuests: {
@@ -148,29 +147,26 @@ export async function POST(request: Request, context: RouteContext) {
         orderBy: { createdAt: "asc" },
       }),
     ]);
-    const plannedGuests = plannedGuestsRaw.map(({ assignments, ...guest }) => ({
+    const candidateGuests = candidateGuestsRaw.map(({ assignments, ...guest }) => ({
       ...guest,
       assignment: assignments[0] ?? null,
     }));
 
     const warnings: string[] = [];
-    if (plannedGuests.length > table.seatCount) {
-      warnings.push("Planned guests exceed table capacity.");
-    }
 
     const occupiedSeatNumbers = new Set(tableAssignments.map((row) => row.seatNumber));
     const emptySeatNumbers = Array.from({ length: table.seatCount }, (_, index) => index + 1).filter(
       (seatNumber) => !occupiedSeatNumbers.has(seatNumber),
     );
-    const unseatedPlannedGuests = plannedGuests.filter((guest) => guest.assignment === null);
+    const unseatedCandidateGuests = candidateGuests.filter((guest) => guest.assignment === null);
 
-    if (unseatedPlannedGuests.length > emptySeatNumbers.length) {
-      warnings.push("Not enough empty seats for all planned unseated guests.");
+    if (unseatedCandidateGuests.length > emptySeatNumbers.length) {
+      warnings.push("Not enough empty seats for all unseated guests.");
     }
 
-    const maxAssignableCount = Math.min(unseatedPlannedGuests.length, emptySeatNumbers.length);
+    const maxAssignableCount = Math.min(unseatedCandidateGuests.length, emptySeatNumbers.length);
     const { ordered, warnings: alternationWarnings } = buildAlternatingOrder(
-      unseatedPlannedGuests.map((guest) => ({
+      unseatedCandidateGuests.map((guest) => ({
         id: guest.id,
         sex: guest.sex as GuestSex,
       })),
@@ -197,7 +193,7 @@ export async function POST(request: Request, context: RouteContext) {
         assignmentsCreated: [],
         plannedAssignments,
         warnings,
-        guests: plannedGuests,
+        guests: candidateGuests,
         seatAssignments: tableAssignments,
       });
     }
@@ -221,10 +217,6 @@ export async function POST(request: Request, context: RouteContext) {
           },
         });
         createdRows.push(created);
-        await tx.guest.update({
-          where: { id: assignment.guestId },
-          data: { plannedTableId: tableId },
-        });
       }
 
       return createdRows;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const tableTypeSchema = z.literal("rectangle");
+const tableTypeSchema = z.enum(["rectangle", "circle"]);
 const seatLayoutSchema = z.enum(["balanced", "top-only", "bottom-only"]);
 const pairSidePreferenceSchema = z.enum(["auto", "male-left", "female-left"]);
 
@@ -31,5 +31,11 @@ export const updateSeatingPlanSchema = z.object({
   tables: z.array(tableSchema),
 });
 
+export const updateSeatingPlanMetadataSchema = z.object({
+  name: z.string().min(1).max(120),
+  eventId: z.string().min(1),
+});
+
 export type CreateSeatingPlanInput = z.infer<typeof createSeatingPlanSchema>;
 export type UpdateSeatingPlanInput = z.infer<typeof updateSeatingPlanSchema>;
+export type UpdateSeatingPlanMetadataInput = z.infer<typeof updateSeatingPlanMetadataSchema>;

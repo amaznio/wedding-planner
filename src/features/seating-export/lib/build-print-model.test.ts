@@ -44,6 +44,47 @@ test("builds detail legends ordered by seat number", () => {
   assert.deepEqual(model.details[0]?.legend.map((item) => item.guestName), ["Bob", "Anna"]);
 });
 
+test("builds circle table geometry for export", () => {
+  const model = buildSeatingPrintModel({
+    plan: {
+      id: "p-circle",
+      name: "Plan",
+      width: 1400,
+      height: 900,
+      tables: [
+        {
+          id: "t1",
+          label: "Round",
+          type: "circle",
+          x: 120,
+          y: 140,
+          rotation: 0,
+          seatCount: 4,
+          seatLayout: "balanced",
+        },
+      ],
+    },
+    guests: [],
+    options: {
+      theme: "simple",
+      paper: "A4",
+      orientation: "landscape",
+      includeEmptySeats: true,
+      overviewShowSeats: true,
+      detailSeatLabelMode: "number",
+      detailTableVertical: false,
+      locale: "en",
+    },
+  });
+
+  const table = model.overview.tables[0];
+  assert.equal(table?.type, "circle");
+  assert.equal(table?.width, table?.height);
+  assert.equal(table?.seats.length, 4);
+  assert.ok((table?.seats[0]?.y ?? Number.POSITIVE_INFINITY) < 0);
+  assert.ok((table?.overviewAabb?.minY ?? 0) < table!.y);
+});
+
 test("keeps overview transform within positive bounds", () => {
   const model = buildSeatingPrintModel({
     plan: {

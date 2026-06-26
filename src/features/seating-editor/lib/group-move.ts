@@ -2,9 +2,11 @@ import type {
   PreferredSeating,
   SeatingRelationship,
 } from "../types/relationship.types";
+import type { SeatingTableType } from "../types/seating-plan.types";
 
 type TableLike = {
   id: string;
+  type?: SeatingTableType;
   x: number;
   y: number;
   seatCount: number;
@@ -81,11 +83,19 @@ function reorderAdjacentSeatsForPair(params: {
   return [...preferredSeats, ...fallbackSeats];
 }
 
-function seatDistances(seatCount: number, fromSeat: number): number[] {
+function seatDistances(
+  seatCount: number,
+  fromSeat: number,
+  tableType: SeatingTableType = "rectangle",
+): number[] {
   const seats = Array.from({ length: seatCount }, (_, i) => i + 1);
   return seats.sort((a, b) => {
-    const da = Math.abs(a - fromSeat);
-    const db = Math.abs(b - fromSeat);
+    const directA = Math.abs(a - fromSeat);
+    const directB = Math.abs(b - fromSeat);
+    const da =
+      tableType === "circle" ? Math.min(directA, seatCount - directA) : directA;
+    const db =
+      tableType === "circle" ? Math.min(directB, seatCount - directB) : directB;
     if (da !== db) return da - db;
     return a - b;
   });
@@ -219,9 +229,11 @@ export function buildGroupMovePlan({
   const pairLinkedGuestId = allLinkedGuestsOrdered.length === 1 ? allLinkedGuestsOrdered[0] : null;
   const pairLinkedGuest = pairLinkedGuestId ? guestsById[pairLinkedGuestId] ?? null : null;
 
-  const adjacencySeats = seatDistances(targetTable.seatCount, targetSeatNumber).filter(
-    (seatNumber) => seatNumber !== targetSeatNumber,
-  );
+  const adjacencySeats = seatDistances(
+    targetTable.seatCount,
+    targetSeatNumber,
+    targetTable.type,
+  ).filter((seatNumber) => seatNumber !== targetSeatNumber);
 
   const preferencesByGuestId: Record<string, PreferredSeating[]> = {};
   for (const relationship of relevantRelationships) {
@@ -246,7 +258,8 @@ export function buildGroupMovePlan({
       const orderedAdjacentSeats =
         initiatorGuest &&
         pairLinkedGuest &&
-        pairLinkedGuestId === guestId
+        pairLinkedGuestId === guestId &&
+        targetTable.type !== "circle"
           ? reorderAdjacentSeatsForPair({
               adjacencySeats,
               targetSeatNumber,

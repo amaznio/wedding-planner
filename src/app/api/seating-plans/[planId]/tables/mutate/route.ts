@@ -8,6 +8,7 @@ import type {
   TableMutationResponse,
   TableSnapshotDelta,
 } from "@/features/seating-editor/types/collaboration.types";
+import type { SeatingTableType } from "@/features/seating-editor/types/seating-plan.types";
 import { prisma } from "@/lib/prisma";
 import { isTrustedRealtimeServiceRequest } from "@/lib/realtime-service-auth";
 import { requireSeatingPlanRole } from "@/lib/wedding-authz";
@@ -15,6 +16,8 @@ import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 type RouteContext = {
   params: Promise<{ planId: string }>;
 };
+
+type SeatLayout = "balanced" | "top-only" | "bottom-only";
 
 function validationErrorResponse(error: ZodError) {
   return NextResponse.json(
@@ -28,6 +31,38 @@ function validationErrorResponse(error: ZodError) {
 
 function conflictResponse(message: string) {
   return NextResponse.json({ error: message }, { status: 409 });
+}
+
+function normalizeTableType(type: string): SeatingTableType {
+  return type === "circle" ? "circle" : "rectangle";
+}
+
+function normalizeSeatLayout(seatLayout: string): SeatLayout {
+  return seatLayout === "top-only" || seatLayout === "bottom-only"
+    ? seatLayout
+    : "balanced";
+}
+
+function toTableSnapshot(table: {
+  id: string;
+  label: string;
+  type: string;
+  x: number;
+  y: number;
+  rotation: number;
+  seatCount: number;
+  seatLayout: string;
+}) {
+  return {
+    id: table.id,
+    label: table.label,
+    type: normalizeTableType(table.type),
+    x: table.x,
+    y: table.y,
+    rotation: table.rotation,
+    seatCount: table.seatCount,
+    seatLayout: normalizeSeatLayout(table.seatLayout),
+  };
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -93,16 +128,7 @@ export async function POST(request: Request, context: RouteContext) {
         const snapshotDelta: TableSnapshotDelta = {
           tables: [
             {
-              table: {
-                id: table.id,
-                label: table.label,
-                type: "rectangle",
-                x: table.x,
-                y: table.y,
-                rotation: table.rotation,
-                seatCount: table.seatCount,
-                seatLayout: (table.seatLayout as "balanced" | "top-only" | "bottom-only") ?? "balanced",
-              },
+              table: toTableSnapshot(table),
             },
           ],
         };
@@ -157,16 +183,7 @@ export async function POST(request: Request, context: RouteContext) {
         const snapshotDelta: TableSnapshotDelta = {
           tables: [
             {
-              table: {
-                id: table.id,
-                label: table.label,
-                type: "rectangle",
-                x: table.x,
-                y: table.y,
-                rotation: table.rotation,
-                seatCount: table.seatCount,
-                seatLayout: (table.seatLayout as "balanced" | "top-only" | "bottom-only") ?? "balanced",
-              },
+              table: toTableSnapshot(table),
             },
           ],
         };
@@ -201,16 +218,7 @@ export async function POST(request: Request, context: RouteContext) {
         const snapshotDelta: TableSnapshotDelta = {
           tables: [
             {
-              table: {
-                id: table.id,
-                label: table.label,
-                type: "rectangle",
-                x: table.x,
-                y: table.y,
-                rotation: table.rotation,
-                seatCount: table.seatCount,
-                seatLayout: (table.seatLayout as "balanced" | "top-only" | "bottom-only") ?? "balanced",
-              },
+              table: toTableSnapshot(table),
             },
           ],
         };
@@ -260,16 +268,7 @@ export async function POST(request: Request, context: RouteContext) {
       const snapshotDelta: TableSnapshotDelta = {
         tables: [
           {
-            table: {
-              id: table.id,
-              label: table.label,
-              type: "rectangle",
-              x: table.x,
-              y: table.y,
-              rotation: table.rotation,
-              seatCount: table.seatCount,
-              seatLayout: (table.seatLayout as "balanced" | "top-only" | "bottom-only") ?? "balanced",
-            },
+            table: toTableSnapshot(table),
           },
         ],
       };

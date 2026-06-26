@@ -1,4 +1,4 @@
-export type SeatingTableType = "rectangle";
+export type SeatingTableType = "rectangle" | "circle";
 export type RectangleSeatLayout = "balanced" | "top-only" | "bottom-only";
 export type PlanPairSidePreference = "auto" | "male-left" | "female-left";
 

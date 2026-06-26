@@ -2,6 +2,337 @@
 
 ## Current Phase
 
+Phase 275 - Stacked homepage hero and demo layout (completed)
+
+## Completed Work
+
+- Changed the signed-out homepage from a desktop two-column layout to a centered vertical stack.
+- Moved the hero higher by top-aligning the homepage section instead of vertically centering it in the viewport.
+- Kept the hero compact and centered with the same concise copy, CTA links, and feature row.
+- Enlarged the interactive seating preview:
+  - demo now sits below the hero
+  - demo uses the full header-aligned `max-w-7xl` content column at wide desktop widths
+  - canvas uses a larger viewport-aware height with desktop min/max bounds
+- Preserved the existing interactive preview behavior:
+  - local React state only
+  - no persistence or `localStorage`
+  - drag remains enabled
+  - measurement-before-table-mount behavior remains in place to avoid reload position shift
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/features/home/components/HomeSeatingCanvas.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/features/home/components/HomeSeatingCanvas.tsx src/features/seating-editor/components/RectTable.tsx src/features/seating-editor/components/Seat.tsx src/app/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser layout and interaction QA against `http://localhost:3000/` with the in-app browser (pass)
+- Visual QA notes:
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-stacked-aligned-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-stacked-aligned-mobile.png`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Desktop hero starts at `y=112`, avoiding the previous large empty band above it.
+  - Desktop header content and demo canvas align to the same content edges: `x=214`, `right=1494`.
+  - Desktop demo canvas renders at `1280x500`.
+  - Desktop mouse drag moved a preview table by `60,30`.
+  - Desktop reload test after dragging reset the table and had no measurement shift: delta `0,0`.
+  - Mobile viewport `390x844` has no horizontal overflow; normal vertical scrolling remains expected.
+  - Mobile touch drag moved a preview table by `30,18`.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+- Next recommended step:
+  - Review the signed-out homepage visually in the app browser and confirm the new hero height and full-width demo alignment feel right.
+
+## Previous Phase
+
+Phase 274 - Homepage preview initial position stabilization (completed)
+
+## Completed Work
+
+- Fixed the interactive homepage seating preview position mismatch on reload.
+- Removed the fallback `640x420` transform from the first rendered table layer.
+- The preview now measures its viewport before mounting the table layer, so the first visible table positions use the same transform that drag math uses.
+- Kept the grid visible while measurement completes, avoiding the visible table shift and first-drag snap-back.
+- Verified mouse and touch drag deltas after reload match the intended movement instead of jumping back to the fallback position.
+- Files changed:
+  - `src/features/home/components/HomeSeatingCanvas.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeSeatingCanvas.tsx src/features/home/components/HomeLanding.tsx src/features/seating-editor/components/RectTable.tsx src/features/seating-editor/components/Seat.tsx src/app/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser reload/drag QA against `http://localhost:3000/` with Playwright + Edge (pass)
+- Visual QA notes:
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-preview-no-jump-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-preview-no-jump-mobile.png`.
+  - Desktop reload test: table position delta after measurement wait was `0,0`; first mouse drag moved by approximately `48,24`.
+  - Mobile reload test: table position delta after measurement wait was `0,0`; first touch drag moved by approximately `34,18`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow and stacks into normal vertical flow.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+- Next recommended step:
+  - Manually reload the homepage in the app browser and start dragging a table immediately after it appears to confirm the perceived snap-back is gone.
+
+## Previous Phase
+
+Phase 273 - Interactive homepage seating preview (completed)
+
+## Completed Work
+
+- Replaced the static signed-out homepage seating mock with an interactive homepage-only DOM canvas.
+- Added a local demo canvas with three draggable rectangular tables:
+  - `Table 1` with 6 seats
+  - `Table 2` with 5 seats
+  - `Table 3` with 7 seats
+- Reused existing seating-editor rendering and geometry where practical:
+  - `RectTable`
+  - `Seat`
+  - `getTableVisualBounds`
+  - existing derived table/seat positioning through `RectTable`
+- Added safe optional preview presentation props to editor components:
+  - `RectTable` supports `presentation="preview"` and `showOccupancy={false}`
+  - `Seat` supports `presentation="preview"`
+  - defaults preserve existing editor behavior
+- Implemented session-only drag state:
+  - table positions live in local React state
+  - dragging clamps tables inside the preview, including seat bounds
+  - reload resets positions
+  - no localStorage or persistence added
+- Enabled mouse and touch dragging for preview tables without embedding full editor chrome, pan/zoom controls, legends, add-table menus, guest-drop behavior, or remote cursors.
+- Added localized accessibility label for the interactive preview.
+- Kept homepage copy, CTAs, authenticated root redirect behavior, auth forms, database schema, and workspace editor persistence unchanged.
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/features/home/components/HomeSeatingCanvas.tsx`
+  - `src/features/seating-editor/components/RectTable.tsx`
+  - `src/features/seating-editor/components/Seat.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/features/home/components/HomeSeatingCanvas.tsx src/features/seating-editor/components/RectTable.tsx src/features/seating-editor/components/Seat.tsx src/app/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser visual and interaction QA against `http://localhost:3000/` with Playwright + Edge (pass)
+- Visual QA notes:
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-interactive-preview-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-interactive-preview-mobile.png`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow and stacks into normal vertical flow.
+  - Browser interaction checks confirmed:
+    - 3 preview tables render
+    - mouse drag moves a table
+    - out-of-bounds drag clamps the table inside the preview
+    - reload resets table positions
+    - touch drag moves a table on mobile viewport
+    - CTA links still resolve to `/sign-up` and `/sign-in`
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+- Next recommended step:
+  - Manually try dragging the homepage preview in the app browser on a real touch device or trackpad to confirm the feel matches expectations.
+
+## Previous Phase
+
+Phase 272 - Homepage seating preview symmetry (completed)
+
+## Completed Work
+
+- Removed the remaining table tilt from the signed-out homepage seating preview.
+- Reworked the mock seat positions so each row is visually centered and evenly spaced:
+  - six-seat tables use mirrored `16% / 50% / 84%` top and bottom anchors
+  - the five-seat table uses centered top and bottom anchors for its uneven row count
+  - the seven-seat table uses four evenly spaced top seats and three centered bottom seats
+- Added center anchoring for preview seat circles so `left-*` values represent the circle center, not the circle's left edge.
+- Kept copy, navigation, auth redirects, and homepage layout unchanged.
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/app/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser visual QA against `http://localhost:3000/` with Playwright + Edge (pass)
+- Visual QA notes:
+  - User reference crop inspected from `C:/Users/adria/AppData/Local/Temp/codex-clipboard-d8925467-6ca5-4d28-ae72-391d6e736675.png`.
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-centered-seats-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-centered-seats-mobile.png`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow and stacks into normal vertical flow.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+- Next recommended step:
+  - Review the signed-out homepage visually in the app browser and confirm the preview table spacing feels balanced.
+
+## Previous Phase
+
+Phase 271 - Homepage compact polish (completed)
+
+## Completed Work
+
+- Reduced the signed-out homepage scale after visual review:
+  - shorter navbar height
+  - smaller brand mark and brand text
+  - smaller hero headline, description, CTAs, and feature row
+  - narrower centered content shell using the existing shadcn-style button variants
+- Removed the title and description text that sat over the seating-plan preview.
+- Shortened the localized hero copy:
+  - English: `Plan guests and seats.`
+  - Polish: `Planuj gości i miejsca.`
+- Kept authenticated root redirect behavior unchanged:
+  - users with exactly one wedding redirect to that wedding workspace
+  - users with zero or multiple weddings redirect to `/weddings`
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm dlx shadcn@latest docs button` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/app/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser visual QA against `http://localhost:3000/` with Playwright + Edge (pass)
+- Visual QA notes:
+  - User reference crop inspected from `C:/Users/adria/AppData/Local/Temp/codex-clipboard-e85898a1-f42b-43c3-b7ce-0f37475f3947.png`.
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-compact-polish-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-compact-polish-mobile.png`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow and stacks into normal vertical flow.
+  - Preview heading query returned no `h2` elements, confirming the overlay text was removed.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Authenticated redirect cases were not manually browser-tested because no signed-in session was available.
+- Next recommended step:
+  - Manually check the signed-out homepage in the app browser and confirm the compact scale feels right at common desktop widths.
+
+## Previous Phase
+
+Phase 270 - Homepage reference UI restyle (completed)
+
+## Completed Work
+
+- Restyled the signed-out homepage to match the supplied reference UI:
+  - centered top header with violet brand mark, `WeddingPlan`, and outline sign-in action
+  - large left hero copy with create-workspace and sign-in CTAs
+  - compact feature icon row for guests, tables, seats, and PDF export
+  - open seating-plan preview on a violet grid with three table mockups and numbered seats
+- Tightened the composition after visual review so the page is more compact and centered instead of stretching edge to edge.
+- Kept authenticated root redirect behavior unchanged:
+  - users with exactly one wedding redirect to that wedding workspace
+  - users with zero or multiple weddings redirect to `/weddings`
+- Kept all signed-out homepage text localized through English and Polish message files.
+- Files changed:
+  - `src/app/page.tsx`
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm dlx shadcn@latest docs button` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/app/page.tsx src/features/home/components/HomeLanding.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser visual QA against `http://localhost:3000/` with Playwright + Edge (pass)
+- Visual QA notes:
+  - Reference screenshot inspected from `C:/Users/adria/AppData/Local/Temp/codex-clipboard-58116c11-a2ac-4452-b181-99404211bcc4.png`.
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-reference-restyle-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-reference-restyle-mobile.png`.
+  - Desktop viewport `1708x960` has no vertical or horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow and stacks into normal vertical flow.
+  - Header sign-in, hero sign-in, and create-workspace links resolve to `/sign-in`, `/sign-in`, and `/sign-up`.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Authenticated redirect cases were verified by code path/typecheck only; no signed-in browser session was available for manual redirect QA.
+  - Mobile signed-out homepage requires normal vertical scrolling, which is expected for the reference-style composition.
+- Next recommended step:
+  - Sign in with accounts covering zero, one, and multiple weddings to manually verify the root redirect branches.
+
+## Previous Phase
+
+Phase 269 - Homepage landing refactor (completed)
+
+## Completed Work
+
+- Replaced the sparse signed-out homepage with a compact shadcn-based landing view.
+- Added localized English and Polish homepage copy for:
+  - product label
+  - headline and description
+  - sign-up/sign-in CTAs
+  - compact feature labels
+  - seating layout preview text
+- Added a lightweight CSS/HTML seating layout preview with tables and numbered seats.
+- Updated authenticated root redirect behavior:
+  - users with exactly one wedding redirect to that wedding workspace
+  - users with zero or multiple weddings redirect to `/weddings`
+- Kept the existing auth session lookup and did not change auth forms, wedding list behavior, schema, or workspace pages.
+- Files changed:
+  - `src/app/page.tsx`
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm dlx shadcn@latest docs button card` (pass)
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/app/page.tsx src/features/home/components/HomeLanding.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - `pnpm dev` (detected an existing Next dev server for this project on `http://localhost:3000`)
+  - browser smoke check against `http://localhost:3000/` with Playwright + Edge (pass)
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Authenticated redirect cases were verified by code path/typecheck only; no signed-in browser session was available for manual redirect QA.
+  - Mobile signed-out homepage requires normal vertical scrolling, while desktop fits the viewport without scrolling.
+- Next recommended step:
+  - Sign in with accounts covering zero, one, and multiple weddings to manually verify the root redirect branches.
+
+## Previous Phase
+
+Phase 268 - Circle table support for seating editor (completed)
+
+## Completed Work
+
+- Added `circle` as a first-class seating table type across editor types, validation schemas, collaboration snapshots, table mutation payloads, save/load payloads, and PDF export inputs.
+- Added shared table geometry helpers for rectangle and circle tables:
+  - rectangle sizing and seat placement remain unchanged
+  - circle seats render in a ring, with seat 1 at 12 o'clock and clockwise numbering
+  - circle ring radius grows only enough to preserve seat spacing at high seat counts
+- Updated the canvas table renderer to draw rectangular or circular table bodies while reusing existing seat assignment, drag/drop, selection, rotation, hover, and group-color behavior.
+- Enabled round table creation from desktop and mobile add-table menus, while keeping other future object types disabled.
+- Hid the rectangle-only seat layout selector for circle tables.
+- Updated grouped move planning so circle table adjacency wraps between the last and first seats and skips left/right pair-side bias for circle tables.
+- Updated PDF print-model and PDF drawing paths to preserve and render circle table geometry.
+- Added focused `node:test` style coverage for circle geometry, schema validation, grouped circle adjacency, and export model geometry.
+- Files changed:
+  - `src/app/seating-plans/[planId]/page.tsx`
+  - `src/features/seating-editor/**`
+  - `src/features/seating-export/**`
+  - `src/app/api/seating-plans/[planId]/**`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - focused changed-file `pnpm exec eslint ...` (pass with warnings only)
+  - `node --test --experimental-strip-types ...` (blocked because the repo's extensionless TypeScript imports are not resolvable by Node's built-in TS stripping)
+  - `pnpm exec tsx --version` (blocked; `tsx` is not installed)
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing hook/ref rules in `src/app/seating-plans/[planId]/page.tsx`.
+  - The new `.test.ts` files typecheck, but there is still no installed TypeScript test runner script to execute them directly.
+  - Authenticated visual verification remains unavailable without a signed-in browser session.
+- Next recommended step:
+  - Add or standardize a TS test runner script, then execute the seating editor/export test files and perform authenticated desktop/mobile visual QA for rectangular and circle table workflows.
+
+## Previous Phase
+
 Phase 267 - Full-width guests table and header actions (completed)
 
 ## Completed Work

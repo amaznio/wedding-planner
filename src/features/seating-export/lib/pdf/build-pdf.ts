@@ -474,32 +474,43 @@ function drawOverviewPage({
       printModel.overview.offsetX + tableCenter.x * printModel.overview.scale;
     const scaledCenterYTop =
       printModel.overview.offsetY + tableCenter.y * printModel.overview.scale;
-    const unrotatedCorners = [
-      { x: table.x, y: table.y },
-      { x: table.x + table.width, y: table.y },
-      { x: table.x + table.width, y: table.y + table.height },
-      { x: table.x, y: table.y + table.height },
-    ];
-    const corners = (table.overviewCorners?.length === 4 ? table.overviewCorners : unrotatedCorners).map(
-      (corner) => ({
-        x: printModel.overview.offsetX + corner.x * printModel.overview.scale,
-        y: pageHeight - (printModel.overview.offsetY + corner.y * printModel.overview.scale),
-      }),
-    );
-    const edgePairs = [
-      [corners[0]!, corners[1]!],
-      [corners[1]!, corners[2]!],
-      [corners[2]!, corners[3]!],
-      [corners[3]!, corners[0]!],
-    ] as const;
-
-    for (const [start, end] of edgePairs) {
-      page.drawLine({
-        start,
-        end,
-        color: colors.tableBorder,
-        thickness: 0.8,
+    if (table.type === "circle") {
+      page.drawCircle({
+        x: scaledCenterX,
+        y: invertY(pageHeight, scaledCenterYTop),
+        size: (table.width / 2) * printModel.overview.scale,
+        color: colors.tableFill,
+        borderColor: colors.tableBorder,
+        borderWidth: 0.8,
       });
+    } else {
+      const unrotatedCorners = [
+        { x: table.x, y: table.y },
+        { x: table.x + table.width, y: table.y },
+        { x: table.x + table.width, y: table.y + table.height },
+        { x: table.x, y: table.y + table.height },
+      ];
+      const corners = (table.overviewCorners?.length === 4 ? table.overviewCorners : unrotatedCorners).map(
+        (corner) => ({
+          x: printModel.overview.offsetX + corner.x * printModel.overview.scale,
+          y: pageHeight - (printModel.overview.offsetY + corner.y * printModel.overview.scale),
+        }),
+      );
+      const edgePairs = [
+        [corners[0]!, corners[1]!],
+        [corners[1]!, corners[2]!],
+        [corners[2]!, corners[3]!],
+        [corners[3]!, corners[0]!],
+      ] as const;
+
+      for (const [start, end] of edgePairs) {
+        page.drawLine({
+          start,
+          end,
+          color: colors.tableBorder,
+          thickness: 0.8,
+        });
+      }
     }
 
     page.drawCircle({
@@ -700,15 +711,26 @@ function drawDetailPage({
   const tableWidth = renderTable.width * placement.scale;
   const tableHeight = renderTable.height * placement.scale;
 
-  page.drawRectangle({
-    x: tableX,
-    y: invertY(pageHeight, tableY, tableHeight),
-    width: tableWidth,
-    height: tableHeight,
-    color: colors.tableFill,
-    borderColor: colors.tableBorder,
-    borderWidth: 1.2,
-  });
+  if (renderTable.type === "circle") {
+    page.drawCircle({
+      x: tableX + tableWidth / 2,
+      y: invertY(pageHeight, tableY + tableHeight / 2),
+      size: tableWidth / 2,
+      color: colors.tableFill,
+      borderColor: colors.tableBorder,
+      borderWidth: 1.2,
+    });
+  } else {
+    page.drawRectangle({
+      x: tableX,
+      y: invertY(pageHeight, tableY, tableHeight),
+      width: tableWidth,
+      height: tableHeight,
+      color: colors.tableFill,
+      borderColor: colors.tableBorder,
+      borderWidth: 1.2,
+    });
+  }
 
   const tableLabel = normalizeText(detail.table.label);
   const tableLabelFont = pickEncodableFont(tableLabel, boldFonts);

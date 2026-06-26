@@ -1,14 +1,17 @@
 import { memo, useRef, useState } from "react";
 
-import { getSeatPositions } from "../lib/seat-positioning";
-import { getRectangleTableDimensions } from "../lib/table-dimensions";
+import { getTableSeatPositions } from "../lib/seat-positioning";
+import { getTableDimensions } from "../lib/table-dimensions";
 import type { SeatingTable } from "../types/seating-plan.types";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { Seat } from "./Seat";
 
 type RectTableProps = {
+  presentation?: "editor" | "preview";
   table: SeatingTable;
   isSelected?: boolean;
+  showOccupancy?: boolean;
   onSelect?: (tableId: string) => void;
   onMove?: (tableId: string, nextX: number, nextY: number) => void;
   screenToCanvas?: (
@@ -26,9 +29,6 @@ type RectTableProps = {
   >;
   selectedGuestId?: string | null;
   showGroupColors?: boolean;
-  plannedGuestCount?: number;
-  isPlannedOverCapacity?: boolean;
-  isTableDropTarget?: boolean;
   selectedSeatNumber?: number | null;
   conflictSeatNumber?: number | null;
   dropTargetSeatNumber?: number | null;
@@ -47,26 +47,22 @@ type RectTableProps = {
   onSeatDragEnter?: (tableId: string, seatNumber: number) => void;
   onSeatDragLeave?: (tableId: string, seatNumber: number) => void;
   onSeatDrop?: (tableId: string, seatNumber: number, guestId: string) => void;
-  onTableDragEnter?: (tableId: string) => void;
-  onTableDragLeave?: (tableId: string) => void;
-  onTableDrop?: (tableId: string, guestId: string) => void;
   onSeatGuestDragStart?: (guestId: string) => void;
   onSeatGuestDragEnd?: () => void;
   onDragStateChange?: (isDragging: boolean) => void;
 };
 
 function RectTableComponent({
+  presentation = "editor",
   table,
   isSelected = false,
+  showOccupancy = true,
   onSelect,
   onMove,
   screenToCanvas,
   seatOccupants,
   selectedGuestId,
   showGroupColors = false,
-  plannedGuestCount = 0,
-  isPlannedOverCapacity = false,
-  isTableDropTarget = false,
   selectedSeatNumber,
   conflictSeatNumber,
   dropTargetSeatNumber,
@@ -80,24 +76,14 @@ function RectTableComponent({
   onSeatDragEnter,
   onSeatDragLeave,
   onSeatDrop,
-  onTableDragEnter,
-  onTableDragLeave,
-  onTableDrop,
   onSeatGuestDragStart,
   onSeatGuestDragEnd,
   onDragStateChange,
 }: RectTableProps) {
   const { t } = useI18n();
-  const dimensions = getRectangleTableDimensions(
-    table.seatCount,
-    table.seatLayout,
-  );
-  const seatPositions = getSeatPositions(
-    table.seatCount,
-    dimensions.width,
-    dimensions.height,
-    table.seatLayout,
-  );
+  const isPreview = presentation === "preview";
+  const dimensions = getTableDimensions(table);
+  const seatPositions = getTableSeatPositions(table);
   const occupiedSeatCount = Object.keys(seatOccupants ?? {}).length;
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -202,54 +188,42 @@ function RectTableComponent({
               onSelect?.(table.id);
             }
           }}
-          className={`h-full w-full rounded-md border bg-zinc-100 shadow-sm transition-shadow ${
-            isSelected
+          className={cn(
+            "h-full w-full border shadow-sm transition-shadow",
+            table.type === "circle" ? "rounded-full" : "rounded-md",
+            isPreview
+              ? "cursor-grab touch-none border-violet-200 bg-white/95 text-zinc-900 shadow-[0_6px_14px_rgba(124,58,237,0.12)] active:cursor-grabbing"
+              : "bg-zinc-100",
+            !isPreview && isSelected
               ? "border-rose-500 ring-2 ring-rose-200 shadow-md shadow-rose-100"
-              : isTableDropTarget
-                ? "border-blue-500 ring-2 ring-blue-200 shadow-md"
-                : isPlannedOverCapacity
-                  ? "border-amber-500 ring-1 ring-amber-200"
-                  : "border-zinc-300 hover:shadow-md"
-          }`}
-          onDragOver={(event) => {
-            event.preventDefault();
-          }}
-          onDragEnter={(event) => {
-            event.preventDefault();
-            onTableDragEnter?.(table.id);
-          }}
-          onDragLeave={() => {
-            onTableDragLeave?.(table.id);
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const guestId = event.dataTransfer.getData("text/plain");
-            if (!guestId) return;
-            onTableDrop?.(table.id, guestId);
-          }}
+              : null,
+            !isPreview && !isSelected ? "border-zinc-300 hover:shadow-md" : null,
+          )}
         >
-          <div className="flex h-full flex-col items-center justify-center gap-1 text-zinc-700">
-            <span className="text-sm font-semibold">{table.label}</span>
-            <span className="text-xs text-zinc-500">
-              {t("table.occupied", {
-                occupied: occupiedSeatCount,
-                total: table.seatCount,
-              })}
+          <div
+            className={cn(
+              "flex h-full flex-col items-center justify-center text-zinc-700",
+              isPreview ? "gap-0 text-zinc-900" : "gap-1",
+            )}
+          >
+            <span className={cn("font-semibold", isPreview ? "text-base" : "text-sm")}>
+              {table.label}
             </span>
-            {/* <span
-              className={`text-[11px] ${
-                isPlannedOverCapacity ? "font-semibold text-amber-700" : "text-zinc-500"
-              }`}
-            >
-              {t("table.planned", { planned: plannedGuestCount, total: table.seatCount })}
-            </span> */}
+            {showOccupancy ? (
+              <span className="text-xs text-zinc-500">
+                {t("table.occupied", {
+                  occupied: occupiedSeatCount,
+                  total: table.seatCount,
+                })}
+              </span>
+            ) : null}
           </div>
         </div>
 
         {seatPositions.map((seat) => (
           <Seat
             key={seat.seatNumber}
+            presentation={presentation}
             seatNumber={seat.seatNumber}
             x={seat.x}
             y={seat.y}
@@ -296,17 +270,30 @@ function RectTableComponent({
               const occupantName =
                 seatOccupants?.[seat.seatNumber]?.guestName ?? null;
               if (!occupantName) return null;
+              const centerX = dimensions.width / 2;
               const centerY = dimensions.height / 2;
+              const dx = seat.x - centerX;
+              const dy = seat.y - centerY;
+              const distance = Math.hypot(dx, dy) || 1;
               const isTopSideSeat = seat.y <= centerY;
               const seatRadius = 18;
-              const labelGap = 1;
-              const labelX = seat.x;
-              const labelY = isTopSideSeat
-                ? seat.y - seatRadius - labelGap
-                : seat.y + seatRadius + labelGap;
-              const anchorTransform = isTopSideSeat
-                ? "translate(-50%, -100%)"
-                : "translate(-50%, 0)";
+              const labelGap = table.type === "circle" ? 8 : 1;
+              const labelX =
+                table.type === "circle"
+                  ? seat.x + (dx / distance) * (seatRadius + labelGap)
+                  : seat.x;
+              const labelY =
+                table.type === "circle"
+                  ? seat.y + (dy / distance) * (seatRadius + labelGap)
+                  : isTopSideSeat
+                    ? seat.y - seatRadius - labelGap
+                    : seat.y + seatRadius + labelGap;
+              const anchorTransform =
+                table.type === "circle"
+                  ? "translate(-50%, -50%)"
+                  : isTopSideSeat
+                    ? "translate(-50%, -100%)"
+                    : "translate(-50%, 0)";
 
               return (
                 <span
@@ -319,7 +306,13 @@ function RectTableComponent({
                   }}
                   title={occupantName}
                 >
-                  <span className="inline-flex max-h-[140px] items-center rounded-md border border-zinc-300/90 bg-white/95 px-1.5 py-0.5 text-[10px] font-medium leading-none text-zinc-800 shadow-sm backdrop-blur [writing-mode:vertical-rl] [text-orientation:mixed]">
+                  <span
+                    className={`inline-flex items-center rounded-md border border-zinc-300/90 bg-white/95 px-1.5 py-0.5 text-[10px] font-medium leading-none text-zinc-800 shadow-sm backdrop-blur ${
+                      table.type === "circle"
+                        ? "max-w-[96px]"
+                        : "max-h-[140px] [writing-mode:vertical-rl] [text-orientation:mixed]"
+                    }`}
+                  >
                     <span className="truncate">{occupantName}</span>
                   </span>
                 </span>
@@ -372,19 +365,19 @@ function areSeatOccupantsEqual(
 
 function areRectTablePropsEqual(prev: RectTableProps, next: RectTableProps) {
   return (
+    prev.presentation === next.presentation &&
     prev.table.id === next.table.id &&
     prev.table.x === next.table.x &&
     prev.table.y === next.table.y &&
     prev.table.label === next.table.label &&
+    prev.table.type === next.table.type &&
     prev.table.rotation === next.table.rotation &&
     prev.table.seatCount === next.table.seatCount &&
     prev.table.seatLayout === next.table.seatLayout &&
     prev.isSelected === next.isSelected &&
+    prev.showOccupancy === next.showOccupancy &&
     prev.selectedGuestId === next.selectedGuestId &&
     prev.showGroupColors === next.showGroupColors &&
-    prev.plannedGuestCount === next.plannedGuestCount &&
-    prev.isPlannedOverCapacity === next.isPlannedOverCapacity &&
-    prev.isTableDropTarget === next.isTableDropTarget &&
     prev.selectedSeatNumber === next.selectedSeatNumber &&
     prev.conflictSeatNumber === next.conflictSeatNumber &&
     prev.dropTargetSeatNumber === next.dropTargetSeatNumber &&

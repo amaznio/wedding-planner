@@ -2,8 +2,10 @@ import { memo } from "react";
 import { createGuestDragPreview } from "../lib/drag-preview";
 import { useI18n } from "@/i18n/provider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 type SeatProps = {
+  presentation?: "editor" | "preview";
   seatNumber: number;
   x: number;
   y: number;
@@ -47,6 +49,7 @@ function getContrastingTextColor(hexColor: string): string {
 }
 
 function SeatComponent({
+  presentation = "editor",
   seatNumber,
   x,
   y,
@@ -71,6 +74,7 @@ function SeatComponent({
   onSeatGuestDragEnd,
 }: SeatProps) {
   const { t } = useI18n();
+  const isPreview = presentation === "preview";
   const initials = occupantName ? getInitials(occupantName) : null;
   const isSeatDraggable = Boolean(enableSeatDrag && occupantGuestId);
   const usesGroupColor =
@@ -140,23 +144,26 @@ function SeatComponent({
         if (!guestId) return;
         onDropGuest?.(seatNumber, guestId);
       }}
-          className={`absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-xs font-medium shadow-sm transition-colors ${
-            isConflict
-              ? "border-red-500 bg-red-100 text-red-800"
-              : isDropTarget
-              ? "border-blue-500 bg-blue-100 text-blue-900 ring-2 ring-blue-200"
-              : isLinkedDropPreview
-              ? "border-cyan-500 bg-cyan-50 text-cyan-900 ring-2 ring-cyan-200"
-              : isSelected
-              ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-200"
-              : isSelectedGuestSeat
-              ? "border-emerald-500 bg-emerald-100 text-emerald-900"
-              : usesGroupColor
-                ? "border-transparent"
-              : occupantName
-                ? "border-blue-300 bg-blue-50 text-blue-800"
-                : "border-zinc-300 bg-white text-zinc-700"
-          }`}
+          className={cn(
+            "absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border text-xs font-medium shadow-sm transition-colors",
+            isPreview
+              ? "pointer-events-none border-violet-200 bg-white text-sm font-bold text-violet-900"
+              : isConflict
+                ? "border-red-500 bg-red-100 text-red-800"
+                : isDropTarget
+                  ? "border-blue-500 bg-blue-100 text-blue-900 ring-2 ring-blue-200"
+                  : isLinkedDropPreview
+                    ? "border-cyan-500 bg-cyan-50 text-cyan-900 ring-2 ring-cyan-200"
+                    : isSelected
+                      ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-200"
+                      : isSelectedGuestSeat
+                        ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                        : usesGroupColor
+                          ? "border-transparent"
+                          : occupantName
+                            ? "border-blue-300 bg-blue-50 text-blue-800"
+                            : "border-zinc-300 bg-white text-zinc-700",
+          )}
           style={seatStyle}
         >
           {isSearchMatch ? (
@@ -182,6 +189,7 @@ function SeatComponent({
 
 function areSeatPropsEqual(prev: SeatProps, next: SeatProps) {
   return (
+    prev.presentation === next.presentation &&
     prev.seatNumber === next.seatNumber &&
     prev.x === next.x &&
     prev.y === next.y &&

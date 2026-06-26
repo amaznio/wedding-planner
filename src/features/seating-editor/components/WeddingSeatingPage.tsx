@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -9,6 +9,7 @@ import {
   Copy,
   Ellipsis,
   MapPin,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -28,6 +29,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +83,7 @@ type PlanCardProps = {
   isDeleting: boolean;
   onDuplicate: (planId: string) => void;
   onDeleteRequest: (plan: SeatingPlanSummary) => void;
+  onEditRequest: (plan: SeatingPlanSummary) => void;
   t: ReturnType<typeof useI18n>["t"];
 };
 
@@ -86,6 +96,7 @@ function PlanCard({
   isDeleting,
   onDuplicate,
   onDeleteRequest,
+  onEditRequest,
   t,
 }: PlanCardProps) {
   const seatsTaken = plan.assignments.length;
@@ -159,6 +170,13 @@ function PlanCard({
           <DropdownMenuContent align="end">
             <DropdownMenuGroup>
               <DropdownMenuItem
+                onSelect={() => onEditRequest(plan)}
+                disabled={!canEdit || isDuplicating || isDeleting}
+              >
+                <Pencil className="mr-2 size-4" />
+                {t("events.detail.seatingTab.edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onSelect={() => onDuplicate(plan.id)}
                 disabled={!canEdit || isDuplicating || isDeleting}
               >
@@ -201,11 +219,13 @@ export function WeddingSeatingPage({
   const [eventFilterId, setEventFilterId] = useState("all");
   const [sortBy, setSortBy] = useState<"updated" | "name">("updated");
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? "");
+  const [planDialogMode, setPlanDialogMode] = useState<"create" | "edit" | null>(null);
+  const [editingPlan, setEditingPlan] = useState<SeatingPlanSummary | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [duplicatingPlanId, setDuplicatingPlanId] = useState<string | null>(null);
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<SeatingPlanSummary | null>(null);
-  const planNameInputRef = useRef<HTMLInputElement>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -234,17 +254,19 @@ export function WeddingSeatingPage({
   const averageCompletion = totalCapacity > 0 ? Math.round((totalSeated / totalCapacity) * 100) : 0;
 
   const handleCreatePlan = async () => {
-    if (!canEdit || !selectedEventId || !planName.trim() || isCreating) return;
+    if (!canEdit || !selectedEventId || isCreating) return;
 
     setIsCreating(true);
     setCreateError(null);
+    const resolvedPlanName =
+      planName.trim() || `${t("plans.newPlanPrefix")} ${dtf.format(new Date())}`;
 
     try {
       const response = await fetch("/api/seating-plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: planName.trim(),
+          name: resolvedPlanName,
           eventId: selectedEventId,
           width: 1600,
           height: 1000,
@@ -285,6 +307,7 @@ export function WeddingSeatingPage({
         ...current,
       ]);
       setPlanName("");
+      setPlanDialogMode(null);
     } catch {
       setCreateError(t("events.detail.states.createPlanError"));
     } finally {
@@ -292,8 +315,85 @@ export function WeddingSeatingPage({
     }
   };
 
+  const openCreateDialog = () => {
+    setCreateError(null);
+    setEditingPlan(null);
+    setPlanName("");
+    if (!selectedEventId && events[0]) setSelectedEventId(events[0].id);
+    setPlanDialogMode("create");
+  };
+
+  const openEditDialog = (plan: SeatingPlanSummary) => {
+    setCreateError(null);
+    setEditingPlan(plan);
+    setPlanName(plan.name);
+    setSelectedEventId(plan.event?.id ?? events[0]?.id ?? "");
+    setPlanDialogMode("edit");
+  };
+
+  const closePlanDialog = () => {
+    if (isCreating || isUpdating) return;
+    setPlanDialogMode(null);
+    setEditingPlan(null);
+    setCreateError(null);
+    setPlanName("");
+  };
+
+  const handleUpdatePlan = async () => {
+    if (!canEdit || !editingPlan || !selectedEventId || isUpdating) return;
+
+    const resolvedPlanName = planName.trim();
+    if (!resolvedPlanName) return;
+
+    setIsUpdating(true);
+    setCreateError(null);
+
+    try {
+      const response = await fetch(`/api/seating-plans/${editingPlan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: resolvedPlanName,
+          eventId: selectedEventId,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            error?: string;
+            plan?: SeatingPlanSummary;
+          }
+        | null;
+
+      if (!response.ok || !payload?.plan) {
+        setCreateError(payload?.error ?? t("events.detail.seatingTab.updateError"));
+        return;
+      }
+
+      setPlans((current) =>
+        current.map((plan) =>
+          plan.id === payload.plan!.id
+            ? {
+                ...plan,
+                name: payload.plan!.name,
+                updatedAt: payload.plan!.updatedAt,
+                event: payload.plan!.event,
+              }
+            : plan,
+        ),
+      );
+      setPlanDialogMode(null);
+      setEditingPlan(null);
+      setPlanName("");
+    } catch {
+      setCreateError(t("events.detail.seatingTab.updateError"));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleDuplicatePlan = async (sourcePlanId: string) => {
-    if (!canEdit || duplicatingPlanId || isCreating || deletingPlanId) return;
+    if (!canEdit || duplicatingPlanId || isCreating || isUpdating || deletingPlanId) return;
 
     setDuplicateError(null);
     setDuplicatingPlanId(sourcePlanId);
@@ -350,27 +450,17 @@ export function WeddingSeatingPage({
     }
   };
 
-  const canCreatePlan = canEdit && !isCreating && !!selectedEventId && !!planName.trim();
+  const isSavingPlan = isCreating || isUpdating;
+  const isEditingPlan = planDialogMode === "edit";
+  const canCreatePlan = canEdit && !isSavingPlan && !!selectedEventId;
+  const canUpdatePlan = canEdit && !isSavingPlan && !!editingPlan && !!selectedEventId && !!planName.trim();
+  const canOpenCreateDialog = canEdit && events.length > 0;
 
   return (
     <AppWorkspacePage as={embedded ? "div" : "main"} className={embedded ? "contents" : "gap-5"}>
       {!embedded ? <WeddingPageHeader
         title={t("dashboard.sidebar.nav.seating")}
         subtitle={t("events.detail.seatingTab.description")}
-        actions={
-          canEdit ? (
-            <Button
-              type="button"
-              variant="primary"
-              className="h-10 px-4"
-              onClick={() => planNameInputRef.current?.focus()}
-              disabled={!canEdit || isCreating || events.length === 0}
-            >
-              <Plus className="size-4" />
-              {t("events.detail.seatingTab.create")}
-            </Button>
-          ) : null
-        }
       /> : null}
 
       {planMismatch ? (
@@ -389,7 +479,7 @@ export function WeddingSeatingPage({
       />
 
       <section>
-        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,260px)_minmax(190px,230px)_auto]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
             <Input
@@ -399,29 +489,15 @@ export function WeddingSeatingPage({
               placeholder={t("events.detail.seatingTab.searchPlaceholder")}
             />
           </div>
-          <Input
-            ref={planNameInputRef}
-            className="h-10 border-zinc-300 bg-white"
-            value={planName}
-            onChange={(event) => setPlanName(event.target.value)}
-            placeholder={t("events.detail.seatingTab.planNamePlaceholder")}
-            disabled={!canEdit || isCreating}
-          />
-          <Select value={selectedEventId} onValueChange={setSelectedEventId} disabled={!canEdit || isCreating || events.length === 0}>
-            <SelectTrigger className="h-10 border-zinc-300 bg-white">
-              <SelectValue placeholder={t("events.detail.seatingTab.selectEventForPlan")} />
-            </SelectTrigger>
-            <SelectContent>
-              {events.map((event) => (
-                <SelectItem key={event.id} value={event.id}>
-                  {event.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button type="button" variant="primary" className="h-10" onClick={handleCreatePlan} disabled={!canCreatePlan}>
+          <Button
+            type="button"
+            variant="primary"
+            className="h-10"
+            onClick={openCreateDialog}
+            disabled={!canOpenCreateDialog}
+          >
             <Plus className="size-4" />
-            {isCreating ? t("events.detail.seatingTab.creating") : t("events.detail.seatingTab.create")}
+            {t("events.detail.seatingTab.create")}
           </Button>
         </div>
 
@@ -455,12 +531,99 @@ export function WeddingSeatingPage({
           </div>
         </div>
 
-        {createError || duplicateError || deleteError ? (
+        {duplicateError || deleteError ? (
           <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {createError ?? duplicateError ?? deleteError}
+            {duplicateError ?? deleteError}
           </div>
         ) : null}
       </section>
+
+      <Dialog
+        open={planDialogMode !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          closePlanDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-xl" closeLabel={t("common.close")}>
+          <DialogHeader>
+            <DialogTitle>
+              {isEditingPlan
+                ? t("events.detail.seatingTab.editDialogTitle")
+                : t("events.detail.seatingTab.createDialogTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditingPlan
+                ? t("events.detail.seatingTab.editDialogDescription")
+                : t("events.detail.seatingTab.createDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="mt-2 flex flex-col gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (isEditingPlan) {
+                void handleUpdatePlan();
+              } else {
+                void handleCreatePlan();
+              }
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-zinc-700" htmlFor="seating-plan-name">
+                {t("events.detail.seatingTab.planNameLabel")}
+              </label>
+              <Input
+                id="seating-plan-name"
+                className="h-10 border-zinc-300 bg-white"
+                value={planName}
+                onChange={(event) => setPlanName(event.target.value)}
+                placeholder={t("events.detail.seatingTab.planNamePlaceholder")}
+                disabled={!canEdit || isSavingPlan}
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-zinc-700" htmlFor="seating-plan-event">
+                {t("events.detail.seatingTab.eventLabel")}
+              </label>
+              <Select
+                value={selectedEventId}
+                onValueChange={setSelectedEventId}
+                disabled={!canEdit || isSavingPlan || events.length === 0}
+              >
+                <SelectTrigger id="seating-plan-event" className="h-10 border-zinc-300 bg-white">
+                  <SelectValue placeholder={t("events.detail.seatingTab.selectEventForPlan")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {events.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {createError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {createError}
+              </div>
+            ) : null}
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={closePlanDialog} disabled={isSavingPlan}>
+                {t("common.cancel")}
+              </Button>
+              <Button type="submit" variant="primary" disabled={isEditingPlan ? !canUpdatePlan : !canCreatePlan}>
+                {isSavingPlan
+                  ? t("events.detail.seatingTab.saving")
+                  : isEditingPlan
+                    ? t("events.detail.seatingTab.saveChanges")
+                    : t("events.detail.seatingTab.create")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {visiblePlans.length ? (
         <section className="flex flex-col gap-3">
@@ -475,6 +638,7 @@ export function WeddingSeatingPage({
               isDeleting={deletingPlanId === plan.id}
               onDuplicate={(planId) => void handleDuplicatePlan(planId)}
               onDeleteRequest={setDeleteCandidate}
+              onEditRequest={openEditDialog}
               t={t}
             />
           ))}

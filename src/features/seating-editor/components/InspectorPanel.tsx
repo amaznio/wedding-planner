@@ -690,22 +690,24 @@ export function InspectorPanel({
                   }
                 />
               </label>
-              <label className="block space-y-1">
-                <span className="text-xs text-zinc-600">{t("inspector.seatLayout")}</span>
-                <select
-                  value={selectedTable.seatLayout}
-                  onChange={(event) =>
-                    onTableSeatLayoutChange(
-                      event.target.value as "balanced" | "top-only" | "bottom-only",
-                    )
-                  }
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-                >
-                  <option value="balanced">{t("inspector.layoutBalanced")}</option>
-                  <option value="top-only">{t("inspector.layoutTopOnly")}</option>
-                  <option value="bottom-only">{t("inspector.layoutBottomOnly")}</option>
-                </select>
-              </label>
+              {selectedTable.type === "rectangle" ? (
+                <label className="block space-y-1">
+                  <span className="text-xs text-zinc-600">{t("inspector.seatLayout")}</span>
+                  <select
+                    value={selectedTable.seatLayout}
+                    onChange={(event) =>
+                      onTableSeatLayoutChange(
+                        event.target.value as "balanced" | "top-only" | "bottom-only",
+                      )
+                    }
+                    className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  >
+                    <option value="balanced">{t("inspector.layoutBalanced")}</option>
+                    <option value="top-only">{t("inspector.layoutTopOnly")}</option>
+                    <option value="bottom-only">{t("inspector.layoutBottomOnly")}</option>
+                  </select>
+                </label>
+              ) : null}
               <div className="flex gap-2">
                 <Button variant="outline" onClick={onRotateTable} className="gap-2">
                   <RotateCw className="h-4 w-4" aria-hidden="true" />

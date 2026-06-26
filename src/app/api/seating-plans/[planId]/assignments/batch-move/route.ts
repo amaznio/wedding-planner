@@ -280,12 +280,6 @@ export async function POST(request: Request, context: RouteContext) {
           seatNumber: item.seatNumber,
         })),
       });
-      for (const item of payload.plannedAssignments) {
-        await tx.guest.update({
-          where: { id: item.guestId },
-          data: { plannedTableId: item.tableId },
-        });
-      }
       await tx.seatingPlan.update({
         where: { id: planId },
         data: { planVersion: { increment: 1 } },

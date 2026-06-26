@@ -4,6 +4,7 @@ import type {
   PlanPairSidePreference,
   SeatingPlan,
   SeatingTable,
+  SeatingTableType,
 } from "../types/seating-plan.types";
 
 const GRID_SIZE = 24;
@@ -27,7 +28,7 @@ type SeatingEditorState = {
   markSaved: () => void;
   updatePlanName: (name: string) => void;
   updatePlanPairSidePreference: (preference: PlanPairSidePreference) => void;
-  addTable: () => void;
+  addTable: (type?: SeatingTableType, labelPrefix?: string) => void;
   selectGuest: (guestId: string | null) => void;
   selectTable: (tableId: string | null) => void;
   selectSeat: (tableId: string, seatNumber: number) => void;
@@ -72,7 +73,11 @@ const DEFAULT_PLAN: SeatingPlan = {
   ],
 };
 
-function getNextTable(tableCount: number): SeatingTable {
+function getNextTable(
+  tableCount: number,
+  type: SeatingTableType = "rectangle",
+  labelPrefix = "Table",
+): SeatingTable {
   const nextIndex = tableCount + 1;
   const generatedId =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -81,8 +86,8 @@ function getNextTable(tableCount: number): SeatingTable {
 
   return {
     id: generatedId,
-    label: `Table ${nextIndex}`,
-    type: "rectangle",
+    label: `${labelPrefix} ${nextIndex}`,
+    type,
     x: 120 + (tableCount % 5) * 220,
     y: 120 + Math.floor(tableCount / 5) * 170,
     rotation: 0,
@@ -154,9 +159,9 @@ export const useSeatingEditorStore = create<SeatingEditorState>((set, get) => ({
       isDirty: true,
     });
   },
-  addTable: () => {
+  addTable: (type = "rectangle", labelPrefix = "Table") => {
     const state = get();
-    const nextTable = getNextTable(state.plan.tables.length);
+    const nextTable = getNextTable(state.plan.tables.length, type, labelPrefix);
 
     set({
       plan: {

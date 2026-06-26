@@ -1,3 +1,5 @@
+import type { SeatingTableType } from "./seating-plan.types";
+
 export type DomainEvent<EntityType extends string = string, Payload = unknown> = {
   eventId: string;
   entityType: EntityType;
@@ -56,7 +58,7 @@ export type TableMutationPayload =
       table: {
         id: string;
         label: string;
-        type: "rectangle";
+        type: SeatingTableType;
         x: number;
         y: number;
         rotation: number;
@@ -164,7 +166,7 @@ export type TableSnapshotDelta = {
     table: {
       id: string;
       label: string;
-      type: "rectangle";
+      type: SeatingTableType;
       x: number;
       y: number;
       rotation: number;

@@ -1,5 +1,5 @@
-import { getSeatPositions } from "@/features/seating-editor/lib/seat-positioning";
-import { getRectangleTableDimensions } from "@/features/seating-editor/lib/table-dimensions";
+import { getTableSeatPositions } from "@/features/seating-editor/lib/seat-positioning";
+import { getTableDimensions } from "@/features/seating-editor/lib/table-dimensions";
 import type {
   ExportGuestInput,
   ExportPlanInput,
@@ -41,7 +41,10 @@ function rotatePointAroundCenter(
   };
 }
 
-function getRotatedTableGeometry(table: { x: number; y: number; width: number; height: number; rotation: number }) {
+function getRotatedTableGeometry(
+  table: { x: number; y: number; width: number; height: number; rotation: number },
+  seats: Array<{ x: number; y: number }> = [],
+) {
   const center = {
     x: table.x + table.width / 2,
     y: table.y + table.height / 2,
@@ -53,8 +56,28 @@ function getRotatedTableGeometry(table: { x: number; y: number; width: number; h
     { x: table.x, y: table.y + table.height },
   ].map((corner) => rotatePointAroundCenter(corner, center, table.rotation));
 
-  const xs = corners.map((point) => point.x);
-  const ys = corners.map((point) => point.y);
+  const seatRadius = 18;
+  const rotatedSeatBounds = seats.map((seat) => {
+    const point = rotatePointAroundCenter(
+      { x: table.x + seat.x, y: table.y + seat.y },
+      center,
+      table.rotation,
+    );
+    return {
+      minX: point.x - seatRadius,
+      minY: point.y - seatRadius,
+      maxX: point.x + seatRadius,
+      maxY: point.y + seatRadius,
+    };
+  });
+  const xs = [
+    ...corners.map((point) => point.x),
+    ...rotatedSeatBounds.flatMap((bounds) => [bounds.minX, bounds.maxX]),
+  ];
+  const ys = [
+    ...corners.map((point) => point.y),
+    ...rotatedSeatBounds.flatMap((bounds) => [bounds.minY, bounds.maxY]),
+  ];
 
   return {
     center,
@@ -170,13 +193,8 @@ export function buildSeatingPrintModel({
   }
 
   const tables: PrintTable[] = plan.tables.map((table, index) => {
-    const dimensions = getRectangleTableDimensions(table.seatCount, table.seatLayout);
-    const rawSeats = getSeatPositions(
-      table.seatCount,
-      dimensions.width,
-      dimensions.height,
-      table.seatLayout,
-    );
+    const dimensions = getTableDimensions(table);
+    const rawSeats = getTableSeatPositions(table);
 
     const seats: PrintSeat[] = rawSeats.map((seat) => {
       const guest = guestByTableSeat.get(`${table.id}:${seat.seatNumber}`);
@@ -200,13 +218,16 @@ export function buildSeatingPrintModel({
           : null,
       };
     });
-    const geometry = getRotatedTableGeometry({
-      x: table.x,
-      y: table.y,
-      width: dimensions.width,
-      height: dimensions.height,
-      rotation: table.rotation,
-    });
+    const geometry = getRotatedTableGeometry(
+      {
+        x: table.x,
+        y: table.y,
+        width: dimensions.width,
+        height: dimensions.height,
+        rotation: table.rotation,
+      },
+      rawSeats,
+    );
 
     return {
       tableId: table.id,

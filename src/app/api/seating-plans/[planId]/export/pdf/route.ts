@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { buildSeatingPrintModel } from "@/features/seating-export/lib/build-print-model";
 import { buildSeatingPlanPdf } from "@/features/seating-export/lib/pdf/build-pdf";
 import { parseSeatingExportOptionsFromSearchParams } from "@/features/seating-export/schemas/export-options.schema";
+import type { SeatingTableType } from "@/features/seating-editor/types/seating-plan.types";
 import { prisma } from "@/lib/prisma";
 import { requireSeatingPlanRole } from "@/lib/wedding-authz";
 
@@ -18,6 +19,10 @@ function sanitizeFilename(input: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return normalized || "seating-plan";
+}
+
+function normalizeTableType(type: string): SeatingTableType {
+  return type === "circle" ? "circle" : "rectangle";
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -67,7 +72,7 @@ export async function GET(request: Request, context: RouteContext) {
         tables: plan.tables.map((table) => ({
           id: table.id,
           label: table.label,
-          type: "rectangle",
+          type: normalizeTableType(table.type),
           x: table.x,
           y: table.y,
           rotation: table.rotation,

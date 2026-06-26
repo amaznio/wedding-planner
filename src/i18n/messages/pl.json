@@ -14,9 +14,19 @@
     "home": "Strona główna"
   },
   "home": {
-    "title": "Wedding Seating Planner MVP",
-    "openEditor": "Otwórz edytor ustawienia stołów",
-    "openWeddings": "Otwórz wesela"
+    "brand": "WeddingPlan",
+    "headline": "Planuj gości i miejsca.",
+    "description": "Ustawiaj stoły, przypisuj miejsca i miej gotowy układ wesela.",
+    "createWorkspace": "Utwórz przestrzeń",
+    "signIn": "Zaloguj się",
+    "features": {
+      "guests": "Goście",
+      "tables": "Stoły",
+      "seats": "Miejsca",
+      "pdfExport": "Eksport PDF"
+    },
+    "previewAriaLabel": "Interaktywny podgląd planu stołów",
+    "previewTable": "Stół {{number}}"
   },
   "auth": {
     "fields": {
@@ -119,6 +129,7 @@
     "more": "Więcej",
     "tablesObjects": "Stoły i obiekty",
     "addRectTable": "Dodaj prostokątny stół",
+    "addRoundTable": "Dodaj okrągły stół",
     "roundComing": "Okrągły stół (wkrótce)",
     "buffetComing": "Bufet (wkrótce)",
     "danceComing": "Parkiet (wkrótce)",
@@ -383,6 +394,7 @@
   "canvas": {
     "add": "+ Dodaj",
     "rectangularTable": "Stół prostokątny",
+    "roundTable": "Stół okrągły",
     "roundComing": "Okrągły stół (wkrótce)",
     "buffetComing": "Bufet (wkrótce)",
     "danceComing": "Parkiet (wkrótce)",
@@ -1119,7 +1131,17 @@
         "title": "Plany stołów",
         "description": "Twórz i otwieraj plany stołów powiązane z tym wydarzeniem.",
         "planNamePlaceholder": "Nazwa planu stołów",
+        "planNameLabel": "Nazwa planu",
+        "eventLabel": "Wydarzenie",
         "create": "Utwórz plan",
+        "createDialogTitle": "Utwórz plan stołów",
+        "createDialogDescription": "Nazwij plan i wybierz wydarzenie, do którego ma należeć.",
+        "edit": "Edytuj plan",
+        "editDialogTitle": "Edytuj plan stołów",
+        "editDialogDescription": "Zmień nazwę planu lub przenieś go do innego wydarzenia.",
+        "saveChanges": "Zapisz zmiany",
+        "saving": "Zapisywanie...",
+        "updateError": "Nie udało się zaktualizować planu stołów",
         "creating": "Tworzenie...",
         "empty": "Brak planów stołów.",
         "searchPlaceholder": "Szukaj planu...",

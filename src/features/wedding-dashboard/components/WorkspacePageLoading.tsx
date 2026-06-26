@@ -245,12 +245,6 @@ export function WeddingSeatingPageShell({ children }: { children: ReactNode }) {
       <WeddingPageHeader
         title={t("dashboard.sidebar.nav.seating")}
         subtitle={t("events.detail.seatingTab.description")}
-        actions={(
-          <Button type="button" variant="primary" disabled>
-            <Plus className="size-4" />
-            {t("events.detail.seatingTab.create")}
-          </Button>
-        )}
       />
       {children}
     </AppWorkspacePage>

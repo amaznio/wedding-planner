@@ -70,7 +70,7 @@ const mutationBaseSchema = z.object({
 });
 
 const seatLayoutSchema = z.enum(["balanced", "top-only", "bottom-only"]);
-const tableTypeSchema = z.literal("rectangle");
+const tableTypeSchema = z.enum(["rectangle", "circle"]);
 
 export const assignmentMutationSchema = z.discriminatedUnion("intent", [
   mutationBaseSchema.extend({

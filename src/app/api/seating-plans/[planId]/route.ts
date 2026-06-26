@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { updateSeatingPlanSchema } from "@/features/seating-editor/schemas/seating-plan.schema";
+import {
+  updateSeatingPlanMetadataSchema,
+  updateSeatingPlanSchema,
+} from "@/features/seating-editor/schemas/seating-plan.schema";
 import { prisma } from "@/lib/prisma";
-import { requireSeatingPlanRole } from "@/lib/wedding-authz";
+import { requireSeatingPlanRole, requireWeddingEventRole } from "@/lib/wedding-authz";
 
 type RouteContext = {
   params: Promise<{ planId: string }>;
@@ -165,6 +168,63 @@ export async function PUT(request: Request, context: RouteContext) {
     });
 
     return NextResponse.json({ plan: updatedPlan, access: authz.access });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return validationErrorResponse(error);
+    }
+
+    return NextResponse.json(
+      {
+        error: "Failed to update seating plan",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const { planId } = await context.params;
+  const authz = await requireSeatingPlanRole(planId, "editor");
+  if (authz.response) return authz.response;
+
+  try {
+    const body = await request.json();
+    const payload = updateSeatingPlanMetadataSchema.parse(body);
+
+    const eventAuthz = await requireWeddingEventRole(payload.eventId, "editor");
+    if (eventAuthz.response) return eventAuthz.response;
+
+    if (authz.weddingId && eventAuthz.weddingId !== authz.weddingId) {
+      return NextResponse.json(
+        { error: "Wedding event does not belong to this seating plan workspace" },
+        { status: 400 },
+      );
+    }
+
+    const plan = await prisma.seatingPlan.update({
+      where: { id: planId },
+      data: {
+        name: payload.name,
+        eventId: payload.eventId,
+        planVersion: { increment: 1 },
+      },
+      include: {
+        assignments: {
+          select: { id: true },
+        },
+        guests: {
+          select: { id: true },
+        },
+        event: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ plan, access: authz.access });
   } catch (error) {
     if (error instanceof ZodError) {
       return validationErrorResponse(error);
