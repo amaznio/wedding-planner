@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { SVGProps } from "react";
-import { Armchair, FileText, UserRound } from "lucide-react";
+import { CircleDollarSign, Store, UserRound } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
@@ -59,14 +59,20 @@ function FeatureSeparator() {
   return <span aria-hidden="true" className="size-1 rounded-full bg-zinc-300" />;
 }
 
-export function HomeLanding() {
+type HomeLandingProps = {
+  isAuthenticated?: boolean;
+};
+
+export function HomeLanding({ isAuthenticated = false }: HomeLandingProps) {
   const { t } = useI18n();
+  const primaryCtaHref = isAuthenticated ? "/weddings" : "/sign-up";
+  const primaryCtaLabel = isAuthenticated ? t("home.viewWeddings") : t("home.createWorkspace");
 
   const features = [
     { icon: UserRound, label: t("home.features.guests") },
-    { icon: TableIcon, label: t("home.features.tables") },
-    { icon: Armchair, label: t("home.features.seats") },
-    { icon: FileText, label: t("home.features.pdfExport") },
+    { icon: TableIcon, label: t("home.features.seating") },
+    { icon: Store, label: t("home.features.vendors") },
+    { icon: CircleDollarSign, label: t("home.features.expenses") },
   ];
 
   return (
@@ -79,15 +85,17 @@ export function HomeLanding() {
               {t("home.brand")}
             </span>
           </div>
-          <Link
-            href="/sign-in"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "default" }),
-              "shadow-sm",
-            )}
-          >
-            {t("home.signIn")}
-          </Link>
+          {!isAuthenticated ? (
+            <Link
+              href="/sign-in"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+                "shadow-sm",
+              )}
+            >
+              {t("home.signIn")}
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -104,23 +112,25 @@ export function HomeLanding() {
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
-              href="/sign-up"
+              href={primaryCtaHref}
               className={cn(
                 buttonVariants({ variant: "primary", size: "default" }),
                 "h-10 px-5 shadow-[0_12px_24px_rgba(109,40,217,0.18)]",
               )}
             >
-              {t("home.createWorkspace")}
+              {primaryCtaLabel}
             </Link>
-            <Link
-              href="/sign-in"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "default" }),
-                "h-10 px-5 shadow-sm",
-              )}
-            >
-              {t("home.signIn")}
-            </Link>
+            {!isAuthenticated ? (
+              <Link
+                href="/sign-in"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "h-10 px-5 shadow-sm",
+                )}
+              >
+                {t("home.signIn")}
+              </Link>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm font-semibold text-zinc-950">

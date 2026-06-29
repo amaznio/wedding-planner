@@ -2,6 +2,308 @@
 
 ## Current Phase
 
+Phase 282 - Homepage wedding-management positioning copy (completed)
+
+## Completed Work
+
+- Updated homepage positioning so the product is not presented as seating-only.
+- Changed the hero message to cover guests, seating, vendors, and expenses.
+- Updated the homepage feature row from:
+  - `Guests`
+  - `Tables`
+  - `Seats`
+  - `PDF export`
+- To:
+  - `Guests`
+  - `Seating`
+  - `Vendors`
+  - `Expenses`
+- Updated both English and Polish locale messages.
+- Replaced the seating-only feature icons with vendor and expense icons while keeping the custom table icon for seating.
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/i18n/messages/en.json src/i18n/messages/pl.json` (passes for TSX; JSON files are ignored by eslint config with warnings)
+- Known issues:
+  - None for this phase.
+- Next recommended step:
+  - Refresh `/` in Polish and English and confirm the broader positioning reads naturally in both languages.
+
+## Previous Phase
+
+Phase 281 - Homepage preview horizontal edge fade (completed)
+
+## Completed Work
+
+- Fixed the homepage seating preview fade so the left and right edges fade as intended.
+- Root cause:
+  - the preview only had a vertical `mask-image`, so it faded top/bottom but had no horizontal fade at all.
+- Added a nested mask structure in `HomeSeatingCanvas`:
+  - outer viewport applies the left/right horizontal fade
+  - inner full-size grid layer keeps the existing top/bottom vertical fade
+- Kept viewport sizing and drag coordinate math unchanged.
+- Files changed:
+  - `src/features/home/components/HomeSeatingCanvas.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeSeatingCanvas.tsx` (pass)
+  - `git diff --check -- src/features/home/components/HomeSeatingCanvas.tsx PROGRESS.md` (pass; only existing CRLF normalization warnings)
+- Known issues:
+  - Browser screenshot verification was not rerun because this repo does not have Playwright installed and the current tool surface did not expose a direct browser-control tool.
+- Next recommended step:
+  - Refresh `/` and confirm the preview now softly fades on the left and right edges as well as top/bottom.
+
+## Previous Phase
+
+Phase 280 - Homepage preview full-width drag bounds (completed)
+
+## Completed Work
+
+- Expanded the homepage seating preview logical canvas width from `640` to `1000`.
+- Repositioned the three demo tables across the wider logical canvas.
+- This makes the transformed draggable layer span the visible preview width at desktop sizes, instead of leaving horizontal inset inside the grid viewport.
+- Drag clamp bounds now allow tables to move to the visible left/right edges of the homepage preview.
+- Files changed:
+  - `src/features/home/components/HomeSeatingCanvas.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeSeatingCanvas.tsx src/features/home/components/HomeLanding.tsx src/app/page.tsx` (pass)
+  - browser measurement and drag QA against `http://localhost:3000/` with Playwright + system Edge (pass)
+- Visual QA notes:
+  - Screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-full-width-preview-canvas.png`.
+  - Desktop preview viewport measured `1216px` wide.
+  - Transformed preview table layer measured `1216px` wide with `0px` horizontal inset.
+  - Dragging a table toward the right edge and back toward the left edge both worked.
+  - Desktop viewport `1440x1000` has no horizontal overflow.
+  - Browser console reported no errors.
+- Known issues:
+  - None for this phase.
+- Next recommended step:
+  - Manually drag each homepage preview table to the far left and right edges in the browser to confirm the interaction feels natural.
+
+## Previous Phase
+
+Phase 279 - Simplify authenticated homepage to one CTA (completed)
+
+## Completed Work
+
+- Simplified authenticated homepage CTAs based on product feedback.
+- Removed authenticated header CTA entirely.
+- Removed authenticated `Create wedding` primary CTA and `/weddings?create=1` homepage link.
+- Authenticated homepage now shows one CTA only:
+  - primary hero `View weddings` -> `/weddings`
+- Signed-out homepage remains unchanged:
+  - header `Sign in` -> `/sign-in`
+  - primary `Create workspace` -> `/sign-up`
+  - secondary `Sign in` -> `/sign-in`
+- Removed now-unused EN/PL `home.weddings` and `home.createWedding` message keys.
+- Kept `/weddings?create=1` support in place for direct links, but homepage no longer uses it.
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/features/home/components/HomeLanding.tsx src/i18n/messages/en.json src/i18n/messages/pl.json` (passes for TSX; JSON files are ignored by eslint config with warnings)
+  - browser smoke against `http://localhost:3000/` with Playwright + system Edge (pass)
+- Visual QA notes:
+  - Signed-out homepage smoke screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-one-authenticated-cta-signed-out-smoke.png`.
+  - Signed-out homepage still has two `/sign-in` links and one `/sign-up` link.
+  - Signed-out homepage has no `/weddings` or `/weddings?create=1` links.
+  - Desktop viewport `1440x1000` has no horizontal overflow.
+  - Browser console reported no errors.
+- Known issues:
+  - Authenticated one-CTA branch was verified by code path/typecheck; available browser session was signed out.
+- Next recommended step:
+  - Sign in, visit `/`, and confirm the only authenticated CTA is the hero `View weddings` button.
+
+## Previous Phase
+
+Phase 278 - Distinct authenticated homepage CTAs and create deep-link (completed)
+
+## Completed Work
+
+- Updated authenticated homepage CTA behavior so all CTAs no longer point to the same route.
+- Signed-out homepage CTA behavior remains unchanged:
+  - header `Sign in` -> `/sign-in`
+  - primary `Create workspace` -> `/sign-up`
+  - secondary `Sign in` -> `/sign-in`
+- Signed-in homepage CTA behavior is now:
+  - header `Weddings` -> `/weddings`
+  - primary `Create wedding` -> `/weddings?create=1`
+  - secondary `View weddings` -> `/weddings`
+- Added EN/PL i18n keys for:
+  - `home.weddings`
+  - `home.createWedding`
+  - `home.viewWeddings`
+- Added `/weddings?create=1` support to the weddings page:
+  - initial page load with `create=1` opens the existing create wedding modal
+  - closing/canceling the modal removes `create=1` from the URL
+  - successful create closes the modal, reloads the list, and removes `create=1`
+  - direct `/weddings` does not auto-open the modal
+- Kept create interaction owned by `/weddings`; no duplicate homepage create modal was added.
+- Files changed:
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/app/weddings/page.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/app/page.tsx src/features/home/components/HomeLanding.tsx src/app/weddings/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser QA against `http://localhost:3000/`, `/weddings`, and `/weddings?create=1` with Playwright + system Edge (pass)
+- Visual QA notes:
+  - Post-create query-modal QA screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-cta-query-modal-qa.png`.
+  - Signed-out homepage still renders two `/sign-in` links and one `/sign-up` link.
+  - `/weddings?create=1` opens the create modal.
+  - Cancel and successful create both clean the URL back to `/weddings`.
+  - `/weddings` without query leaves the modal closed.
+  - Desktop `1440x1000` and mobile `390x844` checks have no horizontal overflow.
+  - Browser console reported no errors.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Authenticated homepage labels were verified by code path/typecheck; browser session available for QA was signed out.
+- Next recommended step:
+  - Sign in, visit `/`, and confirm the header shows `Weddings`, the primary CTA shows `Create wedding`, and it opens the create modal through `/weddings?create=1`.
+
+## Previous Phase
+
+Phase 277 - Homepage no-auth-redirect and authenticated CTAs (completed)
+
+## Completed Work
+
+- Removed the authenticated-user redirect from `/`.
+- The homepage now renders for signed-out and signed-in users.
+- `HomeLanding` now accepts an `isAuthenticated` prop from the server page.
+- Signed-out CTA behavior remains unchanged:
+  - header: `Sign in`
+  - primary: `Create workspace`
+  - secondary: `Sign in`
+- Signed-in CTA behavior now avoids auth links:
+  - header: `Open weddings`
+  - primary: `Open weddings`
+  - secondary: `Manage workspaces`
+- Added EN/PL i18n keys for authenticated homepage CTAs.
+- Removed the now-unused wedding lookup and redirect logic from `src/app/page.tsx`.
+- Files changed:
+  - `src/app/page.tsx`
+  - `src/features/home/components/HomeLanding.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm exec eslint src/app/page.tsx src/features/home/components/HomeLanding.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser smoke against `http://localhost:3000/` with Playwright + system Edge (pass)
+- Visual QA notes:
+  - Homepage smoke screenshot saved at `C:/Users/adria/AppData/Local/Temp/homepage-no-redirect-smoke.png`.
+  - Browser remained on `http://localhost:3000/`, confirming no signed-out redirect behavior changed.
+  - Signed-out homepage CTAs still render `/sign-in` and `/sign-up` links.
+  - Desktop viewport `1440x1000` has no horizontal overflow.
+  - Browser console reported no errors.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Authenticated homepage CTA path was verified by code path/typecheck; browser smoke used the available signed-out session.
+- Next recommended step:
+  - Sign in and visit `/` to confirm the authenticated homepage shows `Open weddings` / `Manage workspaces` and no longer redirects.
+
+## Previous Phase
+
+Phase 276 - Weddings list page refresh (completed)
+
+## Completed Work
+
+- Refreshed `/weddings` as a simpler shadcn-style list page.
+- Kept the existing `/api/weddings` GET/POST contract and wedding-name-only create flow.
+- Replaced raw page controls with existing shadcn primitives:
+  - `Button`
+  - `Card`
+  - `Input`
+  - `Badge`
+  - `Skeleton`
+- Added a cleaner page header with:
+  - `Weddings` title
+  - concise management subtitle
+  - compact inline create form
+- Added client-side search over wedding name and location.
+- Reworked wedding rows into full-width cards with:
+  - calendar icon tile
+  - full wedding name
+  - date or `No date set`
+  - location or `No venue set`
+  - derived `Active` / `Draft` badge based on `date`
+  - events, guests, vendors, and expenses count tiles
+  - primary `Open` link to `/weddings/{id}`
+- Added polished loading, empty, filtered-empty, and error states.
+- Verified mobile text wrapping so wedding names and venues remain visible instead of truncating.
+- Follow-up hierarchy/create polish:
+  - removed wrapper cards around the header and search controls
+  - simplified per-wedding metrics from nested tiles to a lower-emphasis metrics row
+  - made `Open wedding` the primary card action
+  - changed empty-name create attempts from silent no-op to an inline `Enter a wedding name first.` message
+  - surfaced API validation/server error text when wedding creation fails
+- Create modal follow-up:
+  - removed the inline wedding-name input from the header
+  - added a shadcn `Dialog`-based create wedding modal
+  - modal captures required wedding name plus optional date and venue
+  - successful create closes the modal, resets fields, reloads the list, and displays the new wedding
+  - cancel/close resets draft modal fields without submitting
+  - spacing/hierarchy polish:
+    - split modal into header, form body, and footer sections
+    - increased title hierarchy
+    - added body/footer separators
+    - improved form field grouping and footer action spacing
+- Files changed:
+  - `src/app/weddings/page.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm exec eslint src/app/weddings/page.tsx` (pass)
+  - `pnpm lint` (fails on pre-existing unrelated guest API `any` errors and existing seating editor hook/ref rules)
+  - browser QA against `http://localhost:3000/weddings` with Playwright + system Edge using mocked wedding API data (pass)
+- Visual QA notes:
+  - Desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/weddings-refresh-desktop.png`.
+  - Mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/weddings-refresh-mobile.png`.
+  - Follow-up desktop screenshot saved at `C:/Users/adria/AppData/Local/Temp/weddings-refresh-hierarchy-desktop.png`.
+  - Follow-up mobile screenshot saved at `C:/Users/adria/AppData/Local/Temp/weddings-refresh-hierarchy-mobile.png`.
+  - Desktop viewport `1440x1000` has no horizontal overflow.
+  - Mobile viewport `390x844` has no horizontal overflow.
+  - Search filters by wedding name and location.
+  - Create flow posts a new wedding and reloads the list.
+  - Empty create attempts show inline feedback instead of doing nothing.
+  - Open links resolve to `/weddings/{id}`.
+  - Browser console reported no errors during mocked QA.
+  - Create modal QA confirmed:
+    - no header inputs remain
+    - `New wedding` opens the modal
+    - empty submit shows validation feedback
+    - submit posts `{ name, currency, date, location }`
+    - modal closes after successful create
+  - Create modal screenshots saved at:
+    - `C:/Users/adria/AppData/Local/Temp/weddings-create-modal-desktop.png`
+    - `C:/Users/adria/AppData/Local/Temp/weddings-create-modal-mobile.png`
+  - Create modal spacing screenshot saved at `C:/Users/adria/AppData/Local/Temp/weddings-create-modal-spacing.png`.
+- Known issues:
+  - Full lint remains blocked by unrelated existing errors in wedding guest API routes and existing seating editor hook/ref rules.
+  - Browser QA used mocked `/api/weddings` responses for deterministic card/create/search coverage.
+- Next recommended step:
+  - Review `/weddings` while signed in against real account data and confirm the simplified card density feels right.
+
+## Previous Phase
+
 Phase 275 - Stacked homepage hero and demo layout (completed)
 
 ## Completed Work

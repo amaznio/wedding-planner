@@ -15,15 +15,18 @@
   },
   "home": {
     "brand": "WeddingPlan",
-    "headline": "Planuj gości i miejsca.",
-    "description": "Ustawiaj stoły, przypisuj miejsca i miej gotowy układ wesela.",
+    "headline": "Planuj wesele w jednym miejscu.",
+    "description": "Zarządzaj gośćmi, stołami, wykonawcami i wydatkami bez gubienia szczegółów.",
     "createWorkspace": "Utwórz przestrzeń",
+    "viewWeddings": "Zobacz wesela",
+    "openWeddings": "Otwórz wesela",
+    "manageWorkspaces": "Zarządzaj przestrzeniami",
     "signIn": "Zaloguj się",
     "features": {
       "guests": "Goście",
-      "tables": "Stoły",
-      "seats": "Miejsca",
-      "pdfExport": "Eksport PDF"
+      "seating": "Stoły",
+      "vendors": "Wykonawcy",
+      "expenses": "Wydatki"
     },
     "previewAriaLabel": "Interaktywny podgląd planu stołów",
     "previewTable": "Stół {{number}}"

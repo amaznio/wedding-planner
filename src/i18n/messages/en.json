@@ -15,15 +15,18 @@
   },
   "home": {
     "brand": "WeddingPlan",
-    "headline": "Plan guests and seats.",
-    "description": "Arrange tables, assign seats, and keep the wedding layout ready.",
+    "headline": "Plan your wedding in one place.",
+    "description": "Manage guests, seating, vendors, and expenses without losing track of the details.",
     "createWorkspace": "Create workspace",
+    "viewWeddings": "View weddings",
+    "openWeddings": "Open weddings",
+    "manageWorkspaces": "Manage workspaces",
     "signIn": "Sign in",
     "features": {
       "guests": "Guests",
-      "tables": "Tables",
-      "seats": "Seats",
-      "pdfExport": "PDF export"
+      "seating": "Seating",
+      "vendors": "Vendors",
+      "expenses": "Expenses"
     },
     "previewAriaLabel": "Interactive seating plan preview",
     "previewTable": "Table {{number}}"

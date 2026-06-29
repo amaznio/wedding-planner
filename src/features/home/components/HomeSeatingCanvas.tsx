@@ -14,7 +14,7 @@ import { getTableVisualBounds } from "@/features/seating-editor/lib/seat-positio
 import type { SeatingTable } from "@/features/seating-editor/types/seating-plan.types";
 import { useI18n } from "@/i18n/provider";
 
-const CANVAS_WIDTH = 640;
+const CANVAS_WIDTH = 1000;
 const CANVAS_HEIGHT = 420;
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -25,7 +25,7 @@ const initialTables: DemoTable[] = [
   {
     id: "homepage-preview-table-1",
     type: "rectangle",
-    x: 60,
+    x: 80,
     y: 110,
     rotation: 0,
     seatCount: 6,
@@ -34,7 +34,7 @@ const initialTables: DemoTable[] = [
   {
     id: "homepage-preview-table-2",
     type: "rectangle",
-    x: 410,
+    x: 720,
     y: 125,
     rotation: 0,
     seatCount: 5,
@@ -43,7 +43,7 @@ const initialTables: DemoTable[] = [
   {
     id: "homepage-preview-table-3",
     type: "rectangle",
-    x: 240,
+    x: 410,
     y: 290,
     rotation: 0,
     seatCount: 7,
@@ -152,38 +152,50 @@ export function HomeSeatingCanvas() {
       aria-label={t("home.previewAriaLabel")}
       className="relative h-[400px] min-h-[360px] overflow-hidden sm:h-[440px] lg:h-[52vh] lg:min-h-[500px] lg:max-h-[560px]"
       style={{
-        backgroundImage:
-          "linear-gradient(to right, rgb(221 214 254 / 0.58) 1px, transparent 1px), linear-gradient(to bottom, rgb(221 214 254 / 0.58) 1px, transparent 1px)",
-        backgroundSize: "56px 56px",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%)",
         maskImage:
-          "linear-gradient(to bottom, transparent 0, black 7%, black 91%, transparent 100%)",
+          "linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%)",
       }}
     >
-      {viewportTransform ? (
-        <div
-          className="absolute left-0 top-0"
-          style={{
-            width: CANVAS_WIDTH,
-            height: CANVAS_HEIGHT,
-            transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.scale})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {displayTables.map((table) => (
-            <RectTable
-              key={table.id}
-              presentation="preview"
-              table={table}
-              showOccupancy={false}
-              enableTableDrag
-              enableSeatDrag={false}
-              showHoverSeatNames={false}
-              onMove={handleMoveTable}
-              screenToCanvas={screenToCanvas}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgb(221 214 254 / 0.58) 1px, transparent 1px), linear-gradient(to bottom, rgb(221 214 254 / 0.58) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0, black 7%, black 91%, transparent 100%)",
+          maskImage:
+            "linear-gradient(to bottom, transparent 0, black 7%, black 91%, transparent 100%)",
+        }}
+      >
+        {viewportTransform ? (
+          <div
+            className="absolute left-0 top-0"
+            style={{
+              width: CANVAS_WIDTH,
+              height: CANVAS_HEIGHT,
+              transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {displayTables.map((table) => (
+              <RectTable
+                key={table.id}
+                presentation="preview"
+                table={table}
+                showOccupancy={false}
+                enableTableDrag
+                enableSeatDrag={false}
+                showHoverSeatNames={false}
+                onMove={handleMoveTable}
+                screenToCanvas={screenToCanvas}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
