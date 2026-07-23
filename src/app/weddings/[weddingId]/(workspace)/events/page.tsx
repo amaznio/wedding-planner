@@ -45,6 +45,7 @@ async function WeddingEventsData({ params }: WeddingEventsRoutePageProps) {
           type: true,
           startsAt: true,
           location: true,
+          address: true,
           _count: {
             select: {
               eventGuests: true,

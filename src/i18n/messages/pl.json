@@ -924,7 +924,7 @@
   },
   "events": {
     "list": {
-      "searchPlaceholder": "Szukaj po nazwie lub lokalizacji",
+      "searchPlaceholder": "Szukaj po nazwie, lokalizacji lub adresie",
       "empty": "Brak wydarzeń dla bieżących filtrów.",
       "filters": {
         "all": "Wszystkie",
@@ -935,6 +935,7 @@
         "name": "Wydarzenie",
         "date": "Data",
         "location": "Lokalizacja",
+        "address": "Adres",
         "guests": "Goście"
       },
       "title": "Wydarzenia",
@@ -971,7 +972,8 @@
       },
       "editDialog": {
         "namePlaceholder": "Nazwa wydarzenia",
-        "locationPlaceholder": "Miejsce lub adres",
+        "locationPlaceholder": "Miejsce lub nazwa sali",
+        "addressPlaceholder": "Adres lub wskazówki dojazdu",
         "nameRequired": "Nazwa wydarzenia jest wymagana.",
         "dateTimePairRequired": "Uzupełnij jednocześnie datę i godzinę albo wyczyść oba pola.",
         "saveFailed": "Nie udało się zapisać zmian wydarzenia."
@@ -1136,6 +1138,7 @@
       "seatingTab": {
         "title": "Plany stołów",
         "description": "Twórz i otwieraj plany stołów powiązane z tym wydarzeniem.",
+        "openOrCreateDescription": "Otwórz istniejący plan lub utwórz nowy dla tego wydarzenia.",
         "planNamePlaceholder": "Nazwa planu stołów",
         "planNameLabel": "Nazwa planu",
         "eventLabel": "Wydarzenie",
@@ -1168,6 +1171,7 @@
         "deleteConfirmTitle": "Usunąć plan stołów?",
         "deleteConfirmDescription": "Trwale usuniesz \"{{name}}\" oraz jego układ stołów. Tej akcji nie można cofnąć.",
         "deleteConfirmAction": "Usuń plan",
+        "open": "Otwórz",
         "complete": "Wszyscy usadzeni",
         "results": "Widoczne plany: {{count}}",
         "summary": {
@@ -1360,6 +1364,7 @@
         "description": "Kontakty, powiązane wydarzenia i etap współpracy.",
         "columns": {
           "name": "Wykonawca",
+          "type": "Typ",
           "contact": "Kontakt",
           "events": "Wydarzenia",
           "payment": "Opłacone / całość",
@@ -1372,6 +1377,7 @@
       },
       "form": {
         "name": "Nazwa wykonawcy",
+        "vendorType": "Typ wykonawcy",
         "contactName": "Osoba kontaktowa",
         "contactEmail": "Email",
         "contactPhone": "Telefon",
@@ -1382,6 +1388,40 @@
         "status": "Status współpracy",
         "notes": "Notatki",
         "events": "Powiązane wydarzenia"
+      },
+      "vendorTypes": {
+        "Venue": "Sala / miejsce przyjęcia",
+        "Catering": "Catering",
+        "Photographer": "Fotograf",
+        "Videographer": "Kamerzysta",
+        "Dj": "DJ",
+        "Band": "Zespół",
+        "DecorFlorals": "Dekoracje / florystyka",
+        "Coordinator": "Koordynator",
+        "Officiant": "Urzędnik / kościół",
+        "Makeup": "Makijaż",
+        "Hair": "Fryzjer",
+        "CakeBakery": "Tort / cukiernia",
+        "Stationery": "Papeteria",
+        "RingsJewelry": "Obrączki / jubiler",
+        "DressAttire": "Suknia / strój",
+        "SuitAttire": "Garnitur",
+        "Transport": "Transport",
+        "Accommodation": "Noclegi",
+        "Rentals": "Wypożyczalnia",
+        "Entertainment": "Atrakcje",
+        "GiftsFavors": "Prezenty / upominki",
+        "Other": "Inne"
+      },
+      "venuePricing": {
+        "title": "Kalkulacja sali",
+        "description": "Wylicz szacowany koszt z ceny za osobę i liczby gości. Łączny koszt nadal wpisujesz ręcznie.",
+        "event": "Wydarzenie do kalkulacji",
+        "eventPlaceholder": "Wybierz wydarzenie",
+        "pricePerPerson": "Cena za osobę",
+        "guestCount": "Liczba gości",
+        "estimatedTotal": "Szacowany koszt sali",
+        "useAsTotal": "Użyj jako łączny koszt"
       },
       "delete": {
         "title": "Usuń wykonawcę",

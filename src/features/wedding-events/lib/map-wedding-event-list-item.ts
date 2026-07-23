@@ -6,6 +6,7 @@ export type WeddingEventListItem = {
   type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
   startsAt: string | null;
   location: string | null;
+  address: string | null;
   guestCount: number;
   confirmedCount: number;
   respondedCount: number;
@@ -27,6 +28,7 @@ export function mapWeddingEventListItem(input: {
   type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
   startsAt: string | null;
   location: string | null;
+  address: string | null;
   guestCount: number;
   confirmedCount: number;
   respondedCount: number;
@@ -66,6 +68,7 @@ export function mapWeddingEventListItem(input: {
     type: input.type,
     startsAt: input.startsAt,
     location: input.location,
+    address: input.address,
     guestCount: input.guestCount,
     confirmedCount: input.confirmedCount,
     respondedCount: input.respondedCount,

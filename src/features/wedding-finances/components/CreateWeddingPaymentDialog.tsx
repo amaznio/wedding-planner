@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,19 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PaymentAmountInput, PaymentDatePicker, PaymentFormField } from "@/features/wedding-finances/components/PaymentFormControls";
 import { PaymentCategorySelect } from "@/features/wedding-finances/components/PaymentCategorySelect";
+import { PaymentStatusOption } from "@/features/wedding-finances/components/PaymentStatusOption";
 import {
   getPaidByLabel,
   paidByValues,
   getPaymentCategoryLabel,
 } from "@/features/wedding-finances/lib/payment-options";
+import { expenseStatusValues, type ExpenseStatus } from "@/features/wedding-finances/lib/payment-status-options";
 import { useI18n } from "@/i18n/provider";
 
-type ExpenseStatus = "planned" | "committed" | "paid" | "reimbursed" | "canceled";
 type LinkedEvent = { id: string; name: string; type?: string | null };
 type LinkedItem = { id: string; name: string };
 type PaymentForm = { category: string; amount: string; status: ExpenseStatus; incurredAt: string; paidBy: string; notes: string; vendorId: string; eventId: string };
 
-const statuses: ExpenseStatus[] = ["planned", "committed", "paid", "reimbursed", "canceled"];
 const emptyForm: PaymentForm = { category: "", amount: "", status: "planned", incurredAt: "", paidBy: "Couple", notes: "", vendorId: "", eventId: "" };
 
 export function CreateWeddingPaymentDialog({ weddingId, open, onOpenChange, onCreated, initialCurrency, initialEvents = [], initialVendor }: {
@@ -111,7 +111,7 @@ export function CreateWeddingPaymentDialog({ weddingId, open, onOpenChange, onCr
         <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); void save(); }}>
           <Choice fieldLabel={t("budget.page.form.vendorOptional")} value={form.vendorId || "none"} options={["none", ...vendors.map((item) => item.id)]} placeholder={t("budget.page.form.vendorOptional")} renderLabel={(value) => value === "none" ? t("budget.page.form.noVendor") : vendors.find((item) => item.id === value)?.name ?? value} onChange={(value) => setForm((current) => ({ ...current, vendorId: value === "none" ? "" : value }))} />
           <PaymentCategorySelect fieldLabel={t("budget.page.form.category")} value={form.category} placeholder={t("budget.page.form.category")} onChange={(value) => setForm((current) => ({ ...current, category: value }))} t={t} />
-          <Choice fieldLabel={t("budget.page.form.status")} value={form.status} options={statuses} placeholder={t("budget.page.form.status")} renderLabel={(value) => t(`budget.page.status.${value}`)} onChange={(value) => setForm((current) => ({ ...current, status: value as ExpenseStatus }))} />
+          <Choice fieldLabel={t("budget.page.form.status")} value={form.status} options={[...expenseStatusValues]} placeholder={t("budget.page.form.status")} renderLabel={(value) => t(`budget.page.status.${value}`)} renderOption={(value) => <PaymentStatusOption status={value as ExpenseStatus} label={t(`budget.page.status.${value}`)} />} onChange={(value) => setForm((current) => ({ ...current, status: value as ExpenseStatus }))} />
           <div className="grid gap-3 sm:grid-cols-2">
             <PaymentAmountInput label={t("budget.page.form.amount")} value={form.amount} currency={currency} placeholder={t("budget.page.form.amount")} onChange={(value) => setForm((current) => ({ ...current, amount: value }))} />
             <PaymentDatePicker label={t("budget.page.form.date")} value={form.incurredAt} locale={locale} placeholder={t("budget.page.form.datePlaceholder")} clearLabel={t("budget.page.form.clearDate")} onChange={(value) => setForm((current) => ({ ...current, incurredAt: value }))} />
@@ -135,6 +135,7 @@ function Choice({
   options,
   placeholder,
   renderLabel,
+  renderOption,
   onChange,
 }: {
   fieldLabel: string;
@@ -142,6 +143,7 @@ function Choice({
   options: string[];
   placeholder: string;
   renderLabel: (value: string) => string;
+  renderOption?: (value: string) => ReactNode;
   onChange: (value: string) => void;
 }) {
   return (
@@ -152,7 +154,7 @@ function Choice({
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option} value={option}>{renderLabel(option)}</SelectItem>
+            <SelectItem key={option} value={option}>{renderOption?.(option) ?? renderLabel(option)}</SelectItem>
           ))}
         </SelectContent>
       </Select>

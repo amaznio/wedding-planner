@@ -147,6 +147,7 @@ model WeddingEvent {
   type      WeddingEventType @default(wedding)
   startsAt  DateTime?
   location  String?
+  address   String?
   notes     String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -331,9 +332,13 @@ model Vendor {
   contactEmail    String?
   contactPhone    String?
   notes           String?
+  vendorType      String                @default("Other")
   totalCostMinor  Int                   @default(0)
   depositMinor    Int                   @default(0)
   amountPaidMinor Int                   @default(0)
+  venuePricePerPersonMinor Int?
+  venueGuestCount Int?
+  venuePricingEventId String?
   paymentStatus   VendorPaymentStatus   @default(not_started)
   lifecycleStatus VendorLifecycleStatus @default(considering)
   dueDate         DateTime?
@@ -345,6 +350,8 @@ model Vendor {
   documents    WeddingDocument[]
 
   @@index([weddingId])
+  @@index([vendorType])
+  @@index([venuePricingEventId])
 }
 
 model WeddingDocument {

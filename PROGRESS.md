@@ -2,6 +2,33 @@
 
 ## Current Phase
 
+Phase 283 - Event seating tab simplified rows (completed)
+
+## Completed Work
+
+- Reworked the event detail seating tab to match the latest simplified proposal:
+  - removed the outer card wrapper from the tab content
+  - removed the visible plan-name input from the tab body
+  - added a simple section header with a single create action
+  - rendered seating plans as equal rows with subtle dividers, thumbnails, dimensions, and open actions
+- Kept plan creation functional by generating a localized default plan name.
+- Added EN/PL i18n keys for the new section description and row open label.
+- Files changed:
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `src/i18n/messages/en.json`
+  - `src/i18n/messages/pl.json`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm i18n:audit` (pass)
+  - `pnpm lint -- src/features/wedding-events/components/WeddingEventDetailPage.tsx src/i18n/messages/en.json src/i18n/messages/pl.json` (pass for TSX; JSON files are ignored by eslint config with warnings)
+- Known issues:
+  - Browser screenshot QA was not run in this turn.
+- Next recommended step:
+  - Open an event detail page with `?tab=seating` and verify spacing at desktop and mobile widths.
+
+## Previous Phase
+
 Phase 282 - Homepage wedding-management positioning copy (completed)
 
 ## Completed Work

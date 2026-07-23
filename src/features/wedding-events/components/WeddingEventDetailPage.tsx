@@ -64,12 +64,14 @@ type WeddingDetailsApiResponse = {
     id: string;
     name: string;
     date: string | null;
+    location: string | null;
     events: Array<{
       id: string;
       name: string;
       type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
       startsAt: string | null;
       location: string | null;
+      address: string | null;
       notes: string | null;
     }>;
   };
@@ -82,6 +84,7 @@ type WeddingEventApiResponse = {
     type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
     startsAt: string | null;
     location: string | null;
+    address: string | null;
     notes: string | null;
   };
 };
@@ -208,7 +211,6 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const activeTab = tabFromQuery && allowedTabs.has(tabFromQuery as EventTabId)
     ? (tabFromQuery as EventTabId)
     : "overview";
-  const [planName, setPlanName] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [canEditWedding, setCanEditWedding] = useState(false);
   const [timelineItems, setTimelineItems] = useState<EventTimelineItem[]>([]);
@@ -288,6 +290,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           vendorsJson.vendors,
           expensesJson.expenses,
           eventId,
+          weddingJson.wedding.location,
         );
 
         const mappedSeatingPlans: EventSeatingPlanSummary[] = plansJson.plans.map((plan) => ({
@@ -358,10 +361,10 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
 
   const onCreatePlan = async () => {
     if (!canEditWedding) return;
-    if (!planName.trim()) return;
 
     setIsCreatingPlan(true);
     setError(null);
+    const nextPlanName = `${t("plans.newPlanPrefix")} ${data.seatingPlans.length + 1}`;
 
     try {
       const response = await fetch("/api/seating-plans", {
@@ -370,7 +373,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: planName.trim(),
+          name: nextPlanName,
           eventId,
           width: 1600,
           height: 1000,
@@ -395,7 +398,6 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           ...current.seatingPlans,
         ],
       }));
-      setPlanName("");
       setActiveTabWithUrl("seating");
     } catch {
       setError(t("events.detail.states.createPlanError"));
@@ -479,7 +481,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
 
   const localeName = toIntlLocale(locale as Locale);
   const eventDateLabel = formatEventDate(data.event.date, localeName);
-  const eventTimeLabel = `${data.event.startTime} - ${data.event.endTime}`;
+  const eventTimeLabel = data.event.startTime;
 
   const budgetSpentPercent =
     data.event.budget.total > 0 ? Math.min(100, Math.round((data.event.budget.spent / data.event.budget.total) * 100)) : 0;
@@ -867,51 +869,54 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         ) : null}
 
         {activeTab === "seating" ? (
-          <Card className="gap-0">
-            <CardHeader>
-              <CardTitle>{t("events.detail.seatingTab.title")}</CardTitle>
-              <CardDescription>{t("events.detail.seatingTab.description")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  value={planName}
-                  onChange={(event) => setPlanName(event.target.value)}
-                  placeholder={t("events.detail.seatingTab.planNamePlaceholder")}
-                  disabled={!canEditWedding}
-                  className="h-10 flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={onCreatePlan}
-                  disabled={!canEditWedding || isCreatingPlan || !planName.trim()}
-                  variant="primary"
-                >
-                  {isCreatingPlan ? t("events.detail.seatingTab.creating") : t("events.detail.seatingTab.create")}
-                </Button>
+          <section className="pt-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-950">
+                  {t("events.detail.seatingTab.title")}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  {t("events.detail.seatingTab.openOrCreateDescription")}
+                </p>
               </div>
+              <Button
+                type="button"
+                variant="primary"
+                className="h-10 self-start"
+                onClick={onCreatePlan}
+                disabled={!canEditWedding || isCreatingPlan}
+              >
+                <Plus className="size-4" />
+                {isCreatingPlan ? t("events.detail.seatingTab.creating") : t("events.detail.seatingTab.create")}
+              </Button>
+            </div>
 
-              <div className="space-y-2">
-                {data.seatingPlans.length ? (
-                  data.seatingPlans.map((plan) => (
-                    <Link
-                      key={plan.id}
-                      href={weddingRoutes.seatingPlan(plan.id)}
-                      className="flex items-center justify-between rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-900">{plan.name}</p>
-                        <p className="text-zinc-600">{plan.width} x {plan.height}</p>
-                      </div>
+            <div className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200">
+              {data.seatingPlans.length ? (
+                data.seatingPlans.map((plan) => (
+                  <Link
+                    key={plan.id}
+                    href={weddingRoutes.seatingPlan(plan.id)}
+                    className="group grid gap-4 py-5 transition-colors hover:bg-zinc-50/70 sm:grid-cols-[112px_minmax(0,1fr)_auto] sm:items-center sm:px-3"
+                  >
+                    <SeatingPlanThumbnail name={plan.name} />
+                    <div className="min-w-0">
+                      <p className="truncate text-lg font-semibold text-zinc-950">{plan.name}</p>
+                      <p className="mt-1 text-sm text-zinc-600">{plan.width} x {plan.height}</p>
+                    </div>
+                    <span className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-900 shadow-xs transition-colors group-hover:bg-zinc-100">
+                      {t("events.detail.seatingTab.open")}
                       <ExternalLink className="size-4 text-zinc-500" />
-                    </Link>
-                  ))
-                ) : (
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                <div className="py-8">
                   <p className="text-sm text-zinc-600">{t("events.detail.seatingTab.empty")}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              )}
+            </div>
+          </section>
         ) : null}
 
         {activeTab !== "overview" && activeTab !== "seating" && activeTab !== "schedule" ? (
@@ -1004,6 +1009,19 @@ function LegendRow({
   );
 }
 
+function SeatingPlanThumbnail({ name }: { name: string }) {
+  return (
+    <div
+      aria-label={name}
+      className="relative h-24 w-24 overflow-hidden rounded-md border border-zinc-200 bg-white"
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(212,212,216,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(212,212,216,0.5)_1px,transparent_1px)] bg-[size:16px_16px]" />
+      <span className="absolute left-5 top-5 h-3 w-10 rounded-sm bg-zinc-200" />
+      <span className="absolute bottom-5 right-5 h-3 w-10 rounded-sm bg-violet-300" />
+    </div>
+  );
+}
+
 
 function VendorStatusBadge({
   status,
@@ -1029,6 +1047,7 @@ function mergeEventWithApi(
   vendors: VendorsApiResponse["vendors"],
   expenses: ExpensesApiResponse["expenses"],
   eventId: string,
+  weddingLocation: string | null,
 ): WeddingEventDetail {
   const confirmedGuests = guests.filter((guest) => guest.rsvpStatus === "confirmed").length;
   const pendingGuests = guests.filter((guest) => guest.rsvpStatus === "unknown" || guest.rsvpStatus === "maybe").length;
@@ -1058,6 +1077,10 @@ function mergeEventWithApi(
   const warnings = Math.max(0, guestsTotal - totalPlanSeats);
 
   const startsAtDate = event.startsAt ? new Date(event.startsAt) : null;
+  const eventLocation = event.location?.trim() || null;
+  const eventAddress = event.address?.trim() || null;
+  const weddingVenueLocation = event.type === "wedding" ? weddingLocation?.trim() || null : null;
+  const venueLocation = weddingVenueLocation ?? eventLocation;
 
   return {
     ...base,
@@ -1067,8 +1090,8 @@ function mergeEventWithApi(
     date: startsAtDate ? toDateString(startsAtDate) : base.date,
     startTime: startsAtDate ? toTimeString(startsAtDate) : base.startTime,
     venue: {
-      name: event.location || base.venue.name,
-      address: event.location || base.venue.address,
+      name: venueLocation ?? base.venue.name,
+      address: eventAddress ?? "-",
     },
     guests: {
       total: guestsTotal,

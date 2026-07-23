@@ -924,7 +924,7 @@
   },
   "events": {
     "list": {
-      "searchPlaceholder": "Search by name or location",
+      "searchPlaceholder": "Search by name, location, or address",
       "empty": "No events match current filters.",
       "filters": {
         "all": "All",
@@ -935,6 +935,7 @@
         "name": "Event",
         "date": "Date",
         "location": "Location",
+        "address": "Address",
         "guests": "Guests"
       },
       "title": "Events",
@@ -971,7 +972,8 @@
       },
       "editDialog": {
         "namePlaceholder": "Event name",
-        "locationPlaceholder": "Venue or address",
+        "locationPlaceholder": "Venue or place name",
+        "addressPlaceholder": "Street address or directions",
         "nameRequired": "Event name is required.",
         "dateTimePairRequired": "Provide both date and time, or clear both fields.",
         "saveFailed": "Failed to save event changes."
@@ -1136,6 +1138,7 @@
       "seatingTab": {
         "title": "Seating plans",
         "description": "Create and open seating plans linked to this event.",
+        "openOrCreateDescription": "Open an existing plan or create a new one for this event.",
         "planNamePlaceholder": "Seating plan name",
         "planNameLabel": "Plan name",
         "eventLabel": "Event",
@@ -1168,6 +1171,7 @@
         "deleteConfirmTitle": "Delete seating plan?",
         "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and its seating layout. This action cannot be undone.",
         "deleteConfirmAction": "Delete plan",
+        "open": "Open",
         "complete": "Fully seated",
         "results": "{{count}} plans shown",
         "summary": {
@@ -1360,6 +1364,7 @@
         "description": "Contacts, event links and contractor lifecycle.",
         "columns": {
           "name": "Vendor",
+          "type": "Type",
           "contact": "Contact",
           "events": "Events",
           "payment": "Paid / total",
@@ -1372,6 +1377,7 @@
       },
       "form": {
         "name": "Vendor name",
+        "vendorType": "Vendor type",
         "contactName": "Contact name",
         "contactEmail": "Email",
         "contactPhone": "Phone",
@@ -1382,6 +1388,40 @@
         "status": "Lifecycle status",
         "notes": "Notes",
         "events": "Linked events"
+      },
+      "vendorTypes": {
+        "Venue": "Venue / reception space",
+        "Catering": "Catering",
+        "Photographer": "Photographer",
+        "Videographer": "Videographer",
+        "Dj": "DJ",
+        "Band": "Band",
+        "DecorFlorals": "Decor / florals",
+        "Coordinator": "Coordinator",
+        "Officiant": "Officiant / church",
+        "Makeup": "Makeup",
+        "Hair": "Hair",
+        "CakeBakery": "Cake / bakery",
+        "Stationery": "Stationery",
+        "RingsJewelry": "Rings / jeweler",
+        "DressAttire": "Dress / attire",
+        "SuitAttire": "Suit",
+        "Transport": "Transport",
+        "Accommodation": "Accommodation",
+        "Rentals": "Rentals",
+        "Entertainment": "Entertainment",
+        "GiftsFavors": "Gifts / favors",
+        "Other": "Other"
+      },
+      "venuePricing": {
+        "title": "Venue calculation",
+        "description": "Estimate venue cost from price per person and guest count. Total cost remains manual.",
+        "event": "Pricing event",
+        "eventPlaceholder": "Choose event",
+        "pricePerPerson": "Price per person",
+        "guestCount": "Guest count",
+        "estimatedTotal": "Estimated venue cost",
+        "useAsTotal": "Use as total cost"
       },
       "delete": {
         "title": "Delete vendor",

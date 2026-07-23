@@ -46,12 +46,16 @@ export async function PUT(request: Request, context: RouteContext) {
     });
     if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
 
-    if (payload.eventIds) {
+    const referencedEventIds = Array.from(new Set([
+      ...(payload.eventIds ?? []),
+      ...(payload.venuePricingEventId ? [payload.venuePricingEventId] : []),
+    ]));
+    if (referencedEventIds.length > 0) {
       const events = await prisma.weddingEvent.findMany({
-        where: { id: { in: payload.eventIds }, weddingId },
+        where: { id: { in: referencedEventIds }, weddingId },
         select: { id: true },
       });
-      if (events.length !== payload.eventIds.length) {
+      if (events.length !== referencedEventIds.length) {
         return NextResponse.json({ error: "One or more events are invalid for this wedding" }, { status: 400 });
       }
     }
@@ -65,9 +69,13 @@ export async function PUT(request: Request, context: RouteContext) {
           contactEmail: payload.contactEmail,
           contactPhone: payload.contactPhone,
           notes: payload.notes,
+          vendorType: payload.vendorType,
           totalCostMinor: payload.totalCostMinor,
           depositMinor: payload.depositMinor,
           amountPaidMinor: payload.amountPaidMinor,
+          venuePricePerPersonMinor: payload.venuePricePerPersonMinor,
+          venueGuestCount: payload.venueGuestCount,
+          venuePricingEventId: payload.venuePricingEventId,
           paymentStatus: payload.paymentStatus,
           lifecycleStatus: payload.lifecycleStatus,
           dueDate: payload.dueDate,

@@ -16,16 +16,17 @@ import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/com
 import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
 import { PaymentCategorySelect } from "@/features/wedding-finances/components/PaymentCategorySelect";
 import { PaymentAmountInput, PaymentDatePicker, PaymentFormField } from "@/features/wedding-finances/components/PaymentFormControls";
+import { PaymentStatusOption } from "@/features/wedding-finances/components/PaymentStatusOption";
 import {
   getPaidByLabel,
   getPaymentCategoryLabel,
   isKnownPaidByOption,
   paidByValues,
 } from "@/features/wedding-finances/lib/payment-options";
+import { expenseStatusValues, type ExpenseStatus } from "@/features/wedding-finances/lib/payment-status-options";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
-type ExpenseStatus = "planned" | "committed" | "paid" | "reimbursed" | "canceled";
 type RelationshipFilter = "all" | "withVendor" | "standalone";
 
 type Expense = {
@@ -68,8 +69,6 @@ type ExpenseForm = {
   vendorId: string;
   eventId: string;
 };
-
-const statuses: ExpenseStatus[] = ["planned", "committed", "paid", "reimbursed", "canceled"];
 
 const emptyForm: ExpenseForm = {
   category: "",
@@ -285,8 +284,10 @@ export default function WeddingBudgetPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("budget.page.filters.all")}</SelectItem>
-                {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{t(`budget.page.status.${status}`)}</SelectItem>
+                {expenseStatusValues.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    <PaymentStatusOption status={status} label={t(`budget.page.status.${status}`)} />
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -383,8 +384,10 @@ export default function WeddingBudgetPage() {
                   <SelectValue placeholder={t("budget.page.form.status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>{t(`budget.page.status.${status}`)}</SelectItem>
+                  {expenseStatusValues.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      <PaymentStatusOption status={status} label={t(`budget.page.status.${status}`)} />
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

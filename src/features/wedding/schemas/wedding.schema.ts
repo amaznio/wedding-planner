@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { vendorTypeValues } from "@/features/wedding-vendors/lib/vendor-options";
+
 export const weddingEventTypeSchema = z.enum([
   "wedding",
   "afterparty",
@@ -42,8 +44,9 @@ export const updateWeddingSchema = z.object({
 export const createWeddingEventSchema = z.object({
   name: z.string().trim().min(1).max(160),
   type: weddingEventTypeSchema.default("other"),
-  startsAt: z.coerce.date().optional(),
-  location: z.string().trim().max(200).optional(),
+  startsAt: z.coerce.date().nullable().optional(),
+  location: z.string().trim().max(200).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -231,9 +234,13 @@ export const createVendorSchema = z.object({
   contactEmail: z.string().email().max(160).optional(),
   contactPhone: z.string().trim().max(60).optional(),
   notes: z.string().max(4000).optional(),
+  vendorType: z.enum(vendorTypeValues).default("Other"),
   totalCostMinor: z.int().min(0).default(0),
   depositMinor: z.int().min(0).default(0),
   amountPaidMinor: z.int().min(0).default(0),
+  venuePricePerPersonMinor: z.int().min(0).nullable().optional(),
+  venueGuestCount: z.int().min(0).nullable().optional(),
+  venuePricingEventId: z.string().min(1).nullable().optional(),
   paymentStatus: vendorPaymentStatusSchema.default("not_started"),
   lifecycleStatus: vendorLifecycleStatusSchema.default("considering"),
   dueDate: z.coerce.date().optional(),
@@ -246,9 +253,13 @@ export const updateVendorSchema = z.object({
   contactEmail: z.string().email().max(160).nullable().optional(),
   contactPhone: z.string().trim().max(60).nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
+  vendorType: z.enum(vendorTypeValues).optional(),
   totalCostMinor: z.int().min(0).optional(),
   depositMinor: z.int().min(0).optional(),
   amountPaidMinor: z.int().min(0).optional(),
+  venuePricePerPersonMinor: z.int().min(0).nullable().optional(),
+  venueGuestCount: z.int().min(0).nullable().optional(),
+  venuePricingEventId: z.string().min(1).nullable().optional(),
   paymentStatus: vendorPaymentStatusSchema.optional(),
   lifecycleStatus: vendorLifecycleStatusSchema.optional(),
   dueDate: z.coerce.date().nullable().optional(),

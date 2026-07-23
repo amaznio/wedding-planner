@@ -18,6 +18,10 @@ import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/com
 import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
 import { CreateWeddingVendorDialog } from "@/features/wedding-vendors/components/CreateWeddingVendorDialog";
 import { VendorAmountInput, VendorFormField } from "@/features/wedding-vendors/components/VendorFormField";
+import { VendorTypeSelect } from "@/features/wedding-vendors/components/VendorTypeSelect";
+import { VendorVenuePricingFields } from "@/features/wedding-vendors/components/VendorVenuePricingFields";
+import { defaultVendorType, normalizeVendorType, type VendorType } from "@/features/wedding-vendors/lib/vendor-options";
+import { getDefaultVenuePricingEventId, getVenuePricingGuestCount } from "@/features/wedding-vendors/lib/venue-pricing";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
@@ -29,6 +33,9 @@ type WeddingEvent = {
   id: string;
   name: string;
   type?: string | null;
+  _count?: {
+    eventGuests?: number;
+  };
 };
 
 type Vendor = {
@@ -38,10 +45,14 @@ type Vendor = {
   contactEmail: string | null;
   contactPhone: string | null;
   notes: string | null;
+  vendorType?: string | null;
   totalCostMinor: number;
   depositMinor: number;
   depositPaidMinor: number;
   amountPaidMinor: number;
+  venuePricePerPersonMinor: number | null;
+  venueGuestCount: number | null;
+  venuePricingEventId: string | null;
   paymentStatus: VendorPaymentStatus;
   lifecycleStatus: VendorLifecycleStatus;
   vendorEvents: Array<{ eventId: string; event?: WeddingEvent }>;
@@ -57,8 +68,12 @@ type VendorForm = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  vendorType: VendorType;
   totalCost: string;
   deposit: string;
+  venuePricePerPerson: string;
+  venueGuestCount: string;
+  venuePricingEventId: string;
   lifecycleStatus: VendorLifecycleStatus;
   notes: string;
   eventIds: string[];
@@ -69,8 +84,12 @@ const emptyForm: VendorForm = {
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  vendorType: defaultVendorType,
   totalCost: "",
   deposit: "",
+  venuePricePerPerson: "",
+  venueGuestCount: "",
+  venuePricingEventId: "",
   lifecycleStatus: "considering",
   notes: "",
   eventIds: [],
@@ -168,8 +187,12 @@ export default function WeddingVendorsPage() {
       contactName: vendor.contactName ?? "",
       contactEmail: vendor.contactEmail ?? "",
       contactPhone: vendor.contactPhone ?? "",
+      vendorType: normalizeVendorType(vendor.vendorType),
       totalCost: formatMajorAmount(vendor.totalCostMinor),
       deposit: formatMajorAmount(vendor.depositMinor),
+      venuePricePerPerson: vendor.venuePricePerPersonMinor === null ? "" : formatMajorAmount(vendor.venuePricePerPersonMinor),
+      venueGuestCount: vendor.venueGuestCount === null ? "" : String(vendor.venueGuestCount),
+      venuePricingEventId: vendor.venuePricingEventId ?? "",
       lifecycleStatus: vendor.lifecycleStatus,
       notes: vendor.notes ?? "",
       eventIds: vendor.vendorEvents.map((event) => event.eventId),
@@ -196,7 +219,16 @@ export default function WeddingVendorsPage() {
     if (!canEdit || !dialogMode) return;
     const totalCostMinor = parseAmountToMinor(form.totalCost);
     const depositMinor = parseAmountToMinor(form.deposit || "0");
-    if (!form.name.trim() || totalCostMinor === null || depositMinor === null) {
+    const venuePricePerPersonMinor = form.venuePricePerPerson.trim()
+      ? parseAmountToMinor(form.venuePricePerPerson)
+      : null;
+    const venueGuestCount = form.venueGuestCount.trim()
+      ? parseGuestCount(form.venueGuestCount)
+      : null;
+    const hasInvalidVenuePricing = form.vendorType === "Venue"
+      && ((form.venuePricePerPerson.trim() && venuePricePerPersonMinor === null)
+        || (form.venueGuestCount.trim() && venueGuestCount === null));
+    if (!form.name.trim() || totalCostMinor === null || depositMinor === null || hasInvalidVenuePricing) {
       setError(t("vendors.page.errors.invalidForm"));
       return;
     }
@@ -210,8 +242,12 @@ export default function WeddingVendorsPage() {
         contactEmail: form.contactEmail.trim() || null,
         contactPhone: form.contactPhone.trim() || null,
         notes: form.notes.trim() || null,
+        vendorType: form.vendorType,
         totalCostMinor,
         depositMinor,
+        venuePricePerPersonMinor: form.vendorType === "Venue" ? venuePricePerPersonMinor : null,
+        venueGuestCount: form.vendorType === "Venue" ? venueGuestCount : null,
+        venuePricingEventId: form.vendorType === "Venue" ? form.venuePricingEventId || null : null,
         lifecycleStatus: form.lifecycleStatus,
         eventIds: form.eventIds,
       };
@@ -279,6 +315,7 @@ export default function WeddingVendorsPage() {
             variant="standalone"
             columns={[
               { key: "name", label: t("vendors.page.table.columns.name") },
+              { key: "type", label: t("vendors.page.table.columns.type") },
               { key: "contact", label: t("vendors.page.table.columns.contact") },
               { key: "events", label: t("vendors.page.table.columns.events") },
               { key: "payment", label: t("vendors.page.table.columns.payment"), align: "right" },
@@ -288,6 +325,7 @@ export default function WeddingVendorsPage() {
             rows={vendors.map((vendor) => ({
               id: vendor.id,
               name: vendor.name,
+              type: t(`vendors.page.vendorTypes.${normalizeVendorType(vendor.vendorType)}`),
               contact: vendor.contactName || vendor.contactEmail || vendor.contactPhone || "-",
               events: vendor.vendorEvents.map((event) => event.event?.name).filter(Boolean).join(", ") || "-",
               payment: `${formatCurrency(vendor.amountPaidMinor, currency, locale)} / ${formatCurrency(vendor.totalCostMinor, currency, locale)}`,
@@ -364,6 +402,14 @@ export default function WeddingVendorsPage() {
                 placeholder={t("vendors.page.form.name")}
               />
             </VendorFormField>
+            <VendorTypeSelect
+              value={form.vendorType}
+              onChange={(vendorType) => setForm((current) => (
+                vendorType === "Venue"
+                  ? applyVenueDefaults({ ...current, vendorType }, events)
+                  : { ...current, vendorType }
+              ))}
+            />
             <div className="grid gap-3 sm:grid-cols-3">
               <VendorFormField label={t("vendors.page.form.contactName")}>
                 <Input
@@ -408,6 +454,25 @@ export default function WeddingVendorsPage() {
                 />
               ) : null}
             </div>
+            {form.vendorType === "Venue" ? (
+              <VendorVenuePricingFields
+                events={events}
+                currency={currency}
+                locale={locale}
+                eventId={form.venuePricingEventId}
+                pricePerPerson={form.venuePricePerPerson}
+                guestCount={form.venueGuestCount}
+                onEventChange={(eventId, guestCount) => setForm((current) => ({
+                  ...current,
+                  venuePricingEventId: eventId,
+                  venueGuestCount: String(guestCount),
+                  eventIds: current.eventIds.includes(eventId) ? current.eventIds : [...current.eventIds, eventId],
+                }))}
+                onPricePerPersonChange={(value) => setForm((current) => ({ ...current, venuePricePerPerson: value }))}
+                onGuestCountChange={(value) => setForm((current) => ({ ...current, venueGuestCount: value }))}
+                onUseAsTotal={(amountMinor) => setForm((current) => ({ ...current, totalCost: formatMajorAmount(amountMinor) }))}
+              />
+            ) : null}
             <VendorFormField label={t("vendors.page.form.status")}>
               <Select value={form.lifecycleStatus} onValueChange={(value) => setForm((current) => ({ ...current, lifecycleStatus: value as VendorLifecycleStatus }))}>
                 <SelectTrigger aria-label={t("vendors.page.form.status")} className="w-full">
@@ -478,4 +543,22 @@ function parseAmountToMinor(value: string): number | null {
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : null;
+}
+
+function parseGuestCount(value: string): number | null {
+  if (!/^\d+$/.test(value.trim())) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function applyVenueDefaults(form: VendorForm, events: WeddingEvent[]): VendorForm {
+  const eventId = form.venuePricingEventId || getDefaultVenuePricingEventId(events);
+  if (!eventId) return form;
+
+  return {
+    ...form,
+    venuePricingEventId: eventId,
+    venueGuestCount: form.venueGuestCount || String(getVenuePricingGuestCount(events, eventId)),
+    eventIds: form.eventIds.includes(eventId) ? form.eventIds : [...form.eventIds, eventId],
+  };
 }

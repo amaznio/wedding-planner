@@ -21,7 +21,6 @@ export type WeddingEventDetail = {
   isMainEvent: boolean;
   date: string;
   startTime: string;
-  endTime: string;
   venue: {
     name: string;
     address: string;

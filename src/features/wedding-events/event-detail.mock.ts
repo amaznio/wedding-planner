@@ -40,7 +40,6 @@ export function buildEventDetailMockData(input: BuildEventDetailMockDataInput): 
       isMainEvent: input.isMainEvent ?? true,
       date: "2026-06-20",
       startTime: "16:00",
-      endTime: "02:00",
       venue: {
         name: "Folwark Wąsowo",
         address: "Wąsowo 39, 64-320 Buk",

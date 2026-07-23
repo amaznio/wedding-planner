@@ -18,7 +18,16 @@ export async function GET(_: Request, context: RouteContext) {
   const wedding = await prisma.wedding.findUnique({
     where: { id: weddingId },
     include: {
-      events: { orderBy: { createdAt: "asc" } },
+      events: {
+        include: {
+          _count: {
+            select: {
+              eventGuests: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
       _count: {
         select: {
           guests: true,

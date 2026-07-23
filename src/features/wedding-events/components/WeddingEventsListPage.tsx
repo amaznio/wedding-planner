@@ -32,6 +32,7 @@ type WeddingEventsListPageProps = {
     type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
     startsAt: string | null;
     location: string | null;
+    address: string | null;
     _count: {
       eventGuests: number;
       seatingPlans: number;
@@ -57,12 +58,14 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
     date: string;
     time: string;
     location: string;
+    address: string;
   }>({
     name: "",
     type: "other",
     date: "",
     time: "",
     location: "",
+    address: "",
   });
 
   const nowTs = useMemo(() => new Date(nowIso).getTime(), [nowIso]);
@@ -78,6 +81,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
           type: event.type,
           startsAt: event.startsAt,
           location: event.location,
+          address: event.address,
           guestCount: event._count.eventGuests,
           confirmedCount,
           respondedCount,
@@ -104,7 +108,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
       if (!statusMatch) return false;
       if (!normalizedQuery) return true;
 
-      const haystack = `${event.name} ${event.location ?? ""}`.toLowerCase();
+      const haystack = `${event.name} ${event.location ?? ""} ${event.address ?? ""}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
   }, [mappedEvents, nowTs, query, statusFilter]);
@@ -134,6 +138,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
       date: startsAt ? toDateInputValue(startsAt) : "",
       time: startsAt ? toTimeInputValue(startsAt) : "",
       location: event.location ?? "",
+      address: event.address ?? "",
     });
     setEditError(null);
     setEditingEventId(eventId);
@@ -163,6 +168,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
         name: editForm.name.trim(),
         type: editForm.type,
         location: editForm.location.trim() ? editForm.location.trim() : null,
+        address: editForm.address.trim() ? editForm.address.trim() : null,
         startsAt,
       };
 
@@ -183,6 +189,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
           type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
           startsAt: string | null;
           location: string | null;
+          address: string | null;
         };
       };
 
@@ -195,6 +202,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                 type: result.event.type,
                 startsAt: result.event.startsAt,
                 location: result.event.location,
+                address: result.event.address,
               }
             : event,
         ),
@@ -375,6 +383,15 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                 value={editForm.location}
                 onChange={(event) => setEditForm((current) => ({ ...current, location: event.target.value }))}
                 placeholder={t("events.list.editDialog.locationPlaceholder")}
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-event-address" className="text-sm font-medium">{t("events.list.table.address")}</label>
+              <Input
+                id="edit-event-address"
+                value={editForm.address}
+                onChange={(event) => setEditForm((current) => ({ ...current, address: event.target.value }))}
+                placeholder={t("events.list.editDialog.addressPlaceholder")}
               />
             </div>
             {editError ? <p className="text-sm text-red-600">{editError}</p> : null}

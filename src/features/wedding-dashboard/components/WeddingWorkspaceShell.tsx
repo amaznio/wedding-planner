@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { createContext, useContext, useMemo, useState } from "react";
+import { Fragment, createContext, useContext, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -145,16 +145,18 @@ function WeddingWorkspaceTopBar({ breadcrumbs }: { breadcrumbs: WorkspaceBreadcr
             const isLast = index === breadcrumbs.length - 1;
 
             return (
-              <BreadcrumbItem key={`${item.label}-${index}`}>
-                {item.href && !isLast ? (
-                  <BreadcrumbLink asChild>
-                    <Link href={item.href}>{item.label}</Link>
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                )}
+              <Fragment key={`${item.label}-${index}`}>
+                <BreadcrumbItem>
+                  {item.href && !isLast ? (
+                    <BreadcrumbLink asChild>
+                      <Link href={item.href}>{item.label}</Link>
+                    </BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
                 {!isLast ? <BreadcrumbSeparator /> : null}
-              </BreadcrumbItem>
+              </Fragment>
             );
           })}
         </BreadcrumbList>

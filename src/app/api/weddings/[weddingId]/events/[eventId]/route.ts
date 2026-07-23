@@ -56,6 +56,7 @@ export async function PUT(request: Request, context: RouteContext) {
         type: payload.type,
         startsAt: payload.startsAt,
         location: payload.location,
+        address: payload.address,
         notes: payload.notes,
       },
     });
