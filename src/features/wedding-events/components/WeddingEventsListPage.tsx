@@ -1,18 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
+import { enUS, pl } from "react-day-picker/locale";
 import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 import { getEventRoutes } from "@/lib/routes";
 import { WeddingEventListRow } from "@/features/wedding-events/components/WeddingEventListRow";
 import { mapWeddingEventListItem } from "@/features/wedding-events/lib/map-wedding-event-list-item";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +27,37 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+type WeddingEventType = "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
+
+type EventFormState = {
+  name: string;
+  type: WeddingEventType;
+  date: string;
+  time: string;
+  location: string;
+  address: string;
+  requiresSeatingPlan: boolean;
+};
+
+const emptyEventForm: EventFormState = {
+  name: "",
+  type: "other",
+  date: "",
+  time: "",
+  location: "",
+  address: "",
+  requiresSeatingPlan: true,
+};
+
+const eventTypeOptions: Array<{ value: WeddingEventType; labelKey: string }> = [
+  { value: "wedding", labelKey: "events.detail.eventType.wedding" },
+  { value: "ceremony", labelKey: "events.detail.eventType.ceremony" },
+  { value: "afterparty", labelKey: "events.detail.eventType.afterparty" },
+  { value: "bachelor", labelKey: "events.detail.eventType.bachelor" },
+  { value: "bachelorette", labelKey: "events.detail.eventType.bachelorette" },
+  { value: "other", labelKey: "events.detail.eventType.custom" },
+];
+
 type WeddingEventsListPageProps = {
   embedded?: boolean;
   weddingId: string;
@@ -29,7 +65,8 @@ type WeddingEventsListPageProps = {
   events: Array<{
     id: string;
     name: string;
-    type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+    type: WeddingEventType;
+    requiresSeatingPlan: boolean;
     startsAt: string | null;
     location: string | null;
     address: string | null;
@@ -49,24 +86,11 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
   const [eventsState, setEventsState] = useState(events);
   const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
   const [query, setQuery] = useState("");
+  const [eventDialogMode, setEventDialogMode] = useState<"create" | "edit" | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{
-    name: string;
-    type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
-    date: string;
-    time: string;
-    location: string;
-    address: string;
-  }>({
-    name: "",
-    type: "other",
-    date: "",
-    time: "",
-    location: "",
-    address: "",
-  });
+  const [editForm, setEditForm] = useState<EventFormState>(emptyEventForm);
 
   const nowTs = useMemo(() => new Date(nowIso).getTime(), [nowIso]);
 
@@ -86,6 +110,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
           confirmedCount,
           respondedCount,
           seatingPlanCount: event._count.seatingPlans,
+          requiresSeatingPlan: event.requiresSeatingPlan,
           vendorCount: event._count.vendorEvents,
           locale,
         });
@@ -127,6 +152,20 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
     [eventsState, editingEventId],
   );
 
+  const closeEventDialog = () => {
+    setEventDialogMode(null);
+    setEditingEventId(null);
+    setEditError(null);
+    setEditForm(emptyEventForm);
+  };
+
+  const openCreateDialog = () => {
+    setEditForm(emptyEventForm);
+    setEditError(null);
+    setEditingEventId(null);
+    setEventDialogMode("create");
+  };
+
   const openEditDialog = (eventId: string) => {
     const event = eventsState.find((item) => item.id === eventId);
     if (!event) return;
@@ -139,13 +178,15 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
       time: startsAt ? toTimeInputValue(startsAt) : "",
       location: event.location ?? "",
       address: event.address ?? "",
+      requiresSeatingPlan: event.requiresSeatingPlan,
     });
     setEditError(null);
     setEditingEventId(eventId);
+    setEventDialogMode("edit");
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingEvent) return;
+  const handleSaveEvent = async () => {
+    if (eventDialogMode === "edit" && !editingEvent) return;
     if (!editForm.name.trim()) {
       setEditError(t("events.list.editDialog.nameRequired"));
       return;
@@ -169,14 +210,20 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
         type: editForm.type,
         location: editForm.location.trim() ? editForm.location.trim() : null,
         address: editForm.address.trim() ? editForm.address.trim() : null,
+        requiresSeatingPlan: editForm.requiresSeatingPlan,
         startsAt,
       };
 
-      const response = await fetch(`/api/weddings/${weddingId}/events/${editingEvent.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        eventDialogMode === "edit" && editingEvent
+          ? `/api/weddings/${weddingId}/events/${editingEvent.id}`
+          : `/api/weddings/${weddingId}/events`,
+        {
+          method: eventDialogMode === "edit" ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (!response.ok) {
         throw new Error("update_failed");
@@ -186,29 +233,60 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
         event: {
           id: string;
           name: string;
-          type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+          type: WeddingEventType;
+          requiresSeatingPlan: boolean;
           startsAt: string | null;
           location: string | null;
           address: string | null;
+          _count?: {
+            eventGuests: number;
+            seatingPlans: number;
+            vendorEvents: number;
+          };
+          eventGuests?: Array<{
+            rsvpStatus: "unknown" | "confirmed" | "declined" | "maybe";
+          }>;
         };
       };
 
-      setEventsState((current) =>
-        current.map((event) =>
-          event.id === result.event.id
-            ? {
-                ...event,
-                name: result.event.name,
-                type: result.event.type,
-                startsAt: result.event.startsAt,
-                location: result.event.location,
-                address: result.event.address,
-              }
-            : event,
-        ),
-      );
+      if (eventDialogMode === "edit") {
+        setEventsState((current) =>
+          current.map((event) =>
+            event.id === result.event.id
+              ? {
+                  ...event,
+                  name: result.event.name,
+                  type: result.event.type,
+                  requiresSeatingPlan: result.event.requiresSeatingPlan,
+                  startsAt: result.event.startsAt,
+                  location: result.event.location,
+                  address: result.event.address,
+                }
+              : event,
+          ),
+        );
+      } else {
+        setEventsState((current) => [
+          ...current,
+          {
+            id: result.event.id,
+            name: result.event.name,
+            type: result.event.type,
+            requiresSeatingPlan: result.event.requiresSeatingPlan,
+            startsAt: result.event.startsAt,
+            location: result.event.location,
+            address: result.event.address,
+            _count: result.event._count ?? {
+              eventGuests: 0,
+              seatingPlans: 0,
+              vendorEvents: 0,
+            },
+            eventGuests: result.event.eventGuests ?? [],
+          },
+        ]);
+      }
 
-      setEditingEventId(null);
+      closeEventDialog();
     } catch {
       setEditError(t("events.list.editDialog.saveFailed"));
     } finally {
@@ -222,7 +300,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
         title={t("events.list.title")}
         subtitle={t("events.list.subtitle")}
         actions={(
-          <Button type="button" variant="primary" disabled>
+          <Button type="button" variant="primary" onClick={openCreateDialog}>
             <Plus className="size-4" />
             {t("events.actions.addEvent")}
           </Button>
@@ -263,12 +341,20 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
           </TabsList>
         </Tabs>
 
-        <div className="mt-4 max-w-md">
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("events.list.searchPlaceholder")}
-          />
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full max-w-md">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("events.list.searchPlaceholder")}
+            />
+          </div>
+          {embedded ? (
+            <Button type="button" variant="primary" className="self-start" onClick={openCreateDialog}>
+              <Plus className="size-4" />
+              {t("events.actions.addEvent")}
+            </Button>
+          ) : null}
         </div>
 
         <div className="mt-4 flex flex-col gap-3">
@@ -288,7 +374,11 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                   responded: event.respondedCount,
                   percent: event.respondedPercent,
                 })}
-                seatingPlansLabel={t("events.list.row.seatingPlans", { count: event.seatingPlanCount })}
+                seatingPlansLabel={
+                  event.requiresSeatingPlan
+                    ? t("events.list.row.seatingPlans", { count: event.seatingPlanCount })
+                    : t("events.list.row.noSeatingRequired")
+                }
                 vendorsLabel={t("events.list.row.vendors", { count: event.vendorCount })}
                 nextActionLabel={t(`events.list.coverage.nextAction.${event.coverageStatus}`)}
                 openLabel={t("events.list.actions.open")}
@@ -312,16 +402,18 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
         </div>
       </div>
 
-      <Dialog open={editingEventId !== null} onOpenChange={(open) => !open && setEditingEventId(null)}>
+      <Dialog open={eventDialogMode !== null} onOpenChange={(open) => !open && closeEventDialog()}>
         <DialogContent className="sm:max-w-[760px] p-0">
           <DialogHeader className="border-b border-zinc-200 px-6 py-5">
-            <DialogTitle>{t("events.list.actions.edit")}</DialogTitle>
+            <DialogTitle>
+              {eventDialogMode === "edit" ? t("events.list.actions.edit") : t("events.list.createDialog.title")}
+            </DialogTitle>
           </DialogHeader>
           <form
             className="grid gap-4 px-6 py-5"
             onSubmit={(event) => {
               event.preventDefault();
-              void handleSaveEdit();
+              void handleSaveEvent();
             }}
           >
             <div className="grid gap-2">
@@ -340,7 +432,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                 onValueChange={(value) =>
                   setEditForm((current) => ({
                     ...current,
-                    type: value as "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other",
+                    type: value as WeddingEventType,
                   }))
                 }
               >
@@ -348,22 +440,37 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wedding">{t("events.detail.eventType.wedding")}</SelectItem>
-                  <SelectItem value="afterparty">{t("events.detail.eventType.afterparty")}</SelectItem>
-                  <SelectItem value="bachelor">{t("events.detail.eventType.bachelor")}</SelectItem>
-                  <SelectItem value="bachelorette">{t("events.detail.eventType.bachelorette")}</SelectItem>
-                  <SelectItem value="other">{t("events.detail.eventType.custom")}</SelectItem>
+                  {eventTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{t(option.labelKey)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            <label
+              htmlFor="edit-event-requires-seating-plan"
+              className="flex items-center justify-between gap-4 rounded-md border border-zinc-200 px-3 py-3"
+            >
+              <span className="grid gap-0.5">
+                <span className="text-sm font-medium text-zinc-900">{t("events.list.form.requiresSeatingPlan")}</span>
+                <span className="text-xs leading-5 text-zinc-500">{t("events.list.form.requiresSeatingPlanHelp")}</span>
+              </span>
+              <Switch
+                id="edit-event-requires-seating-plan"
+                checked={editForm.requiresSeatingPlan}
+                onCheckedChange={(checked) =>
+                  setEditForm((current) => ({ ...current, requiresSeatingPlan: checked }))
+                }
+              />
+            </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
-                <label htmlFor="edit-event-date" className="text-sm font-medium">{t("events.list.table.date")}</label>
-                <Input
-                  id="edit-event-date"
-                  type="date"
+                <EventDatePicker
+                  label={t("events.list.table.date")}
                   value={editForm.date}
-                  onChange={(event) => setEditForm((current) => ({ ...current, date: event.target.value }))}
+                  locale={locale}
+                  placeholder={t("events.list.form.datePlaceholder")}
+                  clearLabel={t("events.list.form.clearDate")}
+                  onChange={(date) => setEditForm((current) => ({ ...current, date }))}
                 />
               </div>
               <div className="grid gap-2">
@@ -396,7 +503,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
             </div>
             {editError ? <p className="text-sm text-red-600">{editError}</p> : null}
             <DialogFooter className="mt-1 border-t border-zinc-200 pt-4">
-              <Button type="button" variant="outline" onClick={() => setEditingEventId(null)}>
+              <Button type="button" variant="outline" onClick={closeEventDialog}>
                 {t("common.cancel")}
               </Button>
               <Button type="submit" variant="primary" disabled={isSavingEdit}>
@@ -415,6 +522,86 @@ function toDateInputValue(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function EventDatePicker({
+  label,
+  value,
+  locale,
+  placeholder,
+  clearLabel,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  locale: string;
+  placeholder: string;
+  clearLabel: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedDate = parseDateInputValue(value);
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-sm font-medium">{label}</span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={label}
+            className={cn(
+              "h-9 w-full justify-between px-3 text-left font-normal",
+              !selectedDate && "text-zinc-400",
+            )}
+          >
+            <span className="min-w-0 truncate">
+              {selectedDate ? formatDate(selectedDate, locale) : placeholder}
+            </span>
+            <CalendarDays className="size-4 text-zinc-500" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              if (!date) return;
+              onChange(toDateInputValue(date));
+              setOpen(false);
+            }}
+            defaultMonth={selectedDate}
+            locale={locale === "pl" ? pl : enUS}
+          />
+          <div className="border-t border-zinc-200 p-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-center"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              {clearLabel}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function parseDateInputValue(value: string): Date | undefined {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
+}
+
+function formatDate(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
 function toTimeInputValue(date: Date): string {

@@ -37,6 +37,7 @@ export function buildEventDetailMockData(input: BuildEventDetailMockDataInput): 
       weddingId: input.weddingId,
       name: input.eventName ?? "Wedding",
       type: "wedding",
+      requiresSeatingPlan: true,
       isMainEvent: input.isMainEvent ?? true,
       date: "2026-06-20",
       startTime: "16:00",

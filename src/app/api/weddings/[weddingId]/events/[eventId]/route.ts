@@ -54,6 +54,7 @@ export async function PUT(request: Request, context: RouteContext) {
       data: {
         name: payload.name,
         type: payload.type,
+        requiresSeatingPlan: payload.requiresSeatingPlan,
         startsAt: payload.startsAt,
         location: payload.location,
         address: payload.address,

@@ -4,7 +4,7 @@ export type GuestRsvpStatus = "confirmed" | "pending" | "not_attending" | "no_re
 export type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_2";
 export type GuestSex = "male" | "female" | "unknown";
 
-export type WeddingGuestEvent = "wedding" | "afterparty" | "bachelorette" | "bachelor";
+export type WeddingGuestEvent = "wedding" | "ceremony" | "afterparty" | "bachelorette" | "bachelor";
 
 export type WeddingGuest = {
   id: string;

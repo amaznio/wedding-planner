@@ -21,7 +21,7 @@ export type WeddingDetailApiResponse = {
     events: Array<{
       id: string;
       name: string;
-      type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+      type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
       startsAt: string | null;
     }>;
     _count: {
@@ -39,7 +39,7 @@ export type WeddingDashboardApiResponse = {
   rsvpByEvent: Array<{
     eventId: string;
     name: string;
-    type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+    type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
     totalEventGuests: number;
     invited: number;
     confirmed: number;

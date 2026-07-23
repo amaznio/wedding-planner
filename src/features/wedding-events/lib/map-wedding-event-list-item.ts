@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/config";
 export type WeddingEventListItem = {
   id: string;
   name: string;
-  type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+  type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
   startsAt: string | null;
   location: string | null;
   address: string | null;
@@ -13,6 +13,7 @@ export type WeddingEventListItem = {
   confirmedPercent: number;
   respondedPercent: number;
   seatingPlanCount: number;
+  requiresSeatingPlan: boolean;
   vendorCount: number;
   coverageStatus: "missingGuests" | "missingRsvps" | "missingSeating" | "missingVendors" | "ready";
   isMainEvent: boolean;
@@ -25,7 +26,7 @@ export type WeddingEventListItem = {
 export function mapWeddingEventListItem(input: {
   id: string;
   name: string;
-  type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+  type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
   startsAt: string | null;
   location: string | null;
   address: string | null;
@@ -33,6 +34,7 @@ export function mapWeddingEventListItem(input: {
   confirmedCount: number;
   respondedCount: number;
   seatingPlanCount: number;
+  requiresSeatingPlan: boolean;
   vendorCount: number;
   locale: Locale;
 }): WeddingEventListItem {
@@ -75,11 +77,13 @@ export function mapWeddingEventListItem(input: {
     confirmedPercent,
     respondedPercent,
     seatingPlanCount: input.seatingPlanCount,
+    requiresSeatingPlan: input.requiresSeatingPlan,
     vendorCount: input.vendorCount,
     coverageStatus: getCoverageStatus({
       guestCount: input.guestCount,
       respondedCount: input.respondedCount,
       seatingPlanCount: input.seatingPlanCount,
+      requiresSeatingPlan: input.requiresSeatingPlan,
       vendorCount: input.vendorCount,
     }),
     isMainEvent: input.type === "wedding",
@@ -94,11 +98,12 @@ function getCoverageStatus(input: {
   guestCount: number;
   respondedCount: number;
   seatingPlanCount: number;
+  requiresSeatingPlan: boolean;
   vendorCount: number;
 }): WeddingEventListItem["coverageStatus"] {
   if (input.guestCount === 0) return "missingGuests";
   if (input.respondedCount < input.guestCount) return "missingRsvps";
-  if (input.seatingPlanCount === 0) return "missingSeating";
+  if (input.requiresSeatingPlan && input.seatingPlanCount === 0) return "missingSeating";
   if (input.vendorCount === 0) return "missingVendors";
   return "ready";
 }

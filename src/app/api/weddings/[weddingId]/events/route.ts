@@ -49,10 +49,26 @@ export async function POST(request: Request, context: RouteContext) {
         weddingId,
         name: payload.name,
         type: payload.type,
+        requiresSeatingPlan: payload.requiresSeatingPlan,
         startsAt: payload.startsAt,
         location: payload.location,
         address: payload.address,
         notes: payload.notes,
+      },
+      include: {
+        _count: {
+          select: {
+            eventGuests: true,
+            seatingPlans: true,
+            vendorEvents: true,
+            expenses: true,
+          },
+        },
+        eventGuests: {
+          select: {
+            rsvpStatus: true,
+          },
+        },
       },
     });
     return NextResponse.json({ event }, { status: 201 });

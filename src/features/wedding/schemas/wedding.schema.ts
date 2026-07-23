@@ -4,6 +4,7 @@ import { vendorTypeValues } from "@/features/wedding-vendors/lib/vendor-options"
 
 export const weddingEventTypeSchema = z.enum([
   "wedding",
+  "ceremony",
   "afterparty",
   "bachelor",
   "bachelorette",
@@ -47,6 +48,7 @@ export const createWeddingEventSchema = z.object({
   startsAt: z.coerce.date().nullable().optional(),
   location: z.string().trim().max(200).nullable().optional(),
   address: z.string().trim().max(300).nullable().optional(),
+  requiresSeatingPlan: z.boolean().default(true),
   notes: z.string().max(2000).optional(),
 });
 

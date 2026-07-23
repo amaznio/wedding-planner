@@ -30,7 +30,7 @@ type WeddingDetailsApiResponse = {
     events: Array<{
       id: string;
       name: string;
-      type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+      type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
       startsAt: string | null;
     }>;
   };
@@ -53,7 +53,7 @@ type WeddingGuestsApiGuest = {
     requiresSeat: boolean;
     notes: string | null;
     event: {
-      type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+      type: "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
     };
   }>;
 };
@@ -66,7 +66,7 @@ type WeddingGuestsPageProps = {
   weddingId: string;
 };
 
-type WeddingEventType = "wedding" | "afterparty" | "bachelorette" | "bachelor" | "other";
+type WeddingEventType = "wedding" | "ceremony" | "afterparty" | "bachelorette" | "bachelor" | "other";
 
 export function WeddingGuestsPage({ weddingId }: WeddingGuestsPageProps) {
   const { locale, t } = useI18n();
@@ -295,7 +295,7 @@ function mapGuestStatus(rsvpStatuses: Array<"unknown" | "confirmed" | "declined"
 }
 
 function isSupportedGuestEvent(value: string): value is WeddingGuestEvent {
-  return value === "wedding" || value === "afterparty" || value === "bachelorette" || value === "bachelor";
+  return value === "wedding" || value === "ceremony" || value === "afterparty" || value === "bachelorette" || value === "bachelor";
 }
 
 function getInitials(name: string): string {

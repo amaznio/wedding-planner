@@ -27,7 +27,7 @@ type GuestAgeCategory = "adult" | "teen" | "child" | "small_child" | "toddler_0_
 type RelationshipMode = "none" | "with_partner";
 type RelationshipType = "partner" | "plus_one";
 type RelationshipGuestMode = "existing" | "new";
-type WeddingEventType = "wedding" | "afterparty" | "bachelorette" | "bachelor" | "other";
+type WeddingEventType = "wedding" | "ceremony" | "afterparty" | "bachelorette" | "bachelor" | "other";
 
 type ExistingGuestOption = {
   id: string;

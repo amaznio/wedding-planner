@@ -22,6 +22,7 @@ enum GuestAgeCategory {
 
 enum WeddingEventType {
   wedding
+  ceremony
   afterparty
   bachelor
   bachelorette
@@ -140,17 +141,18 @@ model WeddingNote {
 }
 
 model WeddingEvent {
-  id        String           @id @default(cuid())
-  weddingId String
-  wedding   Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
-  name      String
-  type      WeddingEventType @default(wedding)
-  startsAt  DateTime?
-  location  String?
-  address   String?
-  notes     String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id                  String           @id @default(cuid())
+  weddingId           String
+  wedding             Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name                String
+  type                WeddingEventType @default(wedding)
+  requiresSeatingPlan Boolean          @default(true)
+  startsAt            DateTime?
+  location            String?
+  address             String?
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   seatingPlans  SeatingPlan[]
   eventGuests   EventGuest[]

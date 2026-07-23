@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarPlus2, GlassWater, Martini, PartyPopper, Sparkles } from "lucide-react";
+import { CalendarPlus2, Church, GlassWater, Martini, PartyPopper, Sparkles } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ type WeddingEventsStripProps = {
 
 const iconByType = {
   wedding: PartyPopper,
+  ceremony: Church,
   afterparty: GlassWater,
   bachelorette: Sparkles,
   bachelor: Martini,

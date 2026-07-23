@@ -28,7 +28,7 @@ export type DashboardEventCard = {
   date: Date;
   href?: string;
   status: DashboardEventStatus;
-  type: "wedding" | "afterparty" | "bachelorette" | "bachelor" | "other";
+  type: "wedding" | "ceremony" | "afterparty" | "bachelorette" | "bachelor" | "other";
 };
 
 export type PlanningProgressRow = {

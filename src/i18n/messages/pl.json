@@ -854,6 +854,7 @@
     },
     "events": {
       "wedding": "Ślub",
+      "ceremony": "Ceremonia",
       "afterparty": "Afterparty",
       "bachelorette": "Wieczór panieński",
       "bachelor": "Wieczór kawalerski"
@@ -946,6 +947,7 @@
         "confirmedRatio": "{{confirmed}} ({{percent}}%)",
         "respondedRatio": "{{responded}} z odpowiedzią ({{percent}}%)",
         "seatingPlans": "{{count}} planów stołów",
+        "noSeatingRequired": "Plan stołów nie jest potrzebny",
         "vendors": "{{count}} wykonawców"
       },
       "coverage": {
@@ -969,6 +971,15 @@
         "open": "Otwórz",
         "edit": "Edytuj wydarzenie",
         "delete": "Usuń wydarzenie"
+      },
+      "createDialog": {
+        "title": "Dodaj wydarzenie"
+      },
+      "form": {
+        "datePlaceholder": "Wybierz datę",
+        "clearDate": "Wyczyść datę",
+        "requiresSeatingPlan": "Wymaga planu stołów",
+        "requiresSeatingPlanHelp": "Wyłącz dla ceremonii, ślubu kościelnego albo wydarzeń bez przypisanych miejsc."
       },
       "editDialog": {
         "namePlaceholder": "Nazwa wydarzenia",
@@ -1018,6 +1029,7 @@
       },
       "eventType": {
         "wedding": "Wesele",
+        "ceremony": "Ceremonia",
         "afterparty": "Afterparty",
         "bachelorette": "Wieczór panieński",
         "bachelor": "Wieczór kawalerski",

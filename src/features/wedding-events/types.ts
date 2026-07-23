@@ -1,6 +1,6 @@
 import type { DashboardNavItem } from "@/features/wedding-dashboard/types";
 
-export type WeddingEventDetailType = "wedding" | "afterparty" | "bachelorette" | "bachelor" | "custom";
+export type WeddingEventDetailType = "wedding" | "ceremony" | "afterparty" | "bachelorette" | "bachelor" | "custom";
 
 export type WeddingEventTimelineStatus = "done" | "upcoming" | "draft";
 
@@ -18,6 +18,7 @@ export type WeddingEventDetail = {
   weddingId: string;
   name: string;
   type: WeddingEventDetailType;
+  requiresSeatingPlan: boolean;
   isMainEvent: boolean;
   date: string;
   startTime: string;

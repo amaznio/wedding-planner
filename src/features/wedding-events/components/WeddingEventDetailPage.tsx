@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { enUS, pl } from "react-day-picker/locale";
 import {
   Bell,
   CalendarClock,
@@ -23,14 +24,18 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppQuickActionsCard } from "@/components/app/AppQuickActionsCard";
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
@@ -40,6 +45,7 @@ import { useI18n } from "@/i18n/provider";
 import { formatDate, toIntlLocale } from "@/features/wedding-dashboard/lib/formatting";
 import { buildEventDetailMockData } from "@/features/wedding-events/event-detail.mock";
 import { getWeddingRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 import type {
   EventCommandCenterData,
   EventSeatingPlanSummary,
@@ -51,6 +57,18 @@ import type {
 type WeddingEventDetailPageProps = {
   weddingId: string;
   eventId: string;
+};
+
+type WeddingEventApiType = "wedding" | "ceremony" | "afterparty" | "bachelor" | "bachelorette" | "other";
+
+type EventEditForm = {
+  name: string;
+  type: WeddingEventApiType;
+  date: string;
+  time: string;
+  location: string;
+  address: string;
+  requiresSeatingPlan: boolean;
 };
 
 type WeddingDetailsApiResponse = {
@@ -68,7 +86,8 @@ type WeddingDetailsApiResponse = {
     events: Array<{
       id: string;
       name: string;
-      type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+      type: WeddingEventApiType;
+      requiresSeatingPlan: boolean;
       startsAt: string | null;
       location: string | null;
       address: string | null;
@@ -81,7 +100,8 @@ type WeddingEventApiResponse = {
   event: {
     id: string;
     name: string;
-    type: "wedding" | "afterparty" | "bachelor" | "bachelorette" | "other";
+    type: WeddingEventApiType;
+    requiresSeatingPlan: boolean;
     startsAt: string | null;
     location: string | null;
     address: string | null;
@@ -179,6 +199,15 @@ const emptyTimelineForm: TimelineForm = {
   completed: false,
 };
 
+const eventTypeOptions: Array<{ value: WeddingEventApiType; labelKey: string }> = [
+  { value: "wedding", labelKey: "events.detail.eventType.wedding" },
+  { value: "ceremony", labelKey: "events.detail.eventType.ceremony" },
+  { value: "afterparty", labelKey: "events.detail.eventType.afterparty" },
+  { value: "bachelor", labelKey: "events.detail.eventType.bachelor" },
+  { value: "bachelorette", labelKey: "events.detail.eventType.bachelorette" },
+  { value: "other", labelKey: "events.detail.eventType.custom" },
+];
+
 export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetailPageProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -220,6 +249,10 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   const [deleteTimelineItemId, setDeleteTimelineItemId] = useState<string | null>(null);
   const [isSavingTimelineItem, setIsSavingTimelineItem] = useState(false);
   const [timelineError, setTimelineError] = useState<string | null>(null);
+  const [isEditEventOpen, setIsEditEventOpen] = useState(false);
+  const [eventEditForm, setEventEditForm] = useState<EventEditForm | null>(null);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [eventEditError, setEventEditError] = useState<string | null>(null);
   const weddingRoutes = useMemo(() => getWeddingRoutes(weddingId), [weddingId]);
 
   const firstSeatingPlan = data.seatingPlans[0];
@@ -357,6 +390,83 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
     }
     const nextQueryString = nextSearch.toString();
     router.replace(nextQueryString ? `${pathname}?${nextQueryString}` : pathname);
+  };
+
+  const openEditEventDialog = () => {
+    setEventEditForm({
+      name: data.event.name,
+      type: mapDetailTypeToApi(data.event.type),
+      date: data.event.date,
+      time: data.event.startTime,
+      location: data.event.venue.name === "-" ? "" : data.event.venue.name,
+      address: data.event.venue.address === "-" ? "" : data.event.venue.address,
+      requiresSeatingPlan: data.event.requiresSeatingPlan,
+    });
+    setEventEditError(null);
+    setIsEditEventOpen(true);
+  };
+
+  const closeEditEventDialog = () => {
+    setIsEditEventOpen(false);
+    setEventEditForm(null);
+    setEventEditError(null);
+  };
+
+  const saveEvent = async () => {
+    if (!canEditWedding || !eventEditForm) return;
+    if (!eventEditForm.name.trim()) {
+      setEventEditError(t("events.list.editDialog.nameRequired"));
+      return;
+    }
+    if ((eventEditForm.date && !eventEditForm.time) || (!eventEditForm.date && eventEditForm.time)) {
+      setEventEditError(t("events.list.editDialog.dateTimePairRequired"));
+      return;
+    }
+
+    setIsSavingEvent(true);
+    setEventEditError(null);
+    try {
+      const startsAt = eventEditForm.date && eventEditForm.time
+        ? new Date(`${eventEditForm.date}T${eventEditForm.time}`).toISOString()
+        : null;
+      const response = await fetch(`/api/weddings/${weddingId}/events/${eventId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: eventEditForm.name.trim(),
+          type: eventEditForm.type,
+          startsAt,
+          location: eventEditForm.location.trim() || null,
+          address: eventEditForm.address.trim() || null,
+          requiresSeatingPlan: eventEditForm.requiresSeatingPlan,
+        }),
+      });
+      if (!response.ok) throw new Error("event_save_failed");
+
+      const json = (await response.json()) as WeddingEventApiResponse;
+      const startsAtDate = json.event.startsAt ? new Date(json.event.startsAt) : null;
+      setData((current) => ({
+        ...current,
+        event: {
+          ...current.event,
+          name: json.event.name,
+          type: mapEventType(json.event.type),
+          requiresSeatingPlan: json.event.requiresSeatingPlan,
+          isMainEvent: json.event.type === "wedding",
+          date: startsAtDate ? toDateString(startsAtDate) : current.event.date,
+          startTime: startsAtDate ? toTimeString(startsAtDate) : current.event.startTime,
+          venue: {
+            name: json.event.location?.trim() || current.event.venue.name,
+            address: json.event.address?.trim() || "-",
+          },
+        },
+      }));
+      closeEditEventDialog();
+    } catch {
+      setEventEditError(t("events.list.editDialog.saveFailed"));
+    } finally {
+      setIsSavingEvent(false);
+    }
   };
 
   const onCreatePlan = async () => {
@@ -536,7 +646,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
             <Button
               type="button"
               variant="primary"
-              onClick={() => undefined}
+              onClick={openEditEventDialog}
               disabled={!canEditWedding}
             >
               <Edit3 className="size-4" />
@@ -938,6 +1048,113 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         ) : null}
       </div>
 
+      <Dialog open={isEditEventOpen} onOpenChange={(open) => !open && closeEditEventDialog()}>
+        <DialogContent className="sm:max-w-[760px] p-0" closeLabel={t("common.close")}>
+          <DialogHeader className="border-b border-zinc-200 px-6 py-5">
+            <DialogTitle>{t("events.list.actions.edit")}</DialogTitle>
+          </DialogHeader>
+          {eventEditForm ? (
+            <form
+              className="grid gap-4 px-6 py-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveEvent();
+              }}
+            >
+              <div className="grid gap-2">
+                <label htmlFor="detail-edit-event-name" className="text-sm font-medium">{t("events.list.table.name")}</label>
+                <Input
+                  id="detail-edit-event-name"
+                  value={eventEditForm.name}
+                  onChange={(event) => setEventEditForm((current) => current ? { ...current, name: event.target.value } : current)}
+                  placeholder={t("events.list.editDialog.namePlaceholder")}
+                />
+              </div>
+              <div className="grid gap-2 max-w-[220px]">
+                <label htmlFor="detail-edit-event-type" className="text-sm font-medium">{t("events.detail.cards.snapshot.fields.type")}</label>
+                <Select
+                  value={eventEditForm.type}
+                  onValueChange={(value) =>
+                    setEventEditForm((current) => current ? { ...current, type: value as WeddingEventApiType } : current)
+                  }
+                >
+                  <SelectTrigger id="detail-edit-event-type" aria-label={t("events.detail.cards.snapshot.fields.type")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventTypeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{t(option.labelKey)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <label
+                htmlFor="detail-edit-event-requires-seating-plan"
+                className="flex items-center justify-between gap-4 rounded-md border border-zinc-200 px-3 py-3"
+              >
+                <span className="grid gap-0.5">
+                  <span className="text-sm font-medium text-zinc-900">{t("events.list.form.requiresSeatingPlan")}</span>
+                  <span className="text-xs leading-5 text-zinc-500">{t("events.list.form.requiresSeatingPlanHelp")}</span>
+                </span>
+                <Switch
+                  id="detail-edit-event-requires-seating-plan"
+                  checked={eventEditForm.requiresSeatingPlan}
+                  onCheckedChange={(checked) =>
+                    setEventEditForm((current) => current ? { ...current, requiresSeatingPlan: checked } : current)
+                  }
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <EventDatePicker
+                  label={t("events.list.table.date")}
+                  value={eventEditForm.date}
+                  locale={locale}
+                  placeholder={t("events.list.form.datePlaceholder")}
+                  clearLabel={t("events.list.form.clearDate")}
+                  onChange={(date) => setEventEditForm((current) => current ? { ...current, date } : current)}
+                />
+                <div className="grid gap-2">
+                  <label htmlFor="detail-edit-event-time" className="text-sm font-medium">{t("events.detail.cards.snapshot.fields.time")}</label>
+                  <Input
+                    id="detail-edit-event-time"
+                    type="time"
+                    value={eventEditForm.time}
+                    onChange={(event) => setEventEditForm((current) => current ? { ...current, time: event.target.value } : current)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="detail-edit-event-location" className="text-sm font-medium">{t("events.list.table.location")}</label>
+                <Input
+                  id="detail-edit-event-location"
+                  value={eventEditForm.location}
+                  onChange={(event) => setEventEditForm((current) => current ? { ...current, location: event.target.value } : current)}
+                  placeholder={t("events.list.editDialog.locationPlaceholder")}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="detail-edit-event-address" className="text-sm font-medium">{t("events.list.table.address")}</label>
+                <Input
+                  id="detail-edit-event-address"
+                  value={eventEditForm.address}
+                  onChange={(event) => setEventEditForm((current) => current ? { ...current, address: event.target.value } : current)}
+                  placeholder={t("events.list.editDialog.addressPlaceholder")}
+                />
+              </div>
+              {eventEditError ? <p className="text-sm text-red-600">{eventEditError}</p> : null}
+              <DialogFooter className="mt-1 border-t border-zinc-200 pt-4">
+                <Button type="button" variant="outline" onClick={closeEditEventDialog}>
+                  {t("common.cancel")}
+                </Button>
+                <Button type="submit" variant="primary" disabled={isSavingEvent}>
+                  {isSavingEvent ? t("common.saving") : t("common.save")}
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={timelineDialogMode !== null} onOpenChange={(open) => !open && setTimelineDialogMode(null)}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
@@ -980,6 +1197,82 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
       />
     </>
   );
+}
+
+function EventDatePicker({
+  label,
+  value,
+  locale,
+  placeholder,
+  clearLabel,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  locale: string;
+  placeholder: string;
+  clearLabel: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedDate = parseDateInputValue(value);
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-sm font-medium">{label}</span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={label}
+            className={cn(
+              "h-9 w-full justify-between px-3 text-left font-normal",
+              !selectedDate && "text-zinc-400",
+            )}
+          >
+            <span className="min-w-0 truncate">
+              {selectedDate ? formatEventFormDate(selectedDate, locale) : placeholder}
+            </span>
+            <CalendarDays className="size-4 text-zinc-500" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              if (!date) return;
+              onChange(toDateString(date));
+              setOpen(false);
+            }}
+            defaultMonth={selectedDate}
+            locale={locale === "pl" ? pl : enUS}
+          />
+          <div className="border-t border-zinc-200 p-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-center"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              {clearLabel}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function parseDateInputValue(value: string): Date | undefined {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
 }
 
 function MetaItem({ label, value }: { label: string; value: string }) {
@@ -1086,6 +1379,7 @@ function mergeEventWithApi(
     ...base,
     name: event.name || base.name,
     type: mapEventType(event.type),
+    requiresSeatingPlan: event.requiresSeatingPlan,
     isMainEvent: event.type === "wedding",
     date: startsAtDate ? toDateString(startsAtDate) : base.date,
     startTime: startsAtDate ? toTimeString(startsAtDate) : base.startTime,
@@ -1120,6 +1414,11 @@ function mapEventType(value: WeddingEventApiResponse["event"]["type"]): WeddingE
   return value;
 }
 
+function mapDetailTypeToApi(value: WeddingEventDetail["type"]): WeddingEventApiType {
+  if (value === "custom") return "other";
+  return value;
+}
+
 function toDateString(value: Date): string {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -1138,6 +1437,10 @@ function formatEventDate(value: string, locale: string): string {
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+function formatEventFormDate(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
 function formatCurrency(value: number, locale: string): string {

@@ -15,11 +15,15 @@ type WeddingEventsRoutePageProps = {
 
 export default function WeddingEventsRoutePage({ params }: WeddingEventsRoutePageProps) {
   return (
-    <WeddingEventsListPageShell>
-      <Suspense fallback={<WeddingEventsListContentLoading />}>
-        <WeddingEventsData params={params} />
-      </Suspense>
-    </WeddingEventsListPageShell>
+    <Suspense
+      fallback={(
+        <WeddingEventsListPageShell>
+          <WeddingEventsListContentLoading />
+        </WeddingEventsListPageShell>
+      )}
+    >
+      <WeddingEventsData params={params} />
+    </Suspense>
   );
 }
 
@@ -43,6 +47,7 @@ async function WeddingEventsData({ params }: WeddingEventsRoutePageProps) {
           id: true,
           name: true,
           type: true,
+          requiresSeatingPlan: true,
           startsAt: true,
           location: true,
           address: true,
@@ -69,7 +74,6 @@ async function WeddingEventsData({ params }: WeddingEventsRoutePageProps) {
 
   return (
     <WeddingEventsListPage
-      embedded
       weddingId={weddingId}
       events={wedding.events.map((event) => ({
         ...event,

@@ -854,6 +854,7 @@
     },
     "events": {
       "wedding": "Wedding",
+      "ceremony": "Ceremony",
       "afterparty": "Afterparty",
       "bachelorette": "Bachelorette",
       "bachelor": "Bachelor"
@@ -946,6 +947,7 @@
         "confirmedRatio": "{{confirmed}} ({{percent}}%)",
         "respondedRatio": "{{responded}} responded ({{percent}}%)",
         "seatingPlans": "{{count}} seating plans",
+        "noSeatingRequired": "No seating plan needed",
         "vendors": "{{count}} vendors"
       },
       "coverage": {
@@ -969,6 +971,15 @@
         "open": "Open",
         "edit": "Edit event",
         "delete": "Delete event"
+      },
+      "createDialog": {
+        "title": "Add event"
+      },
+      "form": {
+        "datePlaceholder": "Choose date",
+        "clearDate": "Clear date",
+        "requiresSeatingPlan": "Needs seating plan",
+        "requiresSeatingPlanHelp": "Turn this off for ceremonies, church weddings, or events without assigned seats."
       },
       "editDialog": {
         "namePlaceholder": "Event name",
@@ -1018,6 +1029,7 @@
       },
       "eventType": {
         "wedding": "Wedding",
+        "ceremony": "Ceremony",
         "afterparty": "Afterparty",
         "bachelorette": "Bachelorette",
         "bachelor": "Bachelor",
