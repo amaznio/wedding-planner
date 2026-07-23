@@ -270,16 +270,20 @@ export default function AdminPage() {
                   <p className="truncate text-xs text-zinc-600">{user.email}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <select
-                    value={user.role}
-                    onChange={(event) => void onUpdateUserRole(user.id, event.target.value as AppRole)}
-                    disabled={!canManageRoles || isSavingRoleByUserId[user.id]}
-                    className="h-9 rounded-md border border-zinc-300 px-2 text-sm disabled:opacity-50"
-                  >
-                    <option value="USER">USER</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="SUPERADMIN">SUPERADMIN</option>
-                  </select>
+                  <div className="grid gap-1">
+                    <span className="text-xs font-medium text-zinc-600">Role</span>
+                    <select
+                      aria-label="Role"
+                      value={user.role}
+                      onChange={(event) => void onUpdateUserRole(user.id, event.target.value as AppRole)}
+                      disabled={!canManageRoles || isSavingRoleByUserId[user.id]}
+                      className="h-9 rounded-md border border-zinc-300 px-2 text-sm disabled:opacity-50"
+                    >
+                      <option value="USER">USER</option>
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="SUPERADMIN">SUPERADMIN</option>
+                    </select>
+                  </div>
                   <input
                     type="password"
                     value={newPasswordByUserId[user.id] ?? ""}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Edit3, Plus, Trash2 } from "lucide-react";
+import { Edit3, MoreHorizontal, Plus, Trash2, WalletCards } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AppDataTable } from "@/components/app/AppDataTable";
 import { AppStatsRail } from "@/components/app/AppStatsRail";
@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WorkspaceManagementPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
+import { CreateWeddingPaymentDialog } from "@/features/wedding-finances/components/CreateWeddingPaymentDialog";
 import { CreateWeddingVendorDialog } from "@/features/wedding-vendors/components/CreateWeddingVendorDialog";
+import { VendorAmountInput, VendorFormField } from "@/features/wedding-vendors/components/VendorFormField";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 
@@ -25,6 +28,7 @@ const lifecycleStatuses: VendorLifecycleStatus[] = ["considering", "booked", "co
 type WeddingEvent = {
   id: string;
   name: string;
+  type?: string | null;
 };
 
 type Vendor = {
@@ -85,6 +89,7 @@ export default function WeddingVendorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [paymentVendor, setPaymentVendor] = useState<Vendor | null>(null);
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const [form, setForm] = useState<VendorForm>(emptyForm);
@@ -172,6 +177,10 @@ export default function WeddingVendorsPage() {
     setEditingVendorId(vendor.id);
     setError(null);
     setDialogMode("edit");
+  };
+
+  const openPaymentDialog = (vendor: Vendor) => {
+    setPaymentVendor(vendor);
   };
 
   const toggleEvent = (eventId: string) => {
@@ -284,13 +293,28 @@ export default function WeddingVendorsPage() {
               payment: `${formatCurrency(vendor.amountPaidMinor, currency, locale)} / ${formatCurrency(vendor.totalCostMinor, currency, locale)}`,
               status: <AppStatusBadge label={t(`vendors.page.status.${vendor.lifecycleStatus}`)} variant={vendor.lifecycleStatus === "contract_signed" ? "success" : vendor.lifecycleStatus === "booked" ? "secondary" : "default"} />,
               actions: (
-                <div className="flex justify-end gap-1">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => openEditDialog(vendor)} disabled={!canEdit} aria-label={t("vendors.page.actions.edit")}>
-                    <Edit3 className="size-4" />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="primary" size="sm" onClick={() => openPaymentDialog(vendor)} disabled={!canEdit}>
+                    <WalletCards className="size-4" />
+                    {t("vendors.page.actions.addPayment")}
                   </Button>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => setDeleteVendorId(vendor.id)} disabled={!canEdit} aria-label={t("vendors.page.actions.delete")}>
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="ghost" size="icon" disabled={!canEdit} aria-label={t("vendors.page.actions.more")}>
+                        <MoreHorizontal className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => openEditDialog(vendor)}>
+                        <Edit3 className="mr-2 size-4" />
+                        {t("vendors.page.actions.edit")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setDeleteVendorId(vendor.id)} className="text-red-700 focus:text-red-700">
+                        <Trash2 className="mr-2 size-4" />
+                        {t("vendors.page.actions.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ),
             }))}
@@ -303,7 +327,22 @@ export default function WeddingVendorsPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onCreated={load}
+        initialCurrency={currency}
       />
+
+      {paymentVendor ? (
+        <CreateWeddingPaymentDialog
+          weddingId={weddingId}
+          open={paymentVendor !== null}
+          onOpenChange={(open) => {
+            if (!open) setPaymentVendor(null);
+          }}
+          onCreated={load}
+          initialCurrency={currency}
+          initialEvents={events}
+          initialVendor={{ id: paymentVendor.id, name: paymentVendor.name }}
+        />
+      ) : null}
 
       <Dialog open={dialogMode === "edit"} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-2xl">
@@ -317,25 +356,61 @@ export default function WeddingVendorsPage() {
               void saveVendor();
             }}
           >
-            <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder={t("vendors.page.form.name")} />
+            <VendorFormField label={t("vendors.page.form.name")}>
+              <Input
+                aria-label={t("vendors.page.form.name")}
+                value={form.name}
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                placeholder={t("vendors.page.form.name")}
+              />
+            </VendorFormField>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Input value={form.contactName} onChange={(event) => setForm((current) => ({ ...current, contactName: event.target.value }))} placeholder={t("vendors.page.form.contactName")} />
-              <Input value={form.contactEmail} onChange={(event) => setForm((current) => ({ ...current, contactEmail: event.target.value }))} placeholder={t("vendors.page.form.contactEmail")} />
-              <Input value={form.contactPhone} onChange={(event) => setForm((current) => ({ ...current, contactPhone: event.target.value }))} placeholder={t("vendors.page.form.contactPhone")} />
+              <VendorFormField label={t("vendors.page.form.contactName")}>
+                <Input
+                  aria-label={t("vendors.page.form.contactName")}
+                  value={form.contactName}
+                  onChange={(event) => setForm((current) => ({ ...current, contactName: event.target.value }))}
+                  placeholder={t("vendors.page.form.contactName")}
+                />
+              </VendorFormField>
+              <VendorFormField label={t("vendors.page.form.contactEmail")}>
+                <Input
+                  aria-label={t("vendors.page.form.contactEmail")}
+                  value={form.contactEmail}
+                  onChange={(event) => setForm((current) => ({ ...current, contactEmail: event.target.value }))}
+                  placeholder={t("vendors.page.form.contactEmail")}
+                />
+              </VendorFormField>
+              <VendorFormField label={t("vendors.page.form.contactPhone")}>
+                <Input
+                  aria-label={t("vendors.page.form.contactPhone")}
+                  value={form.contactPhone}
+                  onChange={(event) => setForm((current) => ({ ...current, contactPhone: event.target.value }))}
+                  placeholder={t("vendors.page.form.contactPhone")}
+                />
+              </VendorFormField>
             </div>
             <div className={dialogMode === "create" ? "grid gap-3 sm:grid-cols-2" : "grid gap-3"}>
-              <Input value={form.totalCost} onChange={(event) => setForm((current) => ({ ...current, totalCost: event.target.value }))} placeholder={t("vendors.page.form.totalCost")} />
+              <VendorAmountInput
+                label={t("vendors.page.form.totalCost")}
+                value={form.totalCost}
+                currency={currency}
+                onChange={(value) => setForm((current) => ({ ...current, totalCost: value }))}
+                placeholder={t("vendors.page.form.totalCost")}
+              />
               {dialogMode === "create" ? (
-                <div className="grid gap-1">
-                  <Input value={form.deposit} onChange={(event) => setForm((current) => ({ ...current, deposit: event.target.value }))} placeholder={t("vendors.page.form.deposit")} />
-                  <p className="text-xs text-zinc-500">{t("vendors.page.form.depositHint")}</p>
-                </div>
+                <VendorAmountInput
+                  label={t("vendors.page.form.deposit")}
+                  value={form.deposit}
+                  currency={currency}
+                  onChange={(value) => setForm((current) => ({ ...current, deposit: value }))}
+                  placeholder={t("vendors.page.form.deposit")}
+                />
               ) : null}
             </div>
-            <div className="grid gap-2">
-              <p className="text-sm font-medium text-zinc-900">{t("vendors.page.form.status")}</p>
+            <VendorFormField label={t("vendors.page.form.status")}>
               <Select value={form.lifecycleStatus} onValueChange={(value) => setForm((current) => ({ ...current, lifecycleStatus: value as VendorLifecycleStatus }))}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger aria-label={t("vendors.page.form.status")} className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,8 +419,15 @@ export default function WeddingVendorsPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <Input value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("vendors.page.form.notes")} />
+            </VendorFormField>
+            <VendorFormField label={t("vendors.page.form.notes")}>
+              <Input
+                aria-label={t("vendors.page.form.notes")}
+                value={form.notes}
+                onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                placeholder={t("vendors.page.form.notes")}
+              />
+            </VendorFormField>
             <div className="grid gap-2">
               <p className="text-sm font-medium text-zinc-900">{t("vendors.page.form.events")}</p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -393,8 +475,7 @@ function formatMajorAmount(amountMinor: number): string {
 
 function parseAmountToMinor(value: string): number | null {
   const normalized = value.trim().replace(",", ".");
-  if (!normalized) return null;
-  const parsed = Number.parseFloat(normalized);
-  if (!Number.isFinite(parsed) || parsed < 0) return null;
-  return Math.round(parsed * 100);
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : null;
 }

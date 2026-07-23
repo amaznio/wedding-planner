@@ -529,15 +529,19 @@ export function WeddingDashboardPage({ weddingId }: WeddingDashboardPageProps) {
           setDashboardReloadKey((current) => current + 1);
         }}
       />
-      <CreateWeddingPaymentDialog
-        weddingId={weddingId}
-        open={createPaymentOpen}
-        onOpenChange={setCreatePaymentOpen}
-        onCreated={() => {
-          router.refresh();
-          setDashboardReloadKey((current) => current + 1);
-        }}
-      />
+      {createPaymentOpen ? (
+        <CreateWeddingPaymentDialog
+          weddingId={weddingId}
+          open={createPaymentOpen}
+          onOpenChange={setCreatePaymentOpen}
+          initialCurrency={data?.overview.currency}
+          initialEvents={data?.events ?? []}
+          onCreated={() => {
+            router.refresh();
+            setDashboardReloadKey((current) => current + 1);
+          }}
+        />
+      ) : null}
       <CreateWeddingVendorDialog
         weddingId={weddingId}
         open={createVendorOpen}

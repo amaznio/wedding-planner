@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit3, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -252,8 +253,9 @@ export function WeddingDocumentsPage() {
           <p className="mt-1 text-sm leading-6 text-zinc-600">{t("documents.page.table.description")}</p>
         </div>
         <div className="mt-4 max-w-xs">
+          <DocumentField label={t("documents.page.filters.status")}>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as DocumentStatus | "all")}>
-              <SelectTrigger>
+              <SelectTrigger aria-label={t("documents.page.filters.status")} className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -262,6 +264,7 @@ export function WeddingDocumentsPage() {
                 ))}
               </SelectContent>
             </Select>
+          </DocumentField>
         </div>
         <div className="mt-4">
           <AppDataTable
@@ -320,8 +323,9 @@ export function WeddingDocumentsPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <Input value={form.ownerName} onChange={(event) => setForm((current) => ({ ...current, ownerName: event.target.value }))} placeholder={t("documents.page.form.owner")} />
-              <Select value={form.status} onValueChange={(value) => setForm((current) => ({ ...current, status: value as DocumentStatus }))}>
-                <SelectTrigger>
+              <DocumentField label={t("documents.page.form.status")}>
+                <Select value={form.status} onValueChange={(value) => setForm((current) => ({ ...current, status: value as DocumentStatus }))}>
+                <SelectTrigger aria-label={t("documents.page.form.status")} className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,11 +334,13 @@ export function WeddingDocumentsPage() {
                   <SelectItem value="signed">{t("documents.page.status.signed")}</SelectItem>
                 </SelectContent>
               </Select>
+              </DocumentField>
               <Input type="date" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Select value={form.eventId} onValueChange={(value) => setForm((current) => ({ ...current, eventId: value }))}>
-                <SelectTrigger>
+              <DocumentField label={t("documents.page.form.event")}>
+                <Select value={form.eventId} onValueChange={(value) => setForm((current) => ({ ...current, eventId: value }))}>
+                <SelectTrigger aria-label={t("documents.page.form.event")} className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,8 +350,10 @@ export function WeddingDocumentsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={form.vendorId} onValueChange={(value) => setForm((current) => ({ ...current, vendorId: value }))}>
-                <SelectTrigger>
+              </DocumentField>
+              <DocumentField label={t("documents.page.form.vendor")}>
+                <Select value={form.vendorId} onValueChange={(value) => setForm((current) => ({ ...current, vendorId: value }))}>
+                <SelectTrigger aria-label={t("documents.page.form.vendor")} className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -355,6 +363,7 @@ export function WeddingDocumentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              </DocumentField>
             </div>
             <Input value={form.externalUrl} onChange={(event) => setForm((current) => ({ ...current, externalUrl: event.target.value }))} placeholder={t("documents.page.form.externalUrl")} />
             <Input value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("documents.page.form.notes")} />
@@ -377,5 +386,14 @@ export function WeddingDocumentsPage() {
         onConfirm={deleteDocument}
       />
     </AppWorkspacePage>
+  );
+}
+
+function DocumentField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid w-full gap-1.5 text-sm font-medium text-zinc-900">
+      <span>{label}</span>
+      {children}
+    </div>
   );
 }

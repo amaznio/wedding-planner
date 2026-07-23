@@ -87,13 +87,6 @@ export function ExportPdfDialog({ open, onOpenChange, onExport }: ExportPdfDialo
         ? "border-zinc-800/80 bg-zinc-100"
         : "border-zinc-400 bg-zinc-100";
 
-  const previewAccentClass =
-    theme === "elegant"
-      ? "bg-amber-500/70"
-      : theme === "modern"
-        ? "bg-zinc-900"
-        : "bg-zinc-500";
-
   const previewSeatClass =
     theme === "elegant"
       ? "border-amber-400/80 bg-amber-100/80"
@@ -116,7 +109,7 @@ export function ExportPdfDialog({ open, onOpenChange, onExport }: ExportPdfDialo
             <div className="space-y-1.5 sm:w-[280px]">
               <p className="text-sm font-medium text-zinc-900">{t("exportPdf.theme")}</p>
               <Select value={theme} onValueChange={(value) => setTheme(value as PdfThemeId)}>
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("exportPdf.theme")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -131,7 +124,7 @@ export function ExportPdfDialog({ open, onOpenChange, onExport }: ExportPdfDialo
               <div className="space-y-1.5 sm:w-[160px]">
                 <p className="text-sm font-medium text-zinc-900">{t("exportPdf.paper")}</p>
                 <Select value={paper} onValueChange={(value) => setPaper(value as ExportPaper)}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t("exportPdf.paper")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -146,7 +139,7 @@ export function ExportPdfDialog({ open, onOpenChange, onExport }: ExportPdfDialo
                   value={orientation}
                   onValueChange={(value) => setOrientation(value as ExportOrientation)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t("exportPdf.orientation")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -234,7 +227,7 @@ export function ExportPdfDialog({ open, onOpenChange, onExport }: ExportPdfDialo
                 value={detailSeatLabelMode}
                 onValueChange={(value) => setDetailSeatLabelMode(value as DetailSeatLabelMode)}
               >
-                <SelectTrigger className="w-[220px] shrink-0">
+                <SelectTrigger className="w-[220px] shrink-0" aria-label={t("exportPdf.detailSeatLabels")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

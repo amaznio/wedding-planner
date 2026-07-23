@@ -506,28 +506,34 @@ export function WeddingSeatingPage({
             {t("events.detail.seatingTab.results", { count: visiblePlans.length })}
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select value={eventFilterId} onValueChange={setEventFilterId}>
-              <SelectTrigger className="h-10 min-w-[210px] border-zinc-300 bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("events.detail.seatingTab.filterAllEvents")}</SelectItem>
-                {events.map((event) => (
-                  <SelectItem key={event.id} value={event.id}>
-                    {event.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value === "name" ? "name" : "updated")}>
-              <SelectTrigger className="h-10 min-w-[230px] border-zinc-300 bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updated">{t("events.detail.seatingTab.sortUpdated")}</SelectItem>
-                <SelectItem value="name">{t("events.detail.seatingTab.sortName")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid gap-1.5">
+              <span className="text-sm font-medium text-zinc-900">{t("events.detail.seatingTab.filterLabel")}</span>
+              <Select value={eventFilterId} onValueChange={setEventFilterId}>
+                <SelectTrigger className="h-10 min-w-[210px] border-zinc-300 bg-white" aria-label={t("events.detail.seatingTab.filterLabel")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("events.detail.seatingTab.filterAllEvents")}</SelectItem>
+                  {events.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <span className="text-sm font-medium text-zinc-900">{t("events.detail.seatingTab.sortLabel")}</span>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value === "name" ? "name" : "updated")}>
+                <SelectTrigger className="h-10 min-w-[230px] border-zinc-300 bg-white" aria-label={t("events.detail.seatingTab.sortLabel")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updated">{t("events.detail.seatingTab.sortUpdated")}</SelectItem>
+                  <SelectItem value="name">{t("events.detail.seatingTab.sortName")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -592,7 +598,7 @@ export function WeddingSeatingPage({
                 onValueChange={setSelectedEventId}
                 disabled={!canEdit || isSavingPlan || events.length === 0}
               >
-                <SelectTrigger id="seating-plan-event" className="h-10 border-zinc-300 bg-white">
+                <SelectTrigger id="seating-plan-event" className="h-10 border-zinc-300 bg-white" aria-label={t("events.detail.seatingTab.eventLabel")}>
                   <SelectValue placeholder={t("events.detail.seatingTab.selectEventForPlan")} />
                 </SelectTrigger>
                 <SelectContent>

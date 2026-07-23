@@ -136,7 +136,7 @@ export function PeopleWithAccessCard({
                         }
                         disabled={isUpdating}
                       >
-                        <SelectTrigger className="w-[130px]">
+                        <SelectTrigger className="w-[130px]" aria-label={t("weddingCollaboratorsPage.people.columns.role")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

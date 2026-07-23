@@ -711,7 +711,7 @@ export function GuestPanel({
                     {t("guestPanel.group")}
                   </label>
                   <Select value={newGuestGroupId || "none"} onValueChange={(value) => setNewGuestGroupId(value === "none" ? "" : value)} disabled={isSubmitting}>
-                    <SelectTrigger id="guest-group" className="w-full">
+                    <SelectTrigger id="guest-group" className="w-full" aria-label={t("guestPanel.group")}>
                       <SelectValue placeholder={t("guestPanel.selectGroupPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -731,7 +731,7 @@ export function GuestPanel({
                     {t("guestPanel.sex")}
                   </label>
                   <Select value={newGuestSex} onValueChange={(value) => setNewGuestSex(value as GuestSex)} disabled={isSubmitting}>
-                    <SelectTrigger id="guest-sex" className="w-full">
+                    <SelectTrigger id="guest-sex" className="w-full" aria-label={t("guestPanel.sex")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -752,7 +752,7 @@ export function GuestPanel({
                     onValueChange={(value) => setNewGuestAgeCategory(value as GuestAgeCategory)}
                     disabled={isSubmitting}
                   >
-                    <SelectTrigger id="guest-age-category" className="w-full">
+                    <SelectTrigger id="guest-age-category" className="w-full" aria-label={t("guestPanel.ageCategory")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -831,38 +831,44 @@ export function GuestPanel({
           className={variant === "sheet" ? "h-10" : undefined}
         />
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Select value={groupFilter} onValueChange={setGroupFilter}>
-            <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByGroupLabel")}>
-              <SelectValue placeholder={t("guestPanel.filterByGroupLabel")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">{t("guestPanel.filterGroupAll")}</SelectItem>
-                <SelectItem value="ungrouped">{t("guestPanel.filterGroupUngrouped")}</SelectItem>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select value={tableFilter} onValueChange={setTableFilter}>
-            <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByTableLabel")}>
-              <SelectValue placeholder={t("guestPanel.filterByTableLabel")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">{t("guestPanel.filterTableAll")}</SelectItem>
-                <SelectItem value="unassigned">{t("guestPanel.filterTableUnassigned")}</SelectItem>
-                {tableFilterOptions.map((table) => (
-                  <SelectItem key={table.id} value={table.id}>
-                    {table.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div className="grid gap-1.5">
+            <span className="text-sm font-medium text-zinc-900">{t("guestPanel.filterByGroupLabel")}</span>
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByGroupLabel")}>
+                <SelectValue placeholder={t("guestPanel.filterByGroupLabel")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">{t("guestPanel.filterGroupAll")}</SelectItem>
+                  <SelectItem value="ungrouped">{t("guestPanel.filterGroupUngrouped")}</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <span className="text-sm font-medium text-zinc-900">{t("guestPanel.filterByTableLabel")}</span>
+            <Select value={tableFilter} onValueChange={setTableFilter}>
+              <SelectTrigger className="w-full" aria-label={t("guestPanel.filterByTableLabel")}>
+                <SelectValue placeholder={t("guestPanel.filterByTableLabel")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">{t("guestPanel.filterTableAll")}</SelectItem>
+                  <SelectItem value="unassigned">{t("guestPanel.filterTableUnassigned")}</SelectItem>
+                  {tableFilterOptions.map((table) => (
+                    <SelectItem key={table.id} value={table.id}>
+                      {table.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-2">
@@ -1071,32 +1077,40 @@ export function GuestPanel({
             })}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <select
-              value={newRelationshipType}
-              onChange={(event) =>
-                setNewRelationshipType(event.target.value as RelationshipType)
-              }
-              className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
-            >
-              <option value="couple">{t("guestPanel.relationshipType.couple")}</option>
-              <option value="family">{t("guestPanel.relationshipType.family")}</option>
-              <option value="group">{t("guestPanel.relationshipType.group")}</option>
-              <option value="custom">{t("guestPanel.relationshipType.custom")}</option>
-            </select>
-            <select
-              value={newRelationshipPreferredSeating}
-              onChange={(event) =>
-                setNewRelationshipPreferredSeating(
-                  event.target.value as PreferredSeating,
-                )
-              }
-              className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
-            >
-              <option value="none">{t("guestPanel.preferredSeating.none")}</option>
-              <option value="adjacent">{t("guestPanel.preferredSeating.adjacent")}</option>
-              <option value="nearby">{t("guestPanel.preferredSeating.nearby")}</option>
-              <option value="same-table">{t("guestPanel.preferredSeating.same-table")}</option>
-            </select>
+            <div className="grid gap-1">
+              <span className="text-xs font-medium text-zinc-600">{t("guestPanel.relationshipTypeLabel")}</span>
+              <select
+                aria-label={t("guestPanel.relationshipTypeLabel")}
+                value={newRelationshipType}
+                onChange={(event) =>
+                  setNewRelationshipType(event.target.value as RelationshipType)
+                }
+                className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
+              >
+                <option value="couple">{t("guestPanel.relationshipType.couple")}</option>
+                <option value="family">{t("guestPanel.relationshipType.family")}</option>
+                <option value="group">{t("guestPanel.relationshipType.group")}</option>
+                <option value="custom">{t("guestPanel.relationshipType.custom")}</option>
+              </select>
+            </div>
+            <div className="grid gap-1">
+              <span className="text-xs font-medium text-zinc-600">{t("guestPanel.preferredSeatingLabel")}</span>
+              <select
+                aria-label={t("guestPanel.preferredSeatingLabel")}
+                value={newRelationshipPreferredSeating}
+                onChange={(event) =>
+                  setNewRelationshipPreferredSeating(
+                    event.target.value as PreferredSeating,
+                  )
+                }
+                className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-xs"
+              >
+                <option value="none">{t("guestPanel.preferredSeating.none")}</option>
+                <option value="adjacent">{t("guestPanel.preferredSeating.adjacent")}</option>
+                <option value="nearby">{t("guestPanel.preferredSeating.nearby")}</option>
+                <option value="same-table">{t("guestPanel.preferredSeating.same-table")}</option>
+              </select>
+            </div>
           </div>
           <Input
             className="mt-2 h-9 text-xs"

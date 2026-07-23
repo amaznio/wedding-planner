@@ -248,6 +248,8 @@
     "searchPlaceholder": "Szukaj gości",
     "filterByGroupLabel": "Filtruj po grupie",
     "filterByTableLabel": "Filtruj po stole",
+    "relationshipTypeLabel": "Typ relacji",
+    "preferredSeatingLabel": "Preferowane usadzenie",
     "filterGroupAll": "Wszystkie grupy",
     "filterGroupUngrouped": "Bez grupy",
     "filterTableAll": "Wszystkie stoły",
@@ -701,6 +703,7 @@
       "title": "Zaproś osoby",
       "description": "Wyszukaj i zaproś istniejących użytkowników do współpracy nad weselem.",
       "searchPlaceholder": "Szukaj po nazwie lub e-mailu",
+      "roleLabel": "Rola",
       "suggestedUsers": "Sugerowani użytkownicy",
       "searching": "Wyszukiwanie użytkowników...",
       "noUsersFound": "Nie znaleziono użytkowników",
@@ -1148,7 +1151,9 @@
         "creating": "Tworzenie...",
         "empty": "Brak planów stołów.",
         "searchPlaceholder": "Szukaj planu...",
+        "filterLabel": "Wydarzenie",
         "filterAllEvents": "Wszystkie wydarzenia",
+        "sortLabel": "Sortowanie",
         "sortUpdated": "Sortuj: Ostatnia aktualizacja",
         "sortName": "Sortuj: Nazwa",
         "noEvent": "Brak wydarzenia",
@@ -1225,10 +1230,47 @@
         "upcoming": "Nadchodzące płatności"
       },
       "filters": {
-        "all": "Wszystkie statusy"
+        "status": "Status",
+        "relationship": "Powiązanie",
+        "all": "Wszystkie statusy",
+        "relationshipAll": "Wszystkie",
+        "withVendor": "Z wykonawcą",
+        "standalone": "Bez wykonawcy"
+      },
+      "categoryGroups": {
+        "vendorPayments": "Płatności wykonawcy",
+        "weddingCosts": "Koszty weselne"
       },
       "categories": {
-        "deposit": "Zadatek"
+        "deposit": "Zadatek",
+        "Deposit": "Zadatek",
+        "FinalPayment": "Płatność końcowa",
+        "Installment": "Rata",
+        "AdditionalFee": "Dopłata",
+        "Refund": "Zwrot",
+        "Adjustment": "Korekta",
+        "Ceremony": "Ceremonia",
+        "Reception": "Przyjęcie",
+        "Decor": "Dekoracje",
+        "Attire": "Ubiór",
+        "Beauty": "Uroda",
+        "Stationery": "Papeteria",
+        "Rings": "Obrączki",
+        "Transport": "Transport",
+        "Accommodation": "Noclegi",
+        "LegalFees": "Opłaty urzędowe",
+        "Gifts": "Prezenty",
+        "Tips": "Napiwki",
+        "Other": "Inne"
+      },
+      "paidBy": {
+        "Couple": "Para młoda",
+        "Bride": "Panna młoda",
+        "Groom": "Pan młody",
+        "BrideParents": "Rodzice panny młodej",
+        "GroomParents": "Rodzice pana młodego",
+        "Parents": "Rodzice",
+        "OtherPerson": "Inna osoba"
       },
       "status": {
         "planned": "Zaplanowane",
@@ -1250,7 +1292,10 @@
           "category": "Kategoria",
           "amount": "Kwota",
           "status": "Status",
-          "linked": "Powiązanie"
+          "linked": "Powiązanie",
+          "vendor": "Wykonawca",
+          "date": "Data",
+          "paidBy": "Opłacone przez"
         }
       },
       "dialog": {
@@ -1261,9 +1306,15 @@
         "title": "Tytuł płatności",
         "category": "Kategoria",
         "amount": "Kwota",
+        "date": "Data",
+        "datePlaceholder": "Wybierz datę",
+        "clearDate": "Wyczyść datę",
+        "status": "Status",
         "paidBy": "Opłacone przez",
+        "noPaidBy": "Nie wybrano",
         "notes": "Notatki",
         "vendor": "Wykonawca",
+        "vendorOptional": "Wykonawca opcjonalnie",
         "noVendor": "Bez wykonawcy",
         "event": "Wydarzenie",
         "noEvent": "Bez wydarzenia"
@@ -1276,7 +1327,7 @@
         "load": "Nie udało się załadować płatności.",
         "save": "Nie udało się zapisać płatności.",
         "delete": "Nie udało się usunąć płatności.",
-        "invalidForm": "Podaj tytuł, kategorię i poprawną kwotę."
+        "invalidForm": "Wybierz kategorię i podaj poprawną kwotę."
       },
       "empty": "Brak płatności dla tego filtra."
     }
@@ -1300,6 +1351,8 @@
       "actions": {
         "add": "Dodaj wykonawcę",
         "edit": "Edytuj wykonawcę",
+        "addPayment": "Dodaj płatność",
+        "more": "Więcej działań",
         "delete": "Usuń wykonawcę"
       },
       "table": {
@@ -1361,6 +1414,8 @@
       },
       "filters": {
         "search": "Szukaj zadań...",
+        "status": "Status",
+        "groupBy": "Grupowanie",
         "allStatuses": "Wszystkie statusy"
       },
       "groupBy": {
@@ -1522,6 +1577,7 @@
         }
       },
       "filters": {
+        "status": "Status",
         "all": "Wszystkie statusy"
       },
       "status": {
@@ -1545,6 +1601,9 @@
         "owner": "Właściciel",
         "externalUrl": "Adres URL",
         "notes": "Notatki",
+        "status": "Status",
+        "event": "Wydarzenie",
+        "vendor": "Wykonawca",
         "noEvent": "Brak wydarzenia",
         "noVendor": "Brak wykonawcy"
       },

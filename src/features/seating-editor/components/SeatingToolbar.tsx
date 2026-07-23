@@ -314,15 +314,18 @@ export function SeatingToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
-            <SelectTrigger className="h-9 w-[150px]" aria-label={t("common.language")}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">{t("common.english")}</SelectItem>
-              <SelectItem value="pl">{t("common.polish")}</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-zinc-600">{t("common.language")}</span>
+            <Select value={locale} onValueChange={(value) => setLocale(value as "en" | "pl")}>
+              <SelectTrigger className="h-9 w-[150px]" aria-label={t("common.language")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t("common.english")}</SelectItem>
+                <SelectItem value="pl">{t("common.polish")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <UserMenu />
         </div>
       </div>

@@ -339,14 +339,20 @@ export function WeddingTasksPage() {
           <InputGroupAddon><Search /></InputGroupAddon>
           <InputGroupInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("tasks.page.filters.search")} />
         </InputGroup>
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | "all")}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>{statuses.map((status) => <SelectItem key={status} value={status}>{status === "all" ? t("tasks.page.filters.allStatuses") : t(`tasks.page.status.${status}`)}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupBy)}>
-          <SelectTrigger className="w-full sm:w-64"><SelectValue /></SelectTrigger>
-          <SelectContent>{groupByOptions.map((option) => <SelectItem key={option} value={option}>{t(`tasks.page.groupBy.${option}`)}</SelectItem>)}</SelectContent>
-        </Select>
+        <div className="grid gap-1.5">
+          <span className="text-sm font-medium text-zinc-900">{t("tasks.page.filters.status")}</span>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | "all")}>
+            <SelectTrigger className="w-full sm:w-44" aria-label={t("tasks.page.filters.status")}><SelectValue /></SelectTrigger>
+            <SelectContent>{statuses.map((status) => <SelectItem key={status} value={status}>{status === "all" ? t("tasks.page.filters.allStatuses") : t(`tasks.page.status.${status}`)}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <span className="text-sm font-medium text-zinc-900">{t("tasks.page.filters.groupBy")}</span>
+          <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupBy)}>
+            <SelectTrigger className="w-full sm:w-64" aria-label={t("tasks.page.filters.groupBy")}><SelectValue /></SelectTrigger>
+            <SelectContent>{groupByOptions.map((option) => <SelectItem key={option} value={option}>{t(`tasks.page.groupBy.${option}`)}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
@@ -567,7 +573,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function TaskSelect({ value, values, label, onChange, disabled = false }: { value: string; values: string[]; label: (value: string) => string; onChange: (value: string) => void; disabled?: boolean }) {
-  return <Select value={value} onValueChange={onChange} disabled={disabled}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent>{values.map((option) => <SelectItem key={option} value={option}>{label(option)}</SelectItem>)}</SelectContent></Select>;
+  return <Select value={value} onValueChange={onChange} disabled={disabled}><SelectTrigger className="w-full" aria-label={label(value)}><SelectValue /></SelectTrigger><SelectContent>{values.map((option) => <SelectItem key={option} value={option}>{label(option)}</SelectItem>)}</SelectContent></Select>;
 }
 
 function buildSections(tasks: WeddingTask[], groupBy: GroupBy, t: (key: string) => string) {

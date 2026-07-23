@@ -469,7 +469,7 @@ export function AddGuestDialog({
                   value={mainGender ?? ""}
                   onValueChange={(value) => setMainGender(value as GuestGender)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t("weddingGuestsPage.addGuest.gender")}>
                     <SelectValue placeholder={t("weddingGuestsPage.addGuest.genderPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -483,7 +483,7 @@ export function AddGuestDialog({
               <div className="flex max-w-sm flex-col gap-1.5">
                 <label className="text-sm font-medium text-zinc-800">Age group</label>
                 <Select value={mainAgeCategory} onValueChange={(value) => setMainAgeCategory(value as GuestAgeCategory)}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t("guestPanel.ageCategory")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -533,7 +533,7 @@ export function AddGuestDialog({
                         value={relationshipType}
                         onValueChange={(value) => setRelationshipType(value as RelationshipType)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger aria-label={t("weddingGuestsPage.addGuest.relationship.typeLabel")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -635,7 +635,7 @@ export function AddGuestDialog({
                             value={linkedGender ?? ""}
                             onValueChange={(value) => setLinkedGender(value as GuestGender)}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger aria-label={t("weddingGuestsPage.addGuest.gender")}>
                               <SelectValue placeholder={t("weddingGuestsPage.addGuest.genderPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent>
@@ -652,7 +652,7 @@ export function AddGuestDialog({
                             value={linkedAgeCategory}
                             onValueChange={(value) => setLinkedAgeCategory(value as GuestAgeCategory)}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger aria-label={t("guestPanel.ageCategory")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -746,7 +746,7 @@ export function AddGuestDialog({
                               );
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger aria-label={t("guestPanel.ageCategory")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

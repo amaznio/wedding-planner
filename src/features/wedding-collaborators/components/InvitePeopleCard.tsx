@@ -72,19 +72,22 @@ export function InvitePeopleCard({
               className="pl-9"
             />
           </div>
-          <Select
-            value={globalRole}
-            onValueChange={(value) => onGlobalRoleChange(value as Extract<WeddingRole, "editor" | "viewer">)}
-            disabled={!canManageMembers}
-          >
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="editor">{t("weddingCollaboratorsPage.roles.editor")}</SelectItem>
-              <SelectItem value="viewer">{t("weddingCollaboratorsPage.roles.viewer")}</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid gap-1.5 md:w-[150px]">
+            <span className="text-sm font-medium text-zinc-900">{t("weddingCollaboratorsPage.invite.roleLabel")}</span>
+            <Select
+              value={globalRole}
+              onValueChange={(value) => onGlobalRoleChange(value as Extract<WeddingRole, "editor" | "viewer">)}
+              disabled={!canManageMembers}
+            >
+              <SelectTrigger className="w-full" aria-label={t("weddingCollaboratorsPage.invite.roleLabel")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="editor">{t("weddingCollaboratorsPage.roles.editor")}</SelectItem>
+                <SelectItem value="viewer">{t("weddingCollaboratorsPage.roles.viewer")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {canManageMembers ? (
             <Button
               type="button"
@@ -143,21 +146,24 @@ export function InvitePeopleCard({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={rowRole}
-                        onValueChange={(value) =>
-                          onRowRoleChange(user.id, value as Extract<WeddingRole, "editor" | "viewer">)
-                        }
-                        disabled={!canManageMembers || isPending}
-                      >
-                        <SelectTrigger className="w-[130px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="editor">{t("weddingCollaboratorsPage.roles.editor")}</SelectItem>
-                          <SelectItem value="viewer">{t("weddingCollaboratorsPage.roles.viewer")}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="grid gap-1">
+                        <span className="text-xs font-medium text-zinc-500">{t("weddingCollaboratorsPage.invite.roleLabel")}</span>
+                        <Select
+                          value={rowRole}
+                          onValueChange={(value) =>
+                            onRowRoleChange(user.id, value as Extract<WeddingRole, "editor" | "viewer">)
+                          }
+                          disabled={!canManageMembers || isPending}
+                        >
+                          <SelectTrigger className="w-[130px]" aria-label={t("weddingCollaboratorsPage.invite.roleLabel")}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="editor">{t("weddingCollaboratorsPage.roles.editor")}</SelectItem>
+                            <SelectItem value="viewer">{t("weddingCollaboratorsPage.roles.viewer")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       {canManageMembers ? (
                         <Button
                           type="button"

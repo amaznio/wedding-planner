@@ -248,6 +248,8 @@
     "searchPlaceholder": "Search guests",
     "filterByGroupLabel": "Filter by group",
     "filterByTableLabel": "Filter by table",
+    "relationshipTypeLabel": "Relationship type",
+    "preferredSeatingLabel": "Preferred seating",
     "filterGroupAll": "All groups",
     "filterGroupUngrouped": "Ungrouped",
     "filterTableAll": "All tables",
@@ -701,6 +703,7 @@
       "title": "Invite people",
       "description": "Search and invite existing users to collaborate on your wedding.",
       "searchPlaceholder": "Search by name or email",
+      "roleLabel": "Role",
       "suggestedUsers": "Suggested users",
       "searching": "Searching users...",
       "noUsersFound": "No users found",
@@ -1148,7 +1151,9 @@
         "creating": "Creating...",
         "empty": "No seating plans yet.",
         "searchPlaceholder": "Search plans...",
+        "filterLabel": "Event",
         "filterAllEvents": "All events",
+        "sortLabel": "Sorting",
         "sortUpdated": "Sort: Latest update",
         "sortName": "Sort: Name",
         "noEvent": "No event",
@@ -1225,10 +1230,47 @@
         "upcoming": "Upcoming payments"
       },
       "filters": {
-        "all": "All statuses"
+        "status": "Status",
+        "relationship": "Relationship",
+        "all": "All statuses",
+        "relationshipAll": "All",
+        "withVendor": "With vendor",
+        "standalone": "No vendor"
+      },
+      "categoryGroups": {
+        "vendorPayments": "Vendor payments",
+        "weddingCosts": "Wedding costs"
       },
       "categories": {
-        "deposit": "Deposit"
+        "deposit": "Deposit",
+        "Deposit": "Deposit",
+        "FinalPayment": "Final payment",
+        "Installment": "Installment",
+        "AdditionalFee": "Additional fee",
+        "Refund": "Refund",
+        "Adjustment": "Adjustment",
+        "Ceremony": "Ceremony",
+        "Reception": "Reception",
+        "Decor": "Decor",
+        "Attire": "Attire",
+        "Beauty": "Beauty",
+        "Stationery": "Stationery",
+        "Rings": "Rings",
+        "Transport": "Transport",
+        "Accommodation": "Accommodation",
+        "LegalFees": "Legal fees",
+        "Gifts": "Gifts",
+        "Tips": "Tips",
+        "Other": "Other"
+      },
+      "paidBy": {
+        "Couple": "Couple",
+        "Bride": "Bride",
+        "Groom": "Groom",
+        "BrideParents": "Bride's parents",
+        "GroomParents": "Groom's parents",
+        "Parents": "Parents",
+        "OtherPerson": "Other person"
       },
       "status": {
         "planned": "Planned",
@@ -1250,7 +1292,10 @@
           "category": "Category",
           "amount": "Amount",
           "status": "Status",
-          "linked": "Linked to"
+          "linked": "Linked to",
+          "vendor": "Vendor",
+          "date": "Date",
+          "paidBy": "Paid by"
         }
       },
       "dialog": {
@@ -1261,9 +1306,15 @@
         "title": "Payment title",
         "category": "Category",
         "amount": "Amount",
+        "date": "Date",
+        "datePlaceholder": "Choose date",
+        "clearDate": "Clear date",
+        "status": "Status",
         "paidBy": "Paid by",
+        "noPaidBy": "Not selected",
         "notes": "Notes",
         "vendor": "Vendor",
+        "vendorOptional": "Vendor optional",
         "noVendor": "No vendor",
         "event": "Event",
         "noEvent": "No event"
@@ -1276,7 +1327,7 @@
         "load": "Failed to load payments.",
         "save": "Failed to save payment.",
         "delete": "Failed to delete payment.",
-        "invalidForm": "Enter a title, category and valid amount."
+        "invalidForm": "Choose a category and enter a valid amount."
       },
       "empty": "No payments match this filter."
     }
@@ -1300,6 +1351,8 @@
       "actions": {
         "add": "Add vendor",
         "edit": "Edit vendor",
+        "addPayment": "Add payment",
+        "more": "More actions",
         "delete": "Delete vendor"
       },
       "table": {
@@ -1361,6 +1414,8 @@
       },
       "filters": {
         "search": "Search tasks...",
+        "status": "Status",
+        "groupBy": "Grouping",
         "allStatuses": "All statuses"
       },
       "groupBy": {
@@ -1522,6 +1577,7 @@
         }
       },
       "filters": {
+        "status": "Status",
         "all": "All statuses"
       },
       "status": {
@@ -1545,6 +1601,9 @@
         "owner": "Owner",
         "externalUrl": "External URL",
         "notes": "Notes",
+        "status": "Status",
+        "event": "Event",
+        "vendor": "Vendor",
         "noEvent": "No event",
         "noVendor": "No vendor"
       },

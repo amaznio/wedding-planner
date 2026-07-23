@@ -336,7 +336,7 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
                   }))
                 }
               >
-                <SelectTrigger id="edit-event-type">
+                <SelectTrigger id="edit-event-type" aria-label={t("events.detail.cards.snapshot.fields.type")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

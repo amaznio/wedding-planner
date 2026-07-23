@@ -471,6 +471,7 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                       <TableCell>
                         {fastEditMode ? (
                           <select
+                            aria-label={t("weddingGuestsPage.table.columns.status")}
                             value={applyFastEdit(primary).status}
                             onChange={(event) =>
                               setGuestDraft(primary.id, (current) => ({
@@ -584,6 +585,7 @@ function TableRowGroup({ household, t, expanded, fastEditMode, applyFastEdit, se
                         <TableCell>
                           {fastEditMode ? (
                             <select
+                              aria-label={t("weddingGuestsPage.table.columns.status")}
                               value={applyFastEdit(child).status}
                               onChange={(event) =>
                                 setGuestDraft(child.id, (current) => ({
@@ -755,6 +757,7 @@ function AgeCategorySelect({
 }) {
   return (
     <select
+      aria-label={t("weddingGuestsPage.table.columns.ageGroup")}
       value={value}
       onChange={(event) => onChange(event.target.value as GuestAgeCategory)}
       className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm"
@@ -779,6 +782,7 @@ function GenderSelect({
 }) {
   return (
     <select
+      aria-label={t("weddingGuestsPage.table.columns.gender")}
       value={value}
       onChange={(event) => onChange(event.target.value as GuestSex)}
       className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm"
