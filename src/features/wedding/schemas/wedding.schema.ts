@@ -61,16 +61,12 @@ export const createEventTimelineItemSchema = z.object({
   time: z.string().trim().min(1).max(20),
   title: z.string().trim().min(1).max(160),
   notes: z.string().max(2000).nullable().optional(),
-  sortOrder: z.int().min(0).default(0),
-  completed: z.boolean().default(false),
 });
 
 export const updateEventTimelineItemSchema = z.object({
   time: z.string().trim().min(1).max(20).optional(),
   title: z.string().trim().min(1).max(160).optional(),
   notes: z.string().max(2000).nullable().optional(),
-  sortOrder: z.int().min(0).optional(),
-  completed: z.boolean().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: "At least one field must be provided",
 });

@@ -2,6 +2,28 @@
 
 ## Current Phase
 
+Phase 284 - Event overview info card cleanup (completed)
+
+## Completed Work
+
+- Removed the event overview card heading and description from the visible overview tab:
+  - `Informacje o wydarzeniu`
+  - `Kontekst operacyjny dla tego wydarzenia.`
+- Removed the visible event style/theme field from the same info card.
+- Kept the remaining event facts visible: date, time, venue, address, and event type.
+- Files changed:
+  - `src/features/wedding-events/components/WeddingEventDetailPage.tsx`
+  - `PROGRESS.md`
+- Commands run:
+  - `pnpm typecheck` (pass)
+  - `pnpm exec eslint src/features/wedding-events/components/WeddingEventDetailPage.tsx` (pass)
+- Known issues:
+  - Browser screenshot QA was not run in this turn.
+- Next recommended step:
+  - Refresh an event detail overview page and confirm the card starts directly with the event facts.
+
+## Previous Phase
+
 Phase 283 - Event seating tab simplified rows (completed)
 
 ## Completed Work

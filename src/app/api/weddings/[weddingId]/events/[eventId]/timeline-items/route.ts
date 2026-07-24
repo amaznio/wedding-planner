@@ -23,7 +23,7 @@ export async function GET(_: Request, context: RouteContext) {
 
   const items = await prisma.eventTimelineItem.findMany({
     where: { eventId },
-    orderBy: [{ sortOrder: "asc" }, { time: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ time: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
   });
   return NextResponse.json({ items });
 }
@@ -48,8 +48,6 @@ export async function POST(request: Request, context: RouteContext) {
         time: payload.time,
         title: payload.title,
         notes: payload.notes,
-        sortOrder: payload.sortOrder,
-        completed: payload.completed,
       },
     });
     return NextResponse.json({ item }, { status: 201 });

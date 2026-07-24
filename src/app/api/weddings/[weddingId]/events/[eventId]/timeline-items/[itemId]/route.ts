@@ -30,8 +30,6 @@ export async function PUT(request: Request, context: RouteContext) {
         time: payload.time,
         title: payload.title,
         notes: payload.notes,
-        sortOrder: payload.sortOrder,
-        completed: payload.completed,
       },
     });
     return NextResponse.json({ item });

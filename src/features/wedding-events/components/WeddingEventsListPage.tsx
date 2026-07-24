@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TimePicker } from "@/components/ui/time-picker";
 import { WeddingPageHeader } from "@/features/wedding-shell/components/WeddingPageHeader";
 import { useI18n } from "@/i18n/provider";
 import { getEventRoutes } from "@/lib/routes";
@@ -475,11 +476,12 @@ export function WeddingEventsListPage({ embedded = false, weddingId, nowIso, eve
               </div>
               <div className="grid gap-2">
                 <label htmlFor="edit-event-time" className="text-sm font-medium">{t("events.detail.cards.snapshot.fields.time")}</label>
-                <Input
-                  id="edit-event-time"
-                  type="time"
+                <TimePicker
                   value={editForm.time}
-                  onChange={(event) => setEditForm((current) => ({ ...current, time: event.target.value }))}
+                  onChange={(time) => setEditForm((current) => ({ ...current, time }))}
+                  placeholder={t("events.list.form.timePlaceholder")}
+                  clearLabel={t("events.list.form.clearTime")}
+                  ariaLabel={t("events.detail.cards.snapshot.fields.time")}
                 />
               </div>
             </div>

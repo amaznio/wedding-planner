@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit3, ListChecks, Plus, Search, Settings2, Trash2, X } from "lucide-react";
 import { useParams } from "next/navigation";
 
+import { AppFilterBar } from "@/components/app/AppFilterBar";
+import { AppFormField } from "@/components/app/AppFormField";
 import { AppStatsRail } from "@/components/app/AppStatsRail";
 import { AppStatusBadge } from "@/components/app/AppStatusBadge";
 import { AppWorkspacePage } from "@/components/app/AppWorkspacePage";
@@ -334,26 +336,24 @@ export function WeddingTasksPage() {
         ]}
       />
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <AppFilterBar className="mt-5">
         <InputGroup className="max-w-md flex-1">
           <InputGroupAddon><Search /></InputGroupAddon>
           <InputGroupInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("tasks.page.filters.search")} />
         </InputGroup>
-        <div className="grid gap-1.5">
-          <span className="text-sm font-medium text-zinc-900">{t("tasks.page.filters.status")}</span>
+        <AppFormField className="sm:w-auto" label={t("tasks.page.filters.status")}>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | "all")}>
             <SelectTrigger className="w-full sm:w-44" aria-label={t("tasks.page.filters.status")}><SelectValue /></SelectTrigger>
             <SelectContent>{statuses.map((status) => <SelectItem key={status} value={status}>{status === "all" ? t("tasks.page.filters.allStatuses") : t(`tasks.page.status.${status}`)}</SelectItem>)}</SelectContent>
           </Select>
-        </div>
-        <div className="grid gap-1.5">
-          <span className="text-sm font-medium text-zinc-900">{t("tasks.page.filters.groupBy")}</span>
+        </AppFormField>
+        <AppFormField className="sm:w-auto" label={t("tasks.page.filters.groupBy")}>
           <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupBy)}>
             <SelectTrigger className="w-full sm:w-64" aria-label={t("tasks.page.filters.groupBy")}><SelectValue /></SelectTrigger>
             <SelectContent>{groupByOptions.map((option) => <SelectItem key={option} value={option}>{t(`tasks.page.groupBy.${option}`)}</SelectItem>)}</SelectContent>
           </Select>
-        </div>
-      </div>
+        </AppFormField>
+      </AppFilterBar>
 
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
       <div className="mt-5 grid gap-6">

@@ -978,6 +978,8 @@
       "form": {
         "datePlaceholder": "Wybierz datę",
         "clearDate": "Wyczyść datę",
+        "timePlaceholder": "Wybierz godzinę",
+        "clearTime": "Wyczyść godzinę",
         "requiresSeatingPlan": "Wymaga planu stołów",
         "requiresSeatingPlanHelp": "Wyłącz dla ceremonii, ślubu kościelnego albo wydarzeń bez przypisanych miejsc."
       },
@@ -1210,24 +1212,24 @@
         "add": "Dodaj punkt",
         "edit": "Edytuj punkt",
         "delete": "Usuń punkt",
-        "completed": "Gotowe",
-        "empty": "Brak punktów harmonogramu.",
+        "empty": "Brak punktów harmonogramu. Dodaj pierwszy punkt dnia.",
         "createTitle": "Dodaj punkt harmonogramu",
         "editTitle": "Edytuj punkt harmonogramu",
         "deleteTitle": "Usuń punkt harmonogramu",
         "deleteDescription": "Usunąć {{title}} z harmonogramu?",
         "form": {
           "time": "Godzina",
+          "timePlaceholder": "Wybierz godzinę",
           "title": "Tytuł",
-          "sortOrder": "Kolejność",
+          "titlePlaceholder": "np. Ceremonia",
           "notes": "Notatki",
-          "completed": "Ukończone"
+          "notesPlaceholder": "Logistyka, przypomnienia, szczegóły od wykonawców..."
         },
         "errors": {
           "load": "Nie udało się załadować punktów harmonogramu.",
           "save": "Nie udało się zapisać punktu harmonogramu.",
           "delete": "Nie udało się usunąć punktu harmonogramu.",
-          "invalidForm": "Podaj godzinę, tytuł i poprawną kolejność."
+          "invalidForm": "Podaj godzinę i tytuł."
         }
       }
     },

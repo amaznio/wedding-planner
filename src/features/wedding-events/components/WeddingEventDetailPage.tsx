@@ -37,6 +37,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { TimePicker } from "@/components/ui/time-picker";
 import { AppQuickActionsCard } from "@/components/app/AppQuickActionsCard";
 import { WorkspacePageHeader } from "@/features/wedding-dashboard/components/WorkspacePageHeader";
 import { WeddingEventDetailPageLoading } from "@/features/wedding-dashboard/components/WorkspacePageLoading";
@@ -154,8 +156,6 @@ type EventTimelineItem = {
   time: string;
   title: string;
   notes: string | null;
-  sortOrder: number;
-  completed: boolean;
 };
 
 type TimelineItemsApiResponse = {
@@ -166,8 +166,6 @@ type TimelineForm = {
   time: string;
   title: string;
   notes: string;
-  sortOrder: string;
-  completed: boolean;
 };
 
 type EventTabItem = {
@@ -195,8 +193,6 @@ const emptyTimelineForm: TimelineForm = {
   time: "",
   title: "",
   notes: "",
-  sortOrder: "0",
-  completed: false,
 };
 
 const eventTypeOptions: Array<{ value: WeddingEventApiType; labelKey: string }> = [
@@ -524,7 +520,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
   };
 
   const openCreateTimelineDialog = () => {
-    setTimelineForm({ ...emptyTimelineForm, sortOrder: String(timelineItems.length) });
+    setTimelineForm(emptyTimelineForm);
     setEditingTimelineItemId(null);
     setTimelineError(null);
     setTimelineDialogMode("create");
@@ -535,8 +531,6 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
       time: item.time,
       title: item.title,
       notes: item.notes ?? "",
-      sortOrder: String(item.sortOrder),
-      completed: item.completed,
     });
     setEditingTimelineItemId(item.id);
     setTimelineError(null);
@@ -545,8 +539,7 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
 
   const saveTimelineItem = async () => {
     if (!canEditWedding || !timelineDialogMode) return;
-    const sortOrder = Number.parseInt(timelineForm.sortOrder, 10);
-    if (!timelineForm.time.trim() || !timelineForm.title.trim() || !Number.isFinite(sortOrder) || sortOrder < 0) {
+    if (!timelineForm.time.trim() || !timelineForm.title.trim()) {
       setTimelineError(t("events.detail.scheduleTab.errors.invalidForm"));
       return;
     }
@@ -558,8 +551,6 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         time: timelineForm.time.trim(),
         title: timelineForm.title.trim(),
         notes: timelineForm.notes.trim() || null,
-        sortOrder,
-        completed: timelineForm.completed,
       };
       const url = timelineDialogMode === "edit" && editingTimelineItemId
         ? `/api/weddings/${weddingId}/events/${eventId}/timeline-items/${editingTimelineItemId}`
@@ -680,17 +671,12 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-5">
               <Card className="gap-0">
-                <CardHeader>
-                  <CardTitle>{t("events.detail.cards.snapshot.title")}</CardTitle>
-                  <CardDescription>{t("events.detail.cards.snapshot.description")}</CardDescription>
-                </CardHeader>
                 <CardContent className="grid gap-3 text-sm text-zinc-700 sm:grid-cols-2">
                   <MetaItem label={t("events.detail.cards.snapshot.fields.date")} value={eventDateLabel} />
                   <MetaItem label={t("events.detail.cards.snapshot.fields.time")} value={eventTimeLabel} />
                   <MetaItem label={t("events.detail.cards.snapshot.fields.venue")} value={data.event.venue.name} />
                   <MetaItem label={t("events.detail.cards.snapshot.fields.address")} value={data.event.venue.address} />
                   <MetaItem label={t("events.detail.cards.snapshot.fields.type")} value={t(`events.detail.eventType.${data.event.type}`)} />
-                  <MetaItem label={t("events.detail.cards.snapshot.fields.theme")} value={data.event.theme} />
                 </CardContent>
               </Card>
 
@@ -930,33 +916,30 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
         ) : null}
 
         {activeTab === "schedule" ? (
-          <Card className="gap-0">
-            <CardHeader>
+          <section className="pt-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle>{t("events.detail.scheduleTab.title")}</CardTitle>
-                <CardDescription>{t("events.detail.scheduleTab.description")}</CardDescription>
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-950">{t("events.detail.scheduleTab.title")}</h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">{t("events.detail.scheduleTab.description")}</p>
               </div>
-              <CardAction>
-                <Button type="button" variant="primary" onClick={openCreateTimelineDialog} disabled={!canEditWedding}>
-                  <Plus className="size-4" />
-                  {t("events.detail.scheduleTab.add")}
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent>
+              <Button type="button" variant="primary" className="h-10 self-start" onClick={openCreateTimelineDialog} disabled={!canEditWedding}>
+                <Plus className="size-4" />
+                {t("events.detail.scheduleTab.add")}
+              </Button>
+            </div>
+            <div className="mt-6">
               {timelineItems.length ? (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {timelineItems.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-[72px_18px_minmax(0,1fr)_80px] items-start gap-3 py-3">
-                      <p className="pt-0.5 text-lg font-medium leading-none text-zinc-900">{item.time}</p>
+                    <div key={item.id} className="grid min-h-14 grid-cols-[72px_18px_minmax(0,1fr)_80px] items-start gap-3">
+                      <p className="pt-0.5 text-lg font-semibold leading-none text-zinc-950">{item.time}</p>
                       <div className="relative flex h-full justify-center">
-                        {index < timelineItems.length - 1 ? <span className="absolute bottom-[-18px] top-3 w-px bg-violet-200" /> : null}
-                        <span className="relative mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.35)]" />
+                        <span className="relative z-10 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.35)]" />
+                        {index < timelineItems.length - 1 ? <span className="absolute bottom-[-8px] top-5 w-px bg-violet-200" /> : null}
                       </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-zinc-900">{item.title}</p>
-                          {item.completed ? <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{t("events.detail.scheduleTab.completed")}</Badge> : null}
                         </div>
                         {item.notes ? <p className="mt-1 text-sm text-zinc-600">{item.notes}</p> : null}
                       </div>
@@ -974,8 +957,8 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               ) : (
                 <p className="text-sm text-zinc-600">{t("events.detail.scheduleTab.empty")}</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         ) : null}
 
         {activeTab === "seating" ? (
@@ -1115,11 +1098,12 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
                 />
                 <div className="grid gap-2">
                   <label htmlFor="detail-edit-event-time" className="text-sm font-medium">{t("events.detail.cards.snapshot.fields.time")}</label>
-                  <Input
-                    id="detail-edit-event-time"
-                    type="time"
+                  <TimePicker
                     value={eventEditForm.time}
-                    onChange={(event) => setEventEditForm((current) => current ? { ...current, time: event.target.value } : current)}
+                    onChange={(time) => setEventEditForm((current) => current ? { ...current, time } : current)}
+                    placeholder={t("events.list.form.timePlaceholder")}
+                    clearLabel={t("events.list.form.clearTime")}
+                    ariaLabel={t("events.detail.cards.snapshot.fields.time")}
                   />
                 </div>
               </div>
@@ -1167,16 +1151,38 @@ export function WeddingEventDetailPage({ weddingId, eventId }: WeddingEventDetai
               void saveTimelineItem();
             }}
           >
-            <div className="grid gap-3 sm:grid-cols-[140px_minmax(0,1fr)_120px]">
-              <Input value={timelineForm.time} onChange={(event) => setTimelineForm((current) => ({ ...current, time: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.time")} />
-              <Input value={timelineForm.title} onChange={(event) => setTimelineForm((current) => ({ ...current, title: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.title")} />
-              <Input value={timelineForm.sortOrder} onChange={(event) => setTimelineForm((current) => ({ ...current, sortOrder: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.sortOrder")} />
+            <div className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">{t("events.detail.scheduleTab.form.time")}</span>
+                <TimePicker
+                  value={timelineForm.time}
+                  onChange={(time) => setTimelineForm((current) => ({ ...current, time }))}
+                  placeholder={t("events.detail.scheduleTab.form.timePlaceholder")}
+                  clearLabel={t("events.list.form.clearTime")}
+                  minuteStep={15}
+                  ariaLabel={t("events.detail.scheduleTab.form.time")}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="event-timeline-title" className="text-sm font-medium">{t("events.detail.scheduleTab.form.title")}</label>
+                <Input
+                  id="event-timeline-title"
+                  value={timelineForm.title}
+                  onChange={(event) => setTimelineForm((current) => ({ ...current, title: event.target.value }))}
+                  placeholder={t("events.detail.scheduleTab.form.titlePlaceholder")}
+                />
+              </div>
             </div>
-            <Input value={timelineForm.notes} onChange={(event) => setTimelineForm((current) => ({ ...current, notes: event.target.value }))} placeholder={t("events.detail.scheduleTab.form.notes")} />
-            <label className="flex items-center gap-2 text-sm text-zinc-700">
-              <Checkbox checked={timelineForm.completed} onCheckedChange={(checked) => setTimelineForm((current) => ({ ...current, completed: checked === true }))} />
-              {t("events.detail.scheduleTab.form.completed")}
-            </label>
+            <div className="grid gap-2">
+              <label htmlFor="event-timeline-notes" className="text-sm font-medium">{t("events.detail.scheduleTab.form.notes")}</label>
+              <Textarea
+                id="event-timeline-notes"
+                className="min-h-24 resize-y"
+                value={timelineForm.notes}
+                onChange={(event) => setTimelineForm((current) => ({ ...current, notes: event.target.value }))}
+                placeholder={t("events.detail.scheduleTab.form.notesPlaceholder")}
+              />
+            </div>
             {timelineError ? <p className="text-sm text-red-600">{timelineError}</p> : null}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setTimelineDialogMode(null)}>{t("common.cancel")}</Button>

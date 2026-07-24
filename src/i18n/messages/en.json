@@ -978,6 +978,8 @@
       "form": {
         "datePlaceholder": "Choose date",
         "clearDate": "Clear date",
+        "timePlaceholder": "Choose time",
+        "clearTime": "Clear time",
         "requiresSeatingPlan": "Needs seating plan",
         "requiresSeatingPlanHelp": "Turn this off for ceremonies, church weddings, or events without assigned seats."
       },
@@ -1210,24 +1212,24 @@
         "add": "Add item",
         "edit": "Edit item",
         "delete": "Delete item",
-        "completed": "Done",
-        "empty": "No timeline items yet.",
+        "empty": "No timeline items yet. Add the first item for the day.",
         "createTitle": "Add timeline item",
         "editTitle": "Edit timeline item",
         "deleteTitle": "Delete timeline item",
         "deleteDescription": "Delete {{title}} from the schedule?",
         "form": {
           "time": "Time",
+          "timePlaceholder": "Select time",
           "title": "Title",
-          "sortOrder": "Order",
+          "titlePlaceholder": "e.g. Ceremony",
           "notes": "Notes",
-          "completed": "Completed"
+          "notesPlaceholder": "Logistics, reminders, vendor details..."
         },
         "errors": {
           "load": "Failed to load timeline items.",
           "save": "Failed to save timeline item.",
           "delete": "Failed to delete timeline item.",
-          "invalidForm": "Enter a time, title and valid order."
+          "invalidForm": "Enter a time and title."
         }
       }
     },
